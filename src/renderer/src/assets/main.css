@@ -13,7 +13,7 @@
 
     @apply select-none;
 
-    @apply bg-transparent;
+    @apply bg-zinc-900;
 
     @apply font-mono antialiased text-white;
 
