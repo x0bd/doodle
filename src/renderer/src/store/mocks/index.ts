@@ -10,11 +10,11 @@ export const notesMock: NoteInfo[] = [
 		lastEditTime: new Date().getTime(),
 	},
 	{
-		title: "Note 2",
+		title: "I should pivot towards creative development",
 		lastEditTime: new Date().getTime(),
 	},
 	{
-		title: "Note 3",
+		title: "I am such a creative person",
 		lastEditTime: new Date().getTime(),
 	},
 ];
