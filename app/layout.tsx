@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { GeistMono } from "geist/font/mono";
+import { MantineProvider } from "@mantine/core";
 
 export const metadata: Metadata = {
 	title: "Doodle",
@@ -15,7 +16,7 @@ export default function RootLayout({
 	return (
 		<html lang="en">
 			<body className={`${GeistMono.variable} font-mono  antialiased`}>
-				{children}
+				<MantineProvider>{children}</MantineProvider>
 			</body>
 		</html>
 	);
