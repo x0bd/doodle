@@ -2,9 +2,11 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { DragHandleDots2Icon } from "@radix-ui/react-icons";
+import { useTheme } from "next-themes";
+import { SunIcon, MoonIcon } from "lucide-react";
 
 interface GeneratedResult {
 	expression: string;
@@ -17,24 +19,22 @@ interface Response {
 	assign: boolean;
 }
 
-// Define color swatches
-const SWATCHES = [
-	"rgb(255, 255, 255)",
-	"rgb(255, 0, 0)",
-	"rgb(0, 255, 0)",
-	"rgb(0, 0, 255)",
-	"rgb(255, 255, 0)",
-	"rgb(255, 0, 255)",
-	"rgb(0, 255, 255)",
+// Define refined color palette
+const COLORS = [
+	{ name: "White", value: "#FFFFFF" },
+	{ name: "Black", value: "#000000" },
+	{ name: "Blue", value: "#0070F3" }, // Vercel blue
+	{ name: "Cyan", value: "#50E3C2" },
+	{ name: "Red", value: "#FF0000" },
+	{ name: "Green", value: "#00FF00" },
 ];
 
 interface ColorSwatchProps {
-	color: string;
+	color: { name: string; value: string };
 	selected?: boolean;
 	onClick: () => void;
 }
 
-/
 const ColorSwatch: React.FC<ColorSwatchProps> = ({
 	color,
 	selected,
@@ -43,13 +43,16 @@ const ColorSwatch: React.FC<ColorSwatchProps> = ({
 	return (
 		<button
 			className={cn(
-				"w-8 h-8 rounded-full transition-all border-2",
-				selected ? "border-gray-300" : "border-transparent"
+				"w-6 h-6 rounded-full transition-all",
+				selected
+					? "ring-2 ring-white ring-offset-2 ring-offset-black scale-125"
+					: "opacity-80 hover:opacity-100"
 			)}
-			style={{ backgroundColor: color }}
+			style={{ backgroundColor: color.value }}
 			onClick={onClick}
 			type="button"
-			aria-label={`Select ${color} color`}
+			aria-label={`Select ${color.name} color`}
+			title={color.name}
 		/>
 	);
 };
@@ -59,23 +62,50 @@ interface ColorSwatchesProps {
 	onChange: (color: string) => void;
 }
 
-// Custom ColorSwatches component
 const ColorSwatches: React.FC<ColorSwatchesProps> = ({ value, onChange }) => {
 	return (
-		<div className="flex flex-wrap gap-2 items-center justify-center">
-			{SWATCHES.map((swatch) => (
+		<div className="flex gap-3 items-center justify-center py-2">
+			{COLORS.map((color) => (
 				<ColorSwatch
-					key={swatch}
-					color={swatch}
-					selected={value === swatch}
-					onClick={() => onChange(swatch)}
+					key={color.value}
+					color={color}
+					selected={value === color.value}
+					onClick={() => onChange(color.value)}
 				/>
 			))}
 		</div>
 	);
 };
 
-// Draggable component to replace react-draggable
+// Floating Navbar component
+const FloatingNavbar: React.FC = () => {
+	const { theme, setTheme } = useTheme();
+
+	return (
+		<div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
+			<div className="flex items-center px-6 py-2 rounded-full bg-black/30 backdrop-blur-md border border-white/10 shadow-lg">
+				<h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mr-6">
+					Doodle
+				</h1>
+				<button
+					onClick={() =>
+						setTheme(theme === "dark" ? "light" : "dark")
+					}
+					className="p-2 rounded-full hover:bg-white/10 transition-colors"
+					aria-label="Toggle theme"
+				>
+					{theme === "dark" ? (
+						<SunIcon className="h-5 w-5 text-yellow-300" />
+					) : (
+						<MoonIcon className="h-5 w-5 text-blue-300" />
+					)}
+				</button>
+			</div>
+		</div>
+	);
+};
+
+// Draggable component
 const Draggable: React.FC<{
 	children: React.ReactNode;
 	defaultPosition: { x: number; y: number };
@@ -147,11 +177,12 @@ const Draggable: React.FC<{
 export default function AiCalculator() {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const [isDrawing, setIsDrawing] = useState(false);
-	const [color, setColor] = useState(SWATCHES[0]);
+	const [color, setColor] = useState(COLORS[2].value); // Default to Vercel blue
 	const [dictOfVars, setDictOfVars] = useState<Record<string, string>>({});
 	const [result, setResult] = useState<GeneratedResult | undefined>();
 	const [latexPosition, setLatexPosition] = useState({ x: 10, y: 200 });
 	const [latexExpression, setLatexExpression] = useState<Array<string>>([]);
+	const { theme } = useTheme();
 
 	useEffect(() => {
 		if (latexExpression.length > 0 && window.MathJax) {
@@ -249,7 +280,6 @@ export default function AiCalculator() {
 		if (canvas) {
 			const ctx = canvas.getContext("2d");
 			if (ctx) {
-				canvas.style.background = "black";
 				ctx.beginPath();
 				ctx.moveTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
 				setIsDrawing(true);
@@ -280,7 +310,7 @@ export default function AiCalculator() {
 		const canvas = canvasRef.current;
 
 		if (canvas) {
-			// Mock response for now (removing axios dependency)
+			// Mock response for now
 			const mockResponse = {
 				data: [
 					{
@@ -342,37 +372,14 @@ export default function AiCalculator() {
 		}
 	};
 
-	return (
-		<div className="relative min-h-screen">
-			<div className="absolute top-4 left-0 right-0 z-30 px-4">
-				<Card className="bg-black/80 backdrop-blur-sm border-gray-800">
-					<CardContent className="p-4">
-						<div className="grid grid-cols-3 gap-2">
-							<Button
-								onClick={handleReset}
-								variant="secondary"
-								className="w-full"
-							>
-								Reset
-							</Button>
-							<div className="flex justify-center">
-								<ColorSwatches
-									value={color}
-									onChange={setColor}
-								/>
-							</div>
-							<Button
-								onClick={runCalculation}
-								variant="default"
-								className="w-full"
-							>
-								Calculate
-							</Button>
-						</div>
-					</CardContent>
-				</Card>
-			</div>
+	const bgClass = theme === "dark" ? "bg-black" : "bg-gray-100";
 
+	return (
+		<div className={`relative min-h-screen ${bgClass}`}>
+			{/* Navbar */}
+			<FloatingNavbar />
+
+			{/* Drawing Canvas */}
 			<canvas
 				ref={canvasRef}
 				id="canvas"
@@ -383,17 +390,45 @@ export default function AiCalculator() {
 				onMouseOut={stopDrawing}
 			/>
 
+			{/* Floating Action Buttons */}
+			<div className="absolute top-4 right-4 flex gap-2">
+				<Button
+					onClick={handleReset}
+					variant="outline"
+					className="h-8 rounded-full border border-white/20 bg-black/40 backdrop-blur-md text-xs text-white hover:bg-black/60"
+				>
+					Reset
+				</Button>
+
+				<Button
+					onClick={runCalculation}
+					className="h-8 rounded-full bg-blue-600 hover:bg-blue-700 text-xs border-0"
+				>
+					Calculate
+				</Button>
+			</div>
+
+			{/* Enhanced macOS Dock-style Color Palette */}
+			<div className="absolute bottom-6 left-1/2 transform -translate-x-1/2">
+				<Card className="bg-black/30 backdrop-blur-lg border border-white/20 px-4 py-2 rounded-full shadow-2xl">
+					<ColorSwatches value={color} onChange={setColor} />
+				</Card>
+			</div>
+
+			{/* LaTeX Results */}
 			{latexExpression.map((latex, index) => (
 				<Draggable
 					key={index}
 					defaultPosition={latexPosition}
 					onStop={(position) => setLatexPosition(position)}
 				>
-					<Card className="bg-black/80 p-2 text-white shadow-lg border-gray-700">
-						<div
-							className="latex-content"
-							dangerouslySetInnerHTML={{ __html: latex }}
-						/>
+					<Card className="bg-black/40 backdrop-blur-md border border-white/10 rounded-md shadow-xl text-white">
+						<div className="p-3">
+							<div
+								className="latex-content"
+								dangerouslySetInnerHTML={{ __html: latex }}
+							/>
+						</div>
 					</Card>
 				</Draggable>
 			))}
