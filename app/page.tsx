@@ -1,12 +1,21 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import type React from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { DragHandleDots2Icon } from "@radix-ui/react-icons";
 import { useTheme } from "next-themes";
-import { SunIcon, MoonIcon } from "lucide-react";
+import {
+	SunIcon,
+	MoonIcon,
+	PencilIcon,
+	CalculatorIcon,
+	UndoIcon,
+	RotateCcwIcon,
+	Sparkles,
+} from "lucide-react";
 
 interface GeneratedResult {
 	expression: string;
@@ -19,14 +28,16 @@ interface Response {
 	assign: boolean;
 }
 
-// Define refined color palette
+// Enhanced premium color palette
 const COLORS = [
 	{ name: "White", value: "#FFFFFF" },
 	{ name: "Black", value: "#000000" },
-	{ name: "Blue", value: "#0070F3" }, // Vercel blue
+	{ name: "Vercel Blue", value: "#0070F3" },
 	{ name: "Cyan", value: "#50E3C2" },
-	{ name: "Red", value: "#FF0000" },
-	{ name: "Green", value: "#00FF00" },
+	{ name: "Crimson", value: "#FF4785" },
+	{ name: "Sage", value: "#2DD4BF" },
+	{ name: "Amber", value: "#F59E0B" },
+	{ name: "Violet", value: "#8B5CF6" },
 ];
 
 interface ColorSwatchProps {
@@ -43,12 +54,15 @@ const ColorSwatch: React.FC<ColorSwatchProps> = ({
 	return (
 		<button
 			className={cn(
-				"w-6 h-6 rounded-full transition-all",
+				"w-8 h-8 rounded-full transition-all",
 				selected
-					? "ring-2 ring-white ring-offset-2 ring-offset-black scale-125"
-					: "opacity-80 hover:opacity-100"
+					? "ring-2 ring-white/90 ring-offset-2 ring-offset-black/20 scale-110 z-10 shadow-[0_0_15px_rgba(0,0,0,0.2)]"
+					: "opacity-85 hover:opacity-100 hover:scale-105"
 			)}
-			style={{ backgroundColor: color.value }}
+			style={{
+				backgroundColor: color.value,
+				boxShadow: selected ? `0 0 15px ${color.value}80` : "none",
+			}}
 			onClick={onClick}
 			type="button"
 			aria-label={`Select ${color.name} color`}
@@ -64,7 +78,7 @@ interface ColorSwatchesProps {
 
 const ColorSwatches: React.FC<ColorSwatchesProps> = ({ value, onChange }) => {
 	return (
-		<div className="flex gap-3 items-center justify-center py-2">
+		<div className="flex gap-3 items-center justify-center py-2 px-4">
 			{COLORS.map((color) => (
 				<ColorSwatch
 					key={color.value}
@@ -77,35 +91,56 @@ const ColorSwatches: React.FC<ColorSwatchesProps> = ({ value, onChange }) => {
 	);
 };
 
-// Floating Navbar component
+// Premium floating navbar component
 const FloatingNavbar: React.FC = () => {
 	const { theme, setTheme } = useTheme();
 
 	return (
-		<div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
-			<div className="flex items-center px-6 py-2 rounded-full bg-black/30 backdrop-blur-md border border-white/10 shadow-lg">
-				<h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mr-6">
-					Doodle
-				</h1>
-				<button
-					onClick={() =>
-						setTheme(theme === "dark" ? "light" : "dark")
-					}
-					className="p-2 rounded-full hover:bg-white/10 transition-colors"
-					aria-label="Toggle theme"
-				>
-					{theme === "dark" ? (
-						<SunIcon className="h-5 w-5 text-yellow-300" />
-					) : (
-						<MoonIcon className="h-5 w-5 text-blue-300" />
-					)}
-				</button>
+		<div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50">
+			<div className="flex items-center px-6 py-2.5 rounded-full bg-background/80 backdrop-blur-xl border border-border shadow-lg">
+				<div className="flex items-center gap-2">
+					<div className="h-7 w-7 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-sm">
+						<PencilIcon className="h-3.5 w-3.5 text-primary-foreground" />
+					</div>
+					<h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent mr-4">
+						Doodle
+					</h1>
+				</div>
+
+				<div className="mx-3 h-5 w-px bg-border"></div>
+
+				<div className="flex items-center gap-5">
+					<button className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
+						<CalculatorIcon className="h-3.5 w-3.5" />
+						<span>Calculator</span>
+					</button>
+					<button className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
+						<RotateCcwIcon className="h-3.5 w-3.5" />
+						<span>History</span>
+					</button>
+				</div>
+
+				<div className="ml-auto">
+					<button
+						onClick={() =>
+							setTheme(theme === "dark" ? "light" : "dark")
+						}
+						className="p-1.5 rounded-full hover:bg-muted transition-colors"
+						aria-label="Toggle theme"
+					>
+						{theme === "dark" ? (
+							<SunIcon className="h-4 w-4" />
+						) : (
+							<MoonIcon className="h-4 w-4" />
+						)}
+					</button>
+				</div>
 			</div>
 		</div>
 	);
 };
 
-// Draggable component
+// Draggable component with enhanced visuals
 const Draggable: React.FC<{
 	children: React.ReactNode;
 	defaultPosition: { x: number; y: number };
@@ -165,9 +200,12 @@ const Draggable: React.FC<{
 				zIndex: 50,
 			}}
 			onMouseDown={handleMouseDown}
+			className="transition-shadow duration-200 hover:shadow-lg"
 		>
 			<div className="flex items-center gap-1">
-				<DragHandleDots2Icon className="h-4 w-4 text-gray-400" />
+				<div className="h-6 w-6 rounded-full bg-background/50 backdrop-blur-md flex items-center justify-center border border-border/50">
+					<DragHandleDots2Icon className="h-3.5 w-3.5 text-muted-foreground" />
+				</div>
 				{children}
 			</div>
 		</div>
@@ -183,6 +221,11 @@ export default function AiCalculator() {
 	const [latexPosition, setLatexPosition] = useState({ x: 10, y: 200 });
 	const [latexExpression, setLatexExpression] = useState<Array<string>>([]);
 	const { theme } = useTheme();
+	const [calcStatus, setCalcStatus] = useState<"idle" | "calculating">(
+		"idle"
+	);
+	const [brushSize, setBrushSize] = useState(3);
+	const [showWelcome, setShowWelcome] = useState(true);
 
 	useEffect(() => {
 		if (latexExpression.length > 0 && window.MathJax) {
@@ -207,7 +250,7 @@ export default function AiCalculator() {
 				canvas.width = window.innerWidth;
 				canvas.height = window.innerHeight - canvas.offsetTop;
 				ctx.lineCap = "round";
-				ctx.lineWidth = 3;
+				ctx.lineWidth = brushSize;
 			}
 		}
 
@@ -223,7 +266,7 @@ export default function AiCalculator() {
 					tex2jax: {
 						inlineMath: [
 							["$", "$"],
-							["\\(", "\\)"],
+							["$$", "$$"],
 						],
 					},
 				});
@@ -237,7 +280,7 @@ export default function AiCalculator() {
 				const ctx = canvas.getContext("2d");
 				if (ctx) {
 					ctx.lineCap = "round";
-					ctx.lineWidth = 3;
+					ctx.lineWidth = brushSize;
 				}
 			}
 		};
@@ -248,10 +291,10 @@ export default function AiCalculator() {
 			document.head.removeChild(script);
 			window.removeEventListener("resize", handleResize);
 		};
-	}, []);
+	}, [brushSize]);
 
 	const renderLatexToCanvas = (expression: string, answer: string) => {
-		const latex = `\\(\\LARGE{${expression} = ${answer}}\\)`;
+		const latex = `\$$\\LARGE{${expression} = ${answer}}\$$`;
 		setLatexExpression([...latexExpression, latex]);
 
 		// Clear the main canvas
@@ -285,6 +328,7 @@ export default function AiCalculator() {
 				setIsDrawing(true);
 			}
 		}
+		setShowWelcome(false);
 	};
 
 	const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -296,6 +340,7 @@ export default function AiCalculator() {
 			const ctx = canvas.getContext("2d");
 			if (ctx) {
 				ctx.strokeStyle = color;
+				ctx.lineWidth = brushSize;
 				ctx.lineTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
 				ctx.stroke();
 			}
@@ -310,12 +355,14 @@ export default function AiCalculator() {
 		const canvas = canvasRef.current;
 
 		if (canvas) {
+			setCalcStatus("calculating");
+
 			// Mock response for now
 			const mockResponse = {
 				data: [
 					{
-						expr: "2 + 2",
-						result: "4",
+						expr: "x^2 + 3x - 5",
+						result: "42",
 						assign: false,
 					},
 				],
@@ -360,22 +407,33 @@ export default function AiCalculator() {
 				const centerY = (minY + maxY) / 2;
 
 				setLatexPosition({ x: centerX, y: centerY });
-				mockResponse.data.forEach((data: Response) => {
-					setTimeout(() => {
+				setTimeout(() => {
+					mockResponse.data.forEach((data: Response) => {
 						setResult({
 							expression: data.expr,
 							answer: data.result,
 						});
-					}, 1000);
-				});
+					});
+					setCalcStatus("idle");
+				}, 1500);
 			}
 		}
 	};
 
-	const bgClass = theme === "dark" ? "bg-black" : "bg-gray-100";
-
 	return (
-		<div className={`relative min-h-screen ${bgClass}`}>
+		<div className="relative min-h-screen bg-gradient-to-br from-background to-background/90 overflow-hidden">
+			{/* Subtle Grid Background */}
+			<div className="absolute inset-0 bg-grid-pattern opacity-[0.03]"></div>
+
+			{/* Ambient Glow Effects */}
+			<div className="absolute top-[-20%] right-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px] pointer-events-none"></div>
+			<div className="absolute bottom-[-10%] left-[-5%] w-[30%] h-[30%] bg-primary/5 rounded-full blur-[100px] pointer-events-none"></div>
+
+			{/* Canvas Background Frame */}
+			<div className="absolute inset-0 flex items-center justify-center p-16">
+				<div className="w-full h-full rounded-3xl border border-border/40 bg-background/5 backdrop-blur-[2px] shadow-sm"></div>
+			</div>
+
 			{/* Navbar */}
 			<FloatingNavbar />
 
@@ -390,29 +448,81 @@ export default function AiCalculator() {
 				onMouseOut={stopDrawing}
 			/>
 
-			{/* Floating Action Buttons */}
-			<div className="absolute top-4 right-4 flex gap-2">
+			{/* Brush Size Controls */}
+			<div className="absolute left-6 top-1/2 transform -translate-y-1/2">
+				<Card className="bg-background/80 backdrop-blur-xl border border-border p-3 rounded-xl shadow-sm">
+					<div className="flex flex-col items-center gap-3">
+						<span className="text-xs font-medium text-muted-foreground">
+							Brush
+						</span>
+						<input
+							type="range"
+							min="1"
+							max="10"
+							value={brushSize}
+							onChange={(e) =>
+								setBrushSize(Number.parseInt(e.target.value))
+							}
+							className="w-5 h-24 appearance-none bg-transparent outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-runnable-track]:w-1 [&::-webkit-slider-runnable-track]:h-24 [&::-webkit-slider-runnable-track]:bg-border [&::-webkit-slider-runnable-track]:rounded-full"
+							style={{ writingMode: "bt-lr" }}
+						/>
+						<div
+							className="rounded-full"
+							style={{
+								width: `${brushSize * 2}px`,
+								height: `${brushSize * 2}px`,
+								backgroundColor: color,
+							}}
+						></div>
+					</div>
+				</Card>
+			</div>
+
+			{/* Action Buttons */}
+			<div className="absolute top-6 right-6 flex gap-3">
 				<Button
 					onClick={handleReset}
 					variant="outline"
-					className="h-8 rounded-full border border-white/20 bg-black/40 backdrop-blur-md text-xs text-white hover:bg-black/60"
+					size="sm"
+					className="h-9 px-3 rounded-lg text-xs shadow-sm"
 				>
+					<UndoIcon className="h-3.5 w-3.5 mr-1.5" />
 					Reset
 				</Button>
 
 				<Button
 					onClick={runCalculation}
-					className="h-8 rounded-full bg-blue-600 hover:bg-blue-700 text-xs border-0"
+					disabled={calcStatus === "calculating"}
+					size="sm"
+					className={cn(
+						"h-9 px-4 rounded-lg text-xs shadow-sm",
+						calcStatus === "calculating" ? "opacity-80" : ""
+					)}
 				>
-					Calculate
+					{calcStatus === "calculating" ? (
+						<>
+							<div className="animate-spin h-3.5 w-3.5 border-2 border-current border-t-transparent rounded-full mr-1.5"></div>
+							Processing...
+						</>
+					) : (
+						<>
+							<CalculatorIcon className="h-3.5 w-3.5 mr-1.5" />
+							Calculate
+						</>
+					)}
 				</Button>
 			</div>
 
-			{/* Enhanced macOS Dock-style Color Palette */}
+			{/* Color Palette */}
 			<div className="absolute bottom-6 left-1/2 transform -translate-x-1/2">
-				<Card className="bg-black/30 backdrop-blur-lg border border-white/20 px-4 py-2 rounded-full shadow-2xl">
-					<ColorSwatches value={color} onChange={setColor} />
-				</Card>
+				<div className="relative">
+					{/* Subtle reflection effect */}
+					<div className="absolute -bottom-4 left-0 right-0 h-6 bg-gradient-to-b from-background/20 to-transparent rounded-full blur-md mx-8"></div>
+
+					<Card className="bg-background/80 backdrop-blur-xl border border-border px-4 py-2 rounded-full shadow-sm">
+						<ColorSwatches value={color} onChange={setColor} />
+					</Card>
+				</div>
 			</div>
 
 			{/* LaTeX Results */}
@@ -422,16 +532,65 @@ export default function AiCalculator() {
 					defaultPosition={latexPosition}
 					onStop={(position) => setLatexPosition(position)}
 				>
-					<Card className="bg-black/40 backdrop-blur-md border border-white/10 rounded-md shadow-xl text-white">
+					<Card className="bg-background/90 backdrop-blur-xl border border-border rounded-lg shadow-sm text-foreground min-w-64">
 						<div className="p-3">
+							<div className="flex items-center justify-between mb-2">
+								<div className="flex gap-1.5">
+									<div className="h-2.5 w-2.5 rounded-full bg-red-500/80"></div>
+									<div className="h-2.5 w-2.5 rounded-full bg-yellow-500/80"></div>
+									<div className="h-2.5 w-2.5 rounded-full bg-green-500/80"></div>
+								</div>
+								<div className="text-xs text-muted-foreground font-medium">
+									Result
+								</div>
+							</div>
 							<div
-								className="latex-content"
+								className="latex-content bg-muted/50 p-3 rounded-md"
 								dangerouslySetInnerHTML={{ __html: latex }}
 							/>
 						</div>
 					</Card>
 				</Draggable>
 			))}
+
+			{/* Welcome/Guide Overlay */}
+			{showWelcome && latexExpression.length === 0 && (
+				<div className="absolute inset-0 flex items-center justify-center bg-background/20 backdrop-blur-sm">
+					<Card className="bg-background/95 backdrop-blur-xl border border-border rounded-xl w-96 max-w-full shadow-sm">
+						<div className="p-6 text-center">
+							<div className="h-14 w-14 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+								<Sparkles className="h-7 w-7 text-primary-foreground" />
+							</div>
+							<h2 className="text-xl font-bold mb-2">
+								Draw to Calculate
+							</h2>
+							<p className="text-muted-foreground text-sm mb-5">
+								Write any mathematical expression on the canvas
+								with your selected color and press Calculate to
+								solve it instantly
+							</p>
+							<Button
+								onClick={() => setShowWelcome(false)}
+								className="rounded-lg w-full"
+							>
+								Get Started
+							</Button>
+						</div>
+					</Card>
+				</div>
+			)}
+
+			{/* Loading State Overlay */}
+			{calcStatus === "calculating" && (
+				<div className="absolute inset-0 flex items-center justify-center bg-background/10 backdrop-blur-sm pointer-events-none">
+					<div className="bg-background/90 backdrop-blur-xl p-4 rounded-xl flex items-center gap-4 border border-border shadow-sm">
+						<div className="h-7 w-7 rounded-full border-2 border-l-transparent border-primary animate-spin"></div>
+						<div className="text-foreground text-sm font-medium">
+							Processing expression...
+						</div>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }
