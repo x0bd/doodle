@@ -13,8 +13,8 @@ import {
 	PencilIcon,
 	CalculatorIcon,
 	UndoIcon,
-	RotateCcwIcon,
 	Sparkles,
+	Eraser,
 } from "lucide-react";
 
 interface GeneratedResult {
@@ -54,7 +54,7 @@ const ColorSwatch: React.FC<ColorSwatchProps> = ({
 	return (
 		<button
 			className={cn(
-				"w-8 h-8 rounded-full transition-all",
+				"w-9 h-9 rounded-full transition-all",
 				selected
 					? "ring-2 ring-white/90 ring-offset-2 ring-offset-black/20 scale-110 z-10 shadow-[0_0_15px_rgba(0,0,0,0.2)]"
 					: "opacity-85 hover:opacity-100 hover:scale-105"
@@ -71,69 +71,18 @@ const ColorSwatch: React.FC<ColorSwatchProps> = ({
 	);
 };
 
-interface ColorSwatchesProps {
-	value: string;
-	onChange: (color: string) => void;
-}
-
-const ColorSwatches: React.FC<ColorSwatchesProps> = ({ value, onChange }) => {
+// Minimal header component
+const MinimalHeader: React.FC = () => {
 	return (
-		<div className="flex gap-3 items-center justify-center py-2 px-4">
-			{COLORS.map((color) => (
-				<ColorSwatch
-					key={color.value}
-					color={color}
-					selected={value === color.value}
-					onClick={() => onChange(color.value)}
-				/>
-			))}
-		</div>
-	);
-};
-
-// Premium floating navbar component
-const FloatingNavbar: React.FC = () => {
-	const { theme, setTheme } = useTheme();
-
-	return (
-		<div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50">
-			<div className="flex items-center px-6 py-2.5 rounded-full bg-background/80 backdrop-blur-xl border border-border shadow-lg">
+		<div className="fixed top-6  left-1/2 transform -translate-x-1/2  z-50">
+			<div className="flex items-center px-4 py-2 rounded-xl bg-background/80 backdrop-blur-xl border border-border shadow-lg">
 				<div className="flex items-center gap-2">
 					<div className="h-7 w-7 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-sm">
 						<PencilIcon className="h-3.5 w-3.5 text-primary-foreground" />
 					</div>
-					<h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent mr-4">
+					<h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
 						Doodle
 					</h1>
-				</div>
-
-				<div className="mx-3 h-5 w-px bg-border"></div>
-
-				<div className="flex items-center gap-5">
-					<button className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
-						<CalculatorIcon className="h-3.5 w-3.5" />
-						<span>Calculator</span>
-					</button>
-					<button className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
-						<RotateCcwIcon className="h-3.5 w-3.5" />
-						<span>History</span>
-					</button>
-				</div>
-
-				<div className="ml-auto">
-					<button
-						onClick={() =>
-							setTheme(theme === "dark" ? "light" : "dark")
-						}
-						className="p-1.5 rounded-full hover:bg-muted transition-colors"
-						aria-label="Toggle theme"
-					>
-						{theme === "dark" ? (
-							<SunIcon className="h-4 w-4" />
-						) : (
-							<MoonIcon className="h-4 w-4" />
-						)}
-					</button>
 				</div>
 			</div>
 		</div>
@@ -220,12 +169,13 @@ export default function AiCalculator() {
 	const [result, setResult] = useState<GeneratedResult | undefined>();
 	const [latexPosition, setLatexPosition] = useState({ x: 10, y: 200 });
 	const [latexExpression, setLatexExpression] = useState<Array<string>>([]);
-	const { theme } = useTheme();
+	const { theme, setTheme } = useTheme();
 	const [calcStatus, setCalcStatus] = useState<"idle" | "calculating">(
 		"idle"
 	);
 	const [brushSize, setBrushSize] = useState(3);
 	const [showWelcome, setShowWelcome] = useState(true);
+	const [isEraserMode, setIsEraserMode] = useState(false);
 
 	useEffect(() => {
 		if (latexExpression.length > 0 && window.MathJax) {
@@ -318,12 +268,21 @@ export default function AiCalculator() {
 		setDictOfVars({});
 	};
 
+	const toggleEraserMode = () => {
+		setIsEraserMode(!isEraserMode);
+	};
+
 	const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
 		const canvas = canvasRef.current;
 		if (canvas) {
 			const ctx = canvas.getContext("2d");
 			if (ctx) {
 				ctx.beginPath();
+				if (isEraserMode) {
+					ctx.globalCompositeOperation = "destination-out";
+				} else {
+					ctx.globalCompositeOperation = "source-over";
+				}
 				ctx.moveTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
 				setIsDrawing(true);
 			}
@@ -339,7 +298,13 @@ export default function AiCalculator() {
 		if (canvas) {
 			const ctx = canvas.getContext("2d");
 			if (ctx) {
-				ctx.strokeStyle = color;
+				if (isEraserMode) {
+					ctx.globalCompositeOperation = "destination-out";
+					ctx.strokeStyle = "rgba(0,0,0,1)";
+				} else {
+					ctx.globalCompositeOperation = "source-over";
+					ctx.strokeStyle = color;
+				}
 				ctx.lineWidth = brushSize;
 				ctx.lineTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
 				ctx.stroke();
@@ -434,8 +399,8 @@ export default function AiCalculator() {
 				<div className="w-full h-full rounded-3xl border border-border/40 bg-background/5 backdrop-blur-[2px] shadow-sm"></div>
 			</div>
 
-			{/* Navbar */}
-			<FloatingNavbar />
+			{/* Minimal Header */}
+			<MinimalHeader />
 
 			{/* Drawing Canvas */}
 			<canvas
@@ -453,12 +418,12 @@ export default function AiCalculator() {
 				<Card className="bg-background/80 backdrop-blur-xl border border-border p-3 rounded-xl shadow-sm">
 					<div className="flex flex-col items-center gap-3">
 						<span className="text-xs font-medium text-muted-foreground">
-							Brush
+							{isEraserMode ? "Eraser" : "Brush"}
 						</span>
 						<input
 							type="range"
 							min="1"
-							max="10"
+							max="20"
 							value={brushSize}
 							onChange={(e) =>
 								setBrushSize(Number.parseInt(e.target.value))
@@ -467,62 +432,124 @@ export default function AiCalculator() {
 							style={{ writingMode: "bt-lr" }}
 						/>
 						<div
-							className="rounded-full"
+							className={cn(
+								"rounded-full",
+								isEraserMode
+									? "border border-muted-foreground bg-background"
+									: ""
+							)}
 							style={{
 								width: `${brushSize * 2}px`,
 								height: `${brushSize * 2}px`,
-								backgroundColor: color,
+								backgroundColor: isEraserMode
+									? undefined
+									: color,
 							}}
 						></div>
 					</div>
 				</Card>
 			</div>
 
-			{/* Action Buttons */}
-			<div className="absolute top-6 right-6 flex gap-3">
-				<Button
-					onClick={handleReset}
-					variant="outline"
-					size="sm"
-					className="h-9 px-3 rounded-lg text-xs shadow-sm"
-				>
-					<UndoIcon className="h-3.5 w-3.5 mr-1.5" />
-					Reset
-				</Button>
-
-				<Button
-					onClick={runCalculation}
-					disabled={calcStatus === "calculating"}
-					size="sm"
-					className={cn(
-						"h-9 px-4 rounded-lg text-xs shadow-sm",
-						calcStatus === "calculating" ? "opacity-80" : ""
-					)}
-				>
-					{calcStatus === "calculating" ? (
-						<>
-							<div className="animate-spin h-3.5 w-3.5 border-2 border-current border-t-transparent rounded-full mr-1.5"></div>
-							Processing...
-						</>
-					) : (
-						<>
-							<CalculatorIcon className="h-3.5 w-3.5 mr-1.5" />
-							Calculate
-						</>
-					)}
-				</Button>
+			{/* Color Palette - Grid Layout on Mid-Right */}
+			<div className="fixed right-6 top-1/2 transform -translate-y-1/2 z-40">
+				<Card className="bg-background/80 backdrop-blur-xl border border-border p-3 rounded-xl shadow-sm">
+					<div className="grid grid-cols-2 gap-2">
+						{COLORS.slice(0, 6).map((colorItem) => (
+							<ColorSwatch
+								key={colorItem.value}
+								color={colorItem}
+								selected={
+									!isEraserMode && color === colorItem.value
+								}
+								onClick={() => {
+									setColor(colorItem.value);
+									setIsEraserMode(false);
+								}}
+							/>
+						))}
+						<ColorSwatch
+							color={COLORS[6]}
+							selected={
+								!isEraserMode && color === COLORS[6].value
+							}
+							onClick={() => {
+								setColor(COLORS[6].value);
+								setIsEraserMode(false);
+							}}
+						/>
+						<button
+							className={cn(
+								"w-9 h-9 rounded-full transition-all flex items-center justify-center bg-background border border-border",
+								isEraserMode
+									? "ring-2 ring-white/90 ring-offset-2 ring-offset-black/20 scale-110 z-10 shadow-[0_0_15px_rgba(0,0,0,0.2)]"
+									: "opacity-85 hover:opacity-100 hover:scale-105"
+							)}
+							onClick={toggleEraserMode}
+							type="button"
+							aria-label="Eraser tool"
+							title="Eraser"
+						>
+							<Eraser className="h-4 w-4 text-muted-foreground" />
+						</button>
+					</div>
+				</Card>
 			</div>
 
-			{/* Color Palette */}
-			<div className="absolute bottom-6 left-1/2 transform -translate-x-1/2">
-				<div className="relative">
-					{/* Subtle reflection effect */}
-					<div className="absolute -bottom-4 left-0 right-0 h-6 bg-gradient-to-b from-background/20 to-transparent rounded-full blur-md mx-8"></div>
+			{/* Bottom Action Dock with Theme Switcher */}
+			<div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40">
+				<Card className="bg-background/90 backdrop-blur-xl border border-border px-4 py-2 rounded-full shadow-lg flex items-center gap-3">
+					<Button
+						onClick={handleReset}
+						variant="ghost"
+						size="icon"
+						className="h-9 w-9 rounded-full"
+					>
+						<UndoIcon className="h-4 w-4" />
+						<span className="sr-only">Reset</span>
+					</Button>
 
-					<Card className="bg-background/80 backdrop-blur-xl border border-border px-4 py-2 rounded-full shadow-sm">
-						<ColorSwatches value={color} onChange={setColor} />
-					</Card>
-				</div>
+					<div className="h-6 w-px bg-border mx-1"></div>
+
+					<Button
+						onClick={runCalculation}
+						disabled={calcStatus === "calculating"}
+						size="sm"
+						className={cn(
+							"h-10 px-4 rounded-full",
+							calcStatus === "calculating" ? "opacity-80" : ""
+						)}
+					>
+						{calcStatus === "calculating" ? (
+							<>
+								<div className="animate-spin h-3.5 w-3.5 border-2 border-current border-t-transparent rounded-full mr-1.5"></div>
+								Processing...
+							</>
+						) : (
+							<>
+								<CalculatorIcon className="h-3.5 w-3.5 mr-1.5" />
+								Calculate
+							</>
+						)}
+					</Button>
+
+					<div className="h-6 w-px bg-border mx-1"></div>
+
+					<Button
+						onClick={() =>
+							setTheme(theme === "dark" ? "light" : "dark")
+						}
+						variant="ghost"
+						size="icon"
+						className="h-9 w-9 rounded-full"
+						aria-label="Toggle theme"
+					>
+						{theme === "dark" ? (
+							<SunIcon className="h-4 w-4" />
+						) : (
+							<MoonIcon className="h-4 w-4" />
+						)}
+					</Button>
+				</Card>
 			</div>
 
 			{/* LaTeX Results */}
