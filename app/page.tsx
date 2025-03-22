@@ -3,7 +3,6 @@
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { DragHandleDots2Icon } from "@radix-ui/react-icons";
 import { useTheme } from "next-themes";
@@ -15,6 +14,7 @@ import {
 	UndoIcon,
 	Sparkles,
 	Eraser,
+	X,
 } from "lucide-react";
 
 interface GeneratedResult {
@@ -28,16 +28,16 @@ interface Response {
 	assign: boolean;
 }
 
-// Enhanced premium color palette
+// Brutalist color palette
 const COLORS = [
 	{ name: "White", value: "#FFFFFF" },
 	{ name: "Black", value: "#000000" },
 	{ name: "Vercel Blue", value: "#0070F3" },
-	{ name: "Cyan", value: "#50E3C2" },
-	{ name: "Crimson", value: "#FF4785" },
-	{ name: "Sage", value: "#2DD4BF" },
-	{ name: "Amber", value: "#F59E0B" },
-	{ name: "Violet", value: "#8B5CF6" },
+	{ name: "Cyan", value: "#00C7B7" },
+	{ name: "Red", value: "#FF0000" },
+	{ name: "Yellow", value: "#FFFF00" },
+	{ name: "Green", value: "#00FF00" },
+	{ name: "Magenta", value: "#FF00FF" },
 ];
 
 interface ColorSwatchProps {
@@ -54,14 +54,13 @@ const ColorSwatch: React.FC<ColorSwatchProps> = ({
 	return (
 		<button
 			className={cn(
-				"w-9 h-9 rounded-full transition-all",
+				"w-10 h-10 transition-all duration-200 border border-border hover:scale-110",
 				selected
-					? "ring-2 ring-white/90 ring-offset-2 ring-offset-black/20 scale-110 z-10 shadow-[0_0_15px_rgba(0,0,0,0.2)]"
-					: "opacity-85 hover:opacity-100 hover:scale-105"
+					? "outline outline-2 outline-offset-2 outline-foreground z-10 shadow-[0_0_10px_rgba(0,0,0,0.2)]"
+					: "opacity-85 hover:opacity-100"
 			)}
 			style={{
 				backgroundColor: color.value,
-				boxShadow: selected ? `0 0 15px ${color.value}80` : "none",
 			}}
 			onClick={onClick}
 			type="button"
@@ -74,27 +73,31 @@ const ColorSwatch: React.FC<ColorSwatchProps> = ({
 // Minimal header component
 const MinimalHeader: React.FC = () => {
 	return (
-		<div className="fixed top-6  left-1/2 transform -translate-x-1/2  z-50">
-			<div className="flex items-center px-4 py-2 rounded-xl bg-background/80 backdrop-blur-xl border border-border shadow-lg">
+		<div className="fixed top-0 left-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur-sm">
+			<div className="flex items-center justify-between h-14 px-4">
 				<div className="flex items-center gap-2">
-					<div className="h-7 w-7 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-sm">
-						<PencilIcon className="h-3.5 w-3.5 text-primary-foreground" />
+					<div className="h-8 w-8 bg-foreground flex items-center justify-center">
+						<PencilIcon className="h-4 w-4 text-background" />
 					</div>
-					<h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-						Doodle
+					<h1 className="text-xl font-mono font-bold tracking-tight">
+						DOODLE
 					</h1>
+				</div>
+				<div className="text-xs font-mono text-muted-foreground">
+					MATH CALCULATOR v1.0
 				</div>
 			</div>
 		</div>
 	);
 };
 
-// Draggable component with enhanced visuals
+// Draggable component with brutalist visuals
 const Draggable: React.FC<{
 	children: React.ReactNode;
 	defaultPosition: { x: number; y: number };
 	onStop: (position: { x: number; y: number }) => void;
-}> = ({ children, defaultPosition, onStop }) => {
+	onClose?: () => void;
+}> = ({ children, defaultPosition, onStop, onClose }) => {
 	const [position, setPosition] = useState(defaultPosition);
 	const [isDragging, setIsDragging] = useState(false);
 	const dragRef = useRef<HTMLDivElement>(null);
@@ -148,12 +151,27 @@ const Draggable: React.FC<{
 				cursor: isDragging ? "grabbing" : "grab",
 				zIndex: 50,
 			}}
-			onMouseDown={handleMouseDown}
-			className="transition-shadow duration-200 hover:shadow-lg"
+			className="transition-transform duration-200 shadow-lg hover:shadow-xl"
 		>
-			<div className="flex items-center gap-1">
-				<div className="h-6 w-6 rounded-full bg-background/50 backdrop-blur-md flex items-center justify-center border border-border/50">
-					<DragHandleDots2Icon className="h-3.5 w-3.5 text-muted-foreground" />
+			<div className="flex flex-col">
+				<div
+					className="h-7 bg-foreground flex items-center justify-between px-3 cursor-grab"
+					onMouseDown={handleMouseDown}
+				>
+					<div className="flex items-center gap-2">
+						<DragHandleDots2Icon className="h-3.5 w-3.5 text-background" />
+						<span className="text-xs font-mono font-bold text-background tracking-wider">
+							RESULT
+						</span>
+					</div>
+					{onClose && (
+						<button
+							onClick={onClose}
+							className="text-background hover:text-background/80 transition-colors duration-200"
+						>
+							<X className="h-3.5 w-3.5" />
+						</button>
+					)}
 				</div>
 				{children}
 			</div>
@@ -168,7 +186,9 @@ export default function AiCalculator() {
 	const [dictOfVars, setDictOfVars] = useState<Record<string, string>>({});
 	const [result, setResult] = useState<GeneratedResult | undefined>();
 	const [latexPosition, setLatexPosition] = useState({ x: 10, y: 200 });
-	const [latexExpression, setLatexExpression] = useState<Array<string>>([]);
+	const [latexExpression, setLatexExpression] = useState<
+		Array<{ id: string; latex: string }>
+	>([]);
 	const { theme, setTheme } = useTheme();
 	const [calcStatus, setCalcStatus] = useState<"idle" | "calculating">(
 		"idle"
@@ -176,6 +196,17 @@ export default function AiCalculator() {
 	const [brushSize, setBrushSize] = useState(3);
 	const [showWelcome, setShowWelcome] = useState(true);
 	const [isEraserMode, setIsEraserMode] = useState(false);
+	const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
+
+	// Track cursor position for custom cursor
+	useEffect(() => {
+		const handleMouseMove = (e: MouseEvent) => {
+			setCursorPosition({ x: e.clientX, y: e.clientY });
+		};
+
+		window.addEventListener("mousemove", handleMouseMove);
+		return () => window.removeEventListener("mousemove", handleMouseMove);
+	}, []);
 
 	useEffect(() => {
 		if (latexExpression.length > 0 && window.MathJax) {
@@ -199,7 +230,8 @@ export default function AiCalculator() {
 			if (ctx) {
 				canvas.width = window.innerWidth;
 				canvas.height = window.innerHeight - canvas.offsetTop;
-				ctx.lineCap = "round";
+				ctx.lineCap = "square"; // Changed to square for brutalist style
+				ctx.lineJoin = "miter"; // Sharp corners
 				ctx.lineWidth = brushSize;
 			}
 		}
@@ -229,7 +261,8 @@ export default function AiCalculator() {
 				canvas.height = window.innerHeight - canvas.offsetTop;
 				const ctx = canvas.getContext("2d");
 				if (ctx) {
-					ctx.lineCap = "round";
+					ctx.lineCap = "square";
+					ctx.lineJoin = "miter";
 					ctx.lineWidth = brushSize;
 				}
 			}
@@ -238,14 +271,17 @@ export default function AiCalculator() {
 		window.addEventListener("resize", handleResize);
 
 		return () => {
-			document.head.removeChild(script);
+			if (document.head.contains(script)) {
+				document.head.removeChild(script);
+			}
 			window.removeEventListener("resize", handleResize);
 		};
 	}, [brushSize]);
 
 	const renderLatexToCanvas = (expression: string, answer: string) => {
 		const latex = `\$$\\LARGE{${expression} = ${answer}}\$$`;
-		setLatexExpression([...latexExpression, latex]);
+		const id = Date.now().toString();
+		setLatexExpression([...latexExpression, { id, latex }]);
 
 		// Clear the main canvas
 		resetCanvas();
@@ -272,6 +308,10 @@ export default function AiCalculator() {
 		setIsEraserMode(!isEraserMode);
 	};
 
+	const removeLatexExpression = (id: string) => {
+		setLatexExpression(latexExpression.filter((expr) => expr.id !== id));
+	};
+
 	const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
 		const canvas = canvasRef.current;
 		if (canvas) {
@@ -280,9 +320,14 @@ export default function AiCalculator() {
 				ctx.beginPath();
 				if (isEraserMode) {
 					ctx.globalCompositeOperation = "destination-out";
+					ctx.strokeStyle = "rgba(0,0,0,1)";
 				} else {
 					ctx.globalCompositeOperation = "source-over";
+					ctx.strokeStyle = color;
 				}
+				ctx.lineWidth = brushSize;
+				ctx.lineCap = "square";
+				ctx.lineJoin = "miter";
 				ctx.moveTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
 				setIsDrawing(true);
 			}
@@ -305,9 +350,14 @@ export default function AiCalculator() {
 					ctx.globalCompositeOperation = "source-over";
 					ctx.strokeStyle = color;
 				}
+				// Ensure brush size is applied
 				ctx.lineWidth = brushSize;
 				ctx.lineTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
 				ctx.stroke();
+
+				// Begin a new path to ensure consistent line width
+				ctx.beginPath();
+				ctx.moveTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
 			}
 		}
 	};
@@ -386,18 +436,9 @@ export default function AiCalculator() {
 	};
 
 	return (
-		<div className="relative min-h-screen bg-gradient-to-br from-background to-background/90 overflow-hidden">
-			{/* Subtle Grid Background */}
+		<div className="relative min-h-screen bg-background overflow-hidden font-mono">
+			{/* Grid Background */}
 			<div className="absolute inset-0 bg-grid-pattern opacity-[0.03]"></div>
-
-			{/* Ambient Glow Effects */}
-			<div className="absolute top-[-20%] right-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px] pointer-events-none"></div>
-			<div className="absolute bottom-[-10%] left-[-5%] w-[30%] h-[30%] bg-primary/5 rounded-full blur-[100px] pointer-events-none"></div>
-
-			{/* Canvas Background Frame */}
-			<div className="absolute inset-0 flex items-center justify-center p-16">
-				<div className="w-full h-full rounded-3xl border border-border/40 bg-background/5 backdrop-blur-[2px] shadow-sm"></div>
-			</div>
 
 			{/* Minimal Header */}
 			<MinimalHeader />
@@ -406,18 +447,34 @@ export default function AiCalculator() {
 			<canvas
 				ref={canvasRef}
 				id="canvas"
-				className="absolute top-0 left-0 w-full h-full"
+				className="absolute top-14 left-0 w-full h-[calc(100vh-56px)]"
 				onMouseDown={startDrawing}
 				onMouseMove={draw}
 				onMouseUp={stopDrawing}
 				onMouseOut={stopDrawing}
 			/>
 
+			{/* Custom cursor */}
+			{!isDrawing && (
+				<div
+					className="pointer-events-none fixed z-50 transform -translate-x-1/2 -translate-y-1/2"
+					style={{
+						left: `${cursorPosition.x}px`,
+						top: `${cursorPosition.y}px`,
+						width: `${brushSize}px`,
+						height: `${brushSize}px`,
+						backgroundColor: isEraserMode ? "transparent" : color,
+						border: isEraserMode ? "1px solid #000" : "none",
+						opacity: 0.7,
+					}}
+				/>
+			)}
+
 			{/* Brush Size Controls */}
-			<div className="absolute left-6 top-1/2 transform -translate-y-1/2">
-				<Card className="bg-background/80 backdrop-blur-xl border border-border p-3 rounded-xl shadow-sm">
-					<div className="flex flex-col items-center gap-3">
-						<span className="text-xs font-medium text-muted-foreground">
+			<div className="fixed left-0 top-1/2 transform -translate-y-1/2 z-40">
+				<div className="bg-background border border-border p-4 shadow-md transition-transform duration-200 hover:translate-x-1">
+					<div className="flex flex-col items-center gap-4">
+						<span className="text-xs uppercase font-bold tracking-wider">
 							{isEraserMode ? "Eraser" : "Brush"}
 						</span>
 						<input
@@ -428,15 +485,16 @@ export default function AiCalculator() {
 							onChange={(e) =>
 								setBrushSize(Number.parseInt(e.target.value))
 							}
-							className="w-5 h-24 appearance-none bg-transparent outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-runnable-track]:w-1 [&::-webkit-slider-runnable-track]:h-24 [&::-webkit-slider-runnable-track]:bg-border [&::-webkit-slider-runnable-track]:rounded-full"
+							className="w-6 h-32 appearance-none bg-transparent outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:h-6 [&::-webkit-slider-thumb]:bg-foreground [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-runnable-track]:w-1.5 [&::-webkit-slider-runnable-track]:h-32 [&::-webkit-slider-runnable-track]:bg-border"
 							style={{ writingMode: "bt-lr" }}
 						/>
+						<div className="mt-2 text-xs font-mono">
+							{brushSize}px
+						</div>
 						<div
 							className={cn(
-								"rounded-full",
-								isEraserMode
-									? "border border-muted-foreground bg-background"
-									: ""
+								"transition-all duration-200",
+								isEraserMode ? "border-2 border-foreground" : ""
 							)}
 							style={{
 								width: `${brushSize * 2}px`,
@@ -447,13 +505,13 @@ export default function AiCalculator() {
 							}}
 						></div>
 					</div>
-				</Card>
+				</div>
 			</div>
 
-			{/* Color Palette - Grid Layout on Mid-Right */}
-			<div className="fixed right-6 top-1/2 transform -translate-y-1/2 z-40">
-				<Card className="bg-background/80 backdrop-blur-xl border border-border p-3 rounded-xl shadow-sm">
-					<div className="grid grid-cols-2 gap-2">
+			{/* Color Palette - Grid Layout on Right */}
+			<div className="fixed right-0 top-14 bottom-14 z-40 flex flex-col justify-center">
+				<div className="bg-background border-l border-y border-border p-4 shadow-md transition-transform duration-200 hover:-translate-x-1">
+					<div className="grid grid-cols-2 gap-3">
 						{COLORS.slice(0, 6).map((colorItem) => (
 							<ColorSwatch
 								key={colorItem.value}
@@ -479,141 +537,133 @@ export default function AiCalculator() {
 						/>
 						<button
 							className={cn(
-								"w-9 h-9 rounded-full transition-all flex items-center justify-center bg-background border border-border",
+								"w-10 h-10 flex items-center justify-center border border-border bg-background transition-all duration-200 hover:border-foreground",
 								isEraserMode
-									? "ring-2 ring-white/90 ring-offset-2 ring-offset-black/20 scale-110 z-10 shadow-[0_0_15px_rgba(0,0,0,0.2)]"
-									: "opacity-85 hover:opacity-100 hover:scale-105"
+									? "outline outline-2 outline-offset-2 outline-foreground"
+									: ""
 							)}
 							onClick={toggleEraserMode}
 							type="button"
 							aria-label="Eraser tool"
 							title="Eraser"
 						>
-							<Eraser className="h-4 w-4 text-muted-foreground" />
+							<Eraser className="h-5 w-5" />
 						</button>
 					</div>
-				</Card>
+				</div>
 			</div>
 
-			{/* Bottom Action Dock with Theme Switcher */}
-			<div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40">
-				<Card className="bg-background/90 backdrop-blur-xl border border-border px-4 py-2 rounded-full shadow-lg flex items-center gap-3">
-					<Button
-						onClick={handleReset}
-						variant="ghost"
-						size="icon"
-						className="h-9 w-9 rounded-full"
-					>
-						<UndoIcon className="h-4 w-4" />
-						<span className="sr-only">Reset</span>
-					</Button>
+			{/* Bottom Action Bar */}
+			<div className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-background h-14 flex items-center justify-between px-4">
+				<Button
+					onClick={handleReset}
+					variant="outline"
+					size="sm"
+					className="h-8 border-foreground hover:bg-foreground hover:text-background transition-colors duration-200"
+				>
+					<UndoIcon className="h-4 w-4 mr-2" />
+					RESET
+				</Button>
 
-					<div className="h-6 w-px bg-border mx-1"></div>
-
+				<div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
 					<Button
 						onClick={runCalculation}
 						disabled={calcStatus === "calculating"}
 						size="sm"
 						className={cn(
-							"h-10 px-4 rounded-full",
+							"h-10 px-6 bg-foreground text-background hover:bg-foreground/90 transition-all duration-200 hover:scale-105",
 							calcStatus === "calculating" ? "opacity-80" : ""
 						)}
 					>
 						{calcStatus === "calculating" ? (
 							<>
-								<div className="animate-spin h-3.5 w-3.5 border-2 border-current border-t-transparent rounded-full mr-1.5"></div>
-								Processing...
+								<div className="animate-spin h-3.5 w-3.5 border-2 border-background border-t-transparent mr-2"></div>
+								PROCESSING...
 							</>
 						) : (
 							<>
-								<CalculatorIcon className="h-3.5 w-3.5 mr-1.5" />
-								Calculate
+								<CalculatorIcon className="h-3.5 w-3.5 mr-2" />
+								CALCULATE
 							</>
 						)}
 					</Button>
+				</div>
 
-					<div className="h-6 w-px bg-border mx-1"></div>
-
-					<Button
-						onClick={() =>
-							setTheme(theme === "dark" ? "light" : "dark")
-						}
-						variant="ghost"
-						size="icon"
-						className="h-9 w-9 rounded-full"
-						aria-label="Toggle theme"
-					>
-						{theme === "dark" ? (
-							<SunIcon className="h-4 w-4" />
-						) : (
-							<MoonIcon className="h-4 w-4" />
-						)}
-					</Button>
-				</Card>
+				<Button
+					onClick={() =>
+						setTheme(theme === "dark" ? "light" : "dark")
+					}
+					variant="outline"
+					size="icon"
+					className="h-8 w-8 border-foreground hover:bg-foreground hover:text-background transition-colors duration-200"
+				>
+					{theme === "dark" ? (
+						<SunIcon className="h-4 w-4" />
+					) : (
+						<MoonIcon className="h-4 w-4" />
+					)}
+				</Button>
 			</div>
 
 			{/* LaTeX Results */}
-			{latexExpression.map((latex, index) => (
+			{latexExpression.map((expr) => (
 				<Draggable
-					key={index}
+					key={expr.id}
 					defaultPosition={latexPosition}
 					onStop={(position) => setLatexPosition(position)}
+					onClose={() => removeLatexExpression(expr.id)}
 				>
-					<Card className="bg-background/90 backdrop-blur-xl border border-border rounded-lg shadow-sm text-foreground min-w-64">
+					<div className="bg-background border border-border border-t-0 min-w-64">
 						<div className="p-3">
-							<div className="flex items-center justify-between mb-2">
-								<div className="flex gap-1.5">
-									<div className="h-2.5 w-2.5 rounded-full bg-red-500/80"></div>
-									<div className="h-2.5 w-2.5 rounded-full bg-yellow-500/80"></div>
-									<div className="h-2.5 w-2.5 rounded-full bg-green-500/80"></div>
-								</div>
-								<div className="text-xs text-muted-foreground font-medium">
-									Result
-								</div>
-							</div>
 							<div
-								className="latex-content bg-muted/50 p-3 rounded-md"
-								dangerouslySetInnerHTML={{ __html: latex }}
+								className="bg-muted p-3"
+								dangerouslySetInnerHTML={{ __html: expr.latex }}
 							/>
 						</div>
-					</Card>
+					</div>
 				</Draggable>
 			))}
 
 			{/* Welcome/Guide Overlay */}
 			{showWelcome && latexExpression.length === 0 && (
-				<div className="absolute inset-0 flex items-center justify-center bg-background/20 backdrop-blur-sm">
-					<Card className="bg-background/95 backdrop-blur-xl border border-border rounded-xl w-96 max-w-full shadow-sm">
-						<div className="p-6 text-center">
-							<div className="h-14 w-14 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-								<Sparkles className="h-7 w-7 text-primary-foreground" />
+				<div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-50">
+					<div className="bg-background border-2 border-foreground w-96 max-w-full">
+						<div className="bg-foreground text-background p-2 font-bold flex items-center justify-between">
+							<span>WELCOME TO DOODLE</span>
+							<button onClick={() => setShowWelcome(false)}>
+								<X className="h-4 w-4" />
+							</button>
+						</div>
+						<div className="p-6">
+							<div className="h-16 w-16 bg-foreground flex items-center justify-center mx-auto mb-6">
+								<Sparkles className="h-8 w-8 text-background" />
 							</div>
-							<h2 className="text-xl font-bold mb-2">
+							<h2 className="text-xl font-bold mb-4 uppercase text-center">
 								Draw to Calculate
 							</h2>
-							<p className="text-muted-foreground text-sm mb-5">
+							<p className="text-muted-foreground mb-6">
 								Write any mathematical expression on the canvas
-								with your selected color and press Calculate to
-								solve it instantly
+								with your selected color and press CALCULATE to
+								solve it instantly.
 							</p>
 							<Button
 								onClick={() => setShowWelcome(false)}
-								className="rounded-lg w-full"
+								className="w-full bg-foreground text-background hover:bg-foreground/90"
 							>
-								Get Started
+								GET STARTED
 							</Button>
 						</div>
-					</Card>
+					</div>
 				</div>
 			)}
 
 			{/* Loading State Overlay */}
 			{calcStatus === "calculating" && (
-				<div className="absolute inset-0 flex items-center justify-center bg-background/10 backdrop-blur-sm pointer-events-none">
-					<div className="bg-background/90 backdrop-blur-xl p-4 rounded-xl flex items-center gap-4 border border-border shadow-sm">
-						<div className="h-7 w-7 rounded-full border-2 border-l-transparent border-primary animate-spin"></div>
-						<div className="text-foreground text-sm font-medium">
-							Processing expression...
+				<div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm pointer-events-none z-50">
+					<div className="bg-background border-2 border-foreground p-4 flex items-center gap-4">
+						<div className="h-7 w-7 border-2 border-l-transparent border-foreground animate-spin"></div>
+						<div className="font-bold">
+							PROCESSING EXPRESSION...
 						</div>
 					</div>
 				</div>
