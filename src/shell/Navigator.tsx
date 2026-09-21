@@ -58,7 +58,7 @@ export function Navigator() {
           {[...here].sort((a, b) => (g.nodes[a].seq ?? 0) - (g.nodes[b].seq ?? 0)).map((id) => {
             const n = g.nodes[id];
             return (
-              <Row key={id} icon={GLYPH[n.kind]} hl={g.selection.includes(id)} onClick={() => go(id)} onDoubleClick={() => into(id)}>
+              <Row key={id} icon={GLYPH[n.kind]} kind={n.kind} hl={g.selection.includes(id)} onClick={() => go(id)} onDoubleClick={() => into(id)}>
                 {n.title}
               </Row>
             );
@@ -71,9 +71,10 @@ export function Navigator() {
 }
 
 function Row({
-  icon, on, hl, children, onClick, onDoubleClick,
+  icon, kind, on, hl, children, onClick, onDoubleClick,
 }: {
   icon: IconSvgElement;
+  kind?: string;
   on?: boolean;
   hl?: boolean;
   children: string;
@@ -82,7 +83,13 @@ function Row({
 }) {
   return (
     <button className={`list-row${on ? " on" : ""}${hl ? " hl" : ""}`} onClick={onClick} onDoubleClick={onDoubleClick}>
-      <Icon icon={icon} size={14} strokeWidth={1.8} />
+      {kind ? (
+        <span className={`row-glyph k-${kind}`}>
+          <Icon icon={icon} size={12} strokeWidth={1.9} />
+        </span>
+      ) : (
+        <Icon icon={icon} size={14} strokeWidth={1.8} />
+      )}
       <span className="list-word">{children}</span>
       {on && (
         <span className="list-check">

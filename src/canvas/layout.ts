@@ -6,8 +6,8 @@ import type { Point } from "./camera";
 import { inputs, outputs, type GraphNode, type PortRef } from "../state/graph";
 
 export const NODE_PAD = 8;
-export const HEAD_H = 22;
-export const PORTS_TOP = NODE_PAD + HEAD_H + 6; // 36
+export const HEAD_H = 30; // the head band, flush with the card's top
+export const PORTS_TOP = HEAD_H + 2 + 6; // 38: band, its 2px margin, the card's gap
 export const PORT_ROW = 18;
 
 /** the centre of a port's dot: on the node's edge, at its row */

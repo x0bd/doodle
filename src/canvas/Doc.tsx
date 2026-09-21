@@ -48,7 +48,7 @@ export function Doc({ id }: { id: string }) {
     <div className="docpage" onPointerDown={(e) => e.stopPropagation()}>
       <article className="paper">
         <header className="paper-head">
-          <span className="paper-glyph">
+          <span className={`paper-glyph k-${node.kind}`}>
             <Icon icon={GLYPH[node.kind]} size={18} strokeWidth={1.7} />
           </span>
           <div className="paper-name">

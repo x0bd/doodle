@@ -17,7 +17,57 @@
   /* the title line. Every row in the title bar centres on y 30 — where the
      lights are (tauri.macos.conf.json y 32 minus the buttons' own inset). */
   --head-h: 60px;
+
+  /* ── THE ROLES. Doodle's amendment to doctrine 8: not one signal but a
+        set, one hue per kind of thing, the way a cutting room colours its
+        roles. Each is a GROUND — a wash on a head, a dot, a wire — never
+        type. Muted enough to sit on both grounds; declared as h s l so
+        every use picks its own strength. ── */
+  --role-slate:  215 18% 52%;
+  --role-blue:   212 62% 56%;
+  --role-sand:    42 60% 52%;
+  --role-orange:  24 72% 56%;
+  --role-rose:   346 58% 60%;
+  --role-violet: 268 52% 62%;
+  --role-teal:   174 48% 44%;
+  --role-indigo: 236 52% 62%;
+  --role-green:  146 44% 46%;
+
+  /* how strong a wash and a wire are on this ground */
+  --wash: 0.16;
+  --wash-2: 0.28;
+  --wire: 0.55;
 }
+.dark {
+  --role-slate:  215 16% 62%;
+  --role-blue:   212 70% 66%;
+  --role-sand:    42 66% 62%;
+  --role-orange:  24 78% 64%;
+  --role-rose:   346 64% 68%;
+  --role-violet: 268 60% 72%;
+  --role-teal:   174 52% 54%;
+  --role-indigo: 236 60% 72%;
+  --role-green:  146 48% 56%;
+  --wash: 0.2;
+  --wash-2: 0.34;
+  --wire: 0.6;
+}
+
+/* what each kind wears */
+.k-model     { --role: var(--role-slate); }
+.k-prompt    { --role: var(--role-blue); }
+.k-note      { --role: var(--role-sand); }
+.k-shot      { --role: var(--role-orange); }
+.k-character { --role: var(--role-rose); }
+.k-style     { --role: var(--role-violet); }
+.k-generate  { --role: var(--role-teal); }
+.k-write     { --role: var(--role-indigo); }
+.k-preview   { --role: var(--role-green); }
+.k-page      { --role: var(--role-green); }
+/* what flows through a wire */
+.t-model { --flow: var(--role-slate); }
+.t-text  { --flow: var(--role-blue); }
+.t-image { --flow: var(--role-green); }
 .dark {
   --dot: rgba(242, 242, 240, 0.10);
 }
@@ -90,7 +140,7 @@ html, body, #root { height: 100%; }
   height: 44px;
   margin-top: 2px;
   border-radius: 12px;
-  background: var(--surface-raised);
+  background: hsl(var(--role) / var(--wash-2));
   box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), var(--lift);
   color: var(--fg);
   flex-shrink: 0;
@@ -256,7 +306,7 @@ html, body, #root { height: 100%; }
 .ghost-why { color: var(--fg-faint); font-family: var(--font-ui); letter-spacing: 0; }
 .ghost-acts { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; margin-top: 2px; }
 .ghost-acts .pill-sm { --rim-gap: var(--surface); }
-.beat.is-shot .beat-n { padding-top: 5px; color: var(--fg-muted); }
+.beat.is-shot .beat-n { padding-top: 5px; color: hsl(var(--role-orange)); }
 .node-shot { display: flex; flex-direction: column; gap: 4px; padding: 2px 4px 0; }
 .node-cam { font-size: var(--t-micro); color: var(--fg-faint); }
 
@@ -298,42 +348,56 @@ html, body, #root { height: 100%; }
 .node, .wire-line { transition: opacity var(--fast) var(--ease); }
 
 /* ─── A node ────────────────────────────────────────────────────────────────
-   A card on the field: a head row with its dot and its name, a well for
-   what it holds. Selected, it wears the ink ring — the one place on the
-   field where ink appears. */
+   A card on the field: a head that wears its role as a wash, with a full
+   dot of it and the name; ports on the edges; a well for what it holds.
+   Selected, it wears the ink ring — the one place on the field ink
+   appears. */
 .node {
   position: absolute;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 8px;
+  padding: 0 8px 8px;
+  border-radius: 12px;
   cursor: default;
+  background: var(--surface-raised);
+  box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), var(--lift);
+  transition: box-shadow var(--fast) var(--ease), opacity var(--fast) var(--ease);
 }
+@media (hover: hover) and (pointer: fine) {
+  .node:hover { box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), var(--lift-2); }
+}
+.node.sel, .node.sel:hover { box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), 0 0 0 2px var(--bg), 0 0 0 4px var(--ink), var(--lift-2); z-index: 2; }
 /* an ⌥-drag would drop into this one: it wears the tint */
 .node.into { background: var(--tint-2); }
-.node.sel { box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), 0 0 0 2px var(--bg), 0 0 0 4px var(--ink), var(--lift); }
+
+/* the head: the role's wash across the top of the card, rounded with it */
 .node-head {
   position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 22px;
-  padding: 0 4px;
+  height: 30px;
+  margin: 0 -8px 2px;
+  padding: 0 10px 0 12px;
+  border-radius: 12px 12px 0 0;
+  background: hsl(var(--role) / var(--wash));
   flex-shrink: 0;
 }
 .node-dot {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: var(--r-pill);
-  background: var(--fg-faint);
+  background: hsl(var(--role));
+  box-shadow: 0 0 0 2px hsl(var(--role) / 0.25);
   flex-shrink: 0;
 }
-.node.sel .node-dot { background: var(--fg); }
 .node-name {
   flex: 1;
   min-width: 0;
   font-size: var(--t-label);
-  font-weight: var(--w-mid);
+  font-weight: var(--w-declare);
+  letter-spacing: -0.005em;
   color: var(--fg);
   white-space: nowrap;
   overflow: hidden;
@@ -345,13 +409,13 @@ html, body, #root { height: 100%; }
 .node-st + .node-inside, .node-st + .node-state { margin-left: 6px; }
 .node.st-rejected { opacity: 0.55; }
 .node.st-rejected.sel { opacity: 0.8; }
-.node-inside { margin-left: auto; min-width: 18px; height: 16px; font-size: 10px; }
+.node-inside { margin-left: auto; min-width: 18px; height: 16px; font-size: 10px; background: hsl(var(--role) / var(--wash-2)); color: var(--fg); }
 .node-inside + .node-state { margin-left: 6px; }
 .node.running { box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), var(--lift-2); }
 .node.running.sel { box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), 0 0 0 2px var(--bg), 0 0 0 4px var(--ink), var(--lift-2); }
-/* progress is ink — one of the few places it appears */
-.node-progress { position: absolute; left: 4px; right: 4px; bottom: -2px; height: 2px; border-radius: 1px; background: var(--tint-2); overflow: hidden; }
-.node-progress-bar { height: 100%; background: var(--ink); transition: width 60ms linear; }
+/* progress is the role, full, along the foot of the head */
+.node-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: hsl(var(--role) / 0.25); overflow: hidden; }
+.node-progress-bar { height: 100%; background: hsl(var(--role)); transition: width 60ms linear; }
 .node-body { flex: 1; min-height: 0; border-radius: var(--r-plate); overflow: hidden; }
 .node-img { display: block; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
 
@@ -375,19 +439,20 @@ html, body, #root { height: 100%; }
 /* the hit area is bigger than the mark: a wire should be easy to catch */
 .port::before { content: ""; position: absolute; inset: -6px -10px; }
 .port-dot {
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   border-radius: var(--r-pill);
   background: var(--surface-raised);
-  box-shadow: 0 0 0 1.5px var(--rim-edge);
+  box-shadow: 0 0 0 1.5px hsl(var(--flow) / 0.6);
   flex-shrink: 0;
-  transition: background var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+  transition: background var(--fast) var(--ease), box-shadow var(--fast) var(--ease), transform var(--fast) var(--ease);
 }
-.port.on .port-dot { background: var(--fg); box-shadow: 0 0 0 1.5px var(--fg); }
+/* connected: the dot fills with what flows through it, like its wire */
+.port.on .port-dot { background: hsl(var(--flow)); box-shadow: 0 0 0 1.5px hsl(var(--flow)); }
 .port.on { color: var(--fg-muted); }
 @media (hover: hover) and (pointer: fine) {
   .port:hover { color: var(--fg); }
-  .port:hover .port-dot { box-shadow: 0 0 0 1.5px var(--fg), 0 0 0 5px var(--tint-2); transform: scale(1.25); }
+  .port:hover .port-dot { box-shadow: 0 0 0 1.5px hsl(var(--flow)), 0 0 0 5px hsl(var(--flow) / 0.2); transform: scale(1.3); }
 }
 .port:focus-visible { background: none; box-shadow: none; color: var(--fg); }
 /* while a wire is out: every input it can land on lights; the rest step back */
@@ -395,8 +460,8 @@ html, body, #root { height: 100%; }
 .wiring .port.in { opacity: 0.35; }
 .wiring-model .port.in.t-model, .wiring-text .port.in.t-text, .wiring-image .port.in.t-image { opacity: 1; color: var(--fg); }
 .wiring-model .port.in.t-model .port-dot, .wiring-text .port.in.t-text .port-dot, .wiring-image .port.in.t-image .port-dot {
-  box-shadow: 0 0 0 1.5px var(--fg), 0 0 0 5px var(--tint-2);
-  transform: scale(1.25);
+  box-shadow: 0 0 0 1.5px hsl(var(--flow)), 0 0 0 5px hsl(var(--flow) / 0.22);
+  transform: scale(1.3);
 }
 .wiring .port.out { opacity: 0.35; }
 .wire-hit { cursor: default; }
@@ -504,10 +569,10 @@ html, body, #root { height: 100%; }
 /* the wires */
 .wires { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; pointer-events: none; }
 .wire-hit { fill: none; stroke: transparent; stroke-width: 14; pointer-events: stroke; cursor: default; }
-.wire-line { fill: none; stroke: var(--fg-faint); stroke-width: 1.5; pointer-events: none; transition: stroke var(--fast) var(--ease); }
-.wire:hover .wire-line, .wire.sel .wire-line { stroke: var(--fg); }
-.wire.sel .wire-line { stroke-width: 2; }
-.wire-line.live { stroke: var(--fg); stroke-dasharray: 4 4; }
+.wire-line { fill: none; stroke: hsl(var(--flow, var(--role-slate)) / var(--wire)); stroke-width: 1.75; pointer-events: none; transition: stroke var(--fast) var(--ease), stroke-width var(--fast) var(--ease); }
+.wire:hover .wire-line, .wire.sel .wire-line { stroke: hsl(var(--flow, var(--role-slate))); }
+.wire.sel .wire-line { stroke-width: 2.5; }
+.wire-line.live { stroke: hsl(var(--flow, var(--role-slate))); stroke-dasharray: 4 4; }
 
 /* ─── The title line ────────────────────────────────────────────────────── */
 .head {
@@ -624,6 +689,23 @@ html, body, #root { height: 100%; }
 }
 .pane.right .pane-body { padding-bottom: 10px; }
 .pill-icon.sm { width: 26px; height: 26px; }
+.pane-head { justify-content: flex-start; }
+.pane-head .pill-icon.sm { margin-left: auto; }
+.pane-what { flex: 1; min-width: 0; }
+/* a glyph in its role's wash: on rows, in the inspector, on a page */
+.row-glyph {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: hsl(var(--role) / var(--wash-2));
+  color: hsl(var(--role));
+  flex-shrink: 0;
+}
+.dark .row-glyph { color: var(--fg); }
+.row-glyph.big { width: 28px; height: 28px; border-radius: 8px; }
+.list-row.hl .row-glyph, .list-row.on .row-glyph { color: var(--fg); }
 
 /* the inspector's form: the group, at pane density */
 .pane .group-head { padding: 10px 8px 6px; }
@@ -869,6 +951,10 @@ html, body, #root { height: 100%; }
 }
 .tpl:focus-visible { background: var(--surface-raised); box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), var(--lift); }
 .tpl:active { transform: translateY(1px); }
+.tpl-images { --role: var(--role-green); }
+.tpl-film   { --role: var(--role-blue); }
+.tpl-manga  { --role: var(--role-orange); }
+.tpl-book   { --role: var(--role-violet); }
 .tpl-glyph {
   display: grid;
   place-items: center;
@@ -876,7 +962,7 @@ html, body, #root { height: 100%; }
   height: 40px;
   margin-bottom: 6px;
   border-radius: 10px;
-  background: var(--surface-raised);
+  background: hsl(var(--role) / var(--wash-2));
   box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade);
   color: var(--fg);
 }

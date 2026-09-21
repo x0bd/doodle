@@ -50,7 +50,7 @@ export function NewGraph() {
         </header>
         <div className="tpls">
           {TEMPLATES.map((t) => (
-            <button key={t.id} className="tpl" onClick={() => pick(t.id)}>
+            <button key={t.id} className={`tpl tpl-${t.id}`} onClick={() => pick(t.id)}>
               <span className="tpl-glyph">
                 <Icon icon={GLYPH[t.id]} size={22} strokeWidth={1.6} />
               </span>

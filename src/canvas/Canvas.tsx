@@ -376,7 +376,7 @@ export function Canvas() {
       onPointerCancel={onUp}
     >
       <div className="world" style={{ transform: `translate(${cam.x}px, ${cam.y}px) scale(${cam.zoom})` }}>
-        <Wires live={live} lit={lit} />
+        <Wires live={live} liveType={liveType} lit={lit} />
         {here.map((id) => (
           <Node key={id} node={g.nodes[id]} selected={g.selection.includes(id)} into={into === id} dim={!!lit && !lit.has(id)} handlers={handlers} />
         ))}

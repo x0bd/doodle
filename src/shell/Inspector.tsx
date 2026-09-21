@@ -1,6 +1,8 @@
 import { KINDS } from "../graph/kinds";
 import { graph, setStatus, type Canon } from "../state/graph";
 import { FieldRow } from "./Fields";
+import { GLYPH } from "../canvas/Doc";
+import { Icon } from "../icons";
 import { doc, setBible } from "../state/doc";
 import { nav } from "../state/nav";
 
@@ -26,7 +28,12 @@ export function Inspector() {
   return (
     <aside className="pane right card" aria-label="Inspector">
       <div className="pane-head">
-        <div>
+        {node && (
+          <span className={`row-glyph big k-${node.kind}`}>
+            <Icon icon={GLYPH[node.kind]} size={14} strokeWidth={1.8} />
+          </span>
+        )}
+        <div className="pane-what">
           <div className="pane-title">{node ? node.title : ids.length > 1 ? `${ids.length} nodes` : atRoot ? d.name : "Nothing selected"}</div>
           <div className="pane-note">
             {node ? (isWorkspace ? `This page · ${KINDS[node.kind].title}` : KINDS[node.kind].note) : ids.length > 1 ? "Select one to edit it" : atRoot ? "The project. Its rules go into every request." : "Select a node on the field"}
