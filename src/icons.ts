@@ -42,6 +42,7 @@ export {
   File01Icon as PageIcon,
   StickyNote01Icon as NoteIcon,
   ArrowUp01Icon as UpIcon,
+  Camera01Icon as ShotIcon,
   Settings02Icon as GeneralIcon,
   PaintBoardIcon as AppearanceIcon,
   InformationCircleIcon as AboutIcon,

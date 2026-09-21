@@ -4,7 +4,7 @@
  * the inspector edits. The canvas and the inspector both read from here;
  * neither knows a kind by name.
  */
-export type NodeKind = "model" | "prompt" | "generate" | "preview" | "character" | "style" | "write" | "page" | "note";
+export type NodeKind = "model" | "prompt" | "generate" | "preview" | "character" | "style" | "write" | "page" | "note" | "shot";
 export type PortType = "model" | "text" | "image";
 
 export interface Port {
@@ -160,6 +160,27 @@ export const KINDS: Record<NodeKind, KindDef> = {
         fields: [
           { key: "model", label: "Model", type: "select", options: ["Default", "llama3.2", "gemma3", "qwen3", "mistral"] },
           { key: "length", label: "Length", type: "select", options: ["Beat", "Scene", "Chapter"] },
+        ],
+      },
+    ],
+  },
+  shot: {
+    kind: "shot",
+    title: "Shot",
+    note: "One frame of the scene, with its camera",
+    inputs: [],
+    outputs: [{ id: "text", name: "brief", type: "text" }],
+    size: { w: 240, h: 150 },
+    data: { description: "", shotSize: "MS", lensMm: 35, movement: "static", durationMs: 3000 },
+    groups: [
+      {
+        name: "Camera",
+        fields: [
+          { key: "description", label: "What we see", type: "text", rows: 3 },
+          { key: "shotSize", label: "Size", type: "select", options: ["ECU", "CU", "MCU", "MS", "MLS", "WS", "EWS"] },
+          { key: "lensMm", label: "Lens", type: "number", min: 8, max: 200, step: 1 },
+          { key: "movement", label: "Movement", type: "select", options: ["static", "pan", "tilt", "dolly-in", "dolly-out", "truck", "handheld", "crane"] },
+          { key: "durationMs", label: "Duration (ms)", type: "number", min: 500, max: 60000, step: 250 },
         ],
       },
     ],

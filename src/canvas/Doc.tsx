@@ -1,8 +1,9 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import {
-  Icon, PlusIcon, CheckIcon, CloseIcon, ImageIcon, ModelIcon, TextIcon, GenerateIcon, CharacterIcon, StyleIcon, WriteIcon, PageIcon, NoteIcon, ChevronRightIcon,
+  Icon, PlusIcon, CheckIcon, CloseIcon, ImageIcon, ModelIcon, TextIcon, GenerateIcon, CharacterIcon, StyleIcon, WriteIcon, PageIcon, NoteIcon, ShotIcon, ChevronRightIcon,
   type IconSvgElement,
 } from "../icons";
+import { shots, proposalsFor, keepShot, keepAll, dropShot, dismiss } from "../state/shots";
 import { KINDS, type NodeKind } from "../graph/kinds";
 import { graph, updateData, rename, childrenOf, makeNode, addNode, takeOutput, type GraphNode } from "../state/graph";
 import { drafts, draftsFor, accept, reject } from "../state/drafts";
@@ -14,7 +15,7 @@ import { FieldRow } from "../shell/Fields";
 
 export const GLYPH: Record<NodeKind, IconSvgElement> = {
   model: ModelIcon, prompt: TextIcon, generate: GenerateIcon, preview: ImageIcon,
-  character: CharacterIcon, style: StyleIcon, write: WriteIcon, page: PageIcon, note: NoteIcon,
+  character: CharacterIcon, style: StyleIcon, write: WriteIcon, page: PageIcon, note: NoteIcon, shot: ShotIcon,
 };
 
 const ASK_LABEL = { expand: "Expanded", continue: "Continued", rewrite: "Rewritten", ask: "Answered" } as const;
@@ -26,6 +27,7 @@ export function Doc({ id }: { id: string }) {
   const g = graph.use();
   const node = g.nodes[id];
   const all = drafts.use();
+  const proposals = shots.use();
   const j = jobs.use();
   assets.use();
   const name = doc.use((d) => d.name);
@@ -34,6 +36,7 @@ export function Doc({ id }: { id: string }) {
   const kids = childrenOf(g, id).map((c) => g.nodes[c]).sort((a, b) => a.seq - b.seq);
   const images = node.attachments ?? [];
   const mine = draftsFor(all, id);
+  const proposed = proposalsFor(proposals, id);
   const parent = node.parent ? g.nodes[node.parent]?.title : name;
   const job = RUNNABLE.has(node.kind) ? jobFor(j, id) : undefined;
 
@@ -92,8 +95,61 @@ export function Doc({ id }: { id: string }) {
             </section>
         ))}
 
+        {proposed.map((p) => (
+          <section key={p.id} className={`proposal ${p.state}`} aria-live="polite">
+            <div className="sec-head">
+              <span className="sec-name">Proposed shots</span>
+              <span className="sec-note">
+                {p.state === "thinking" ? `${p.provider ?? "Thinking"}…` : p.state === "failed" ? p.error : `${p.items.length} from ${p.provider ?? "the agent"} — ghosts until you keep them`}
+              </span>
+              {p.state === "ready" && (
+                <>
+                  <button className="pill pill-sm" onClick={() => keepAll(p.id)}>
+                    <Icon icon={CheckIcon} size={11} strokeWidth={2.4} />
+                    Keep all
+                  </button>
+                  <button className="pill-icon sm" aria-label="Dismiss all" onClick={() => dismiss(p.id)}>
+                    <Icon icon={CloseIcon} size={12} strokeWidth={2.2} />
+                  </button>
+                </>
+              )}
+              {p.state === "failed" && (
+                <button className="pill-icon sm" aria-label="Dismiss" onClick={() => dismiss(p.id)}>
+                  <Icon icon={CloseIcon} size={12} strokeWidth={2.2} />
+                </button>
+              )}
+            </div>
+            {p.state === "ready" && (
+              <ol className="ghosts">
+                {p.items.map((it, i) => (
+                  <li key={i} className="ghost">
+                    <span className="beat-n px">{i + 1}</span>
+                    <div className="beat-what">
+                      <span className="ghost-title">{it.title}</span>
+                      <span className="ghost-text">{it.description}</span>
+                      <span className="ghost-cam px">
+                        {it.shotSize} · {it.lensMm}mm · {it.movement} · {(it.durationMs / 1000).toFixed(1)}s
+                        {it.rationale && <span className="ghost-why"> — {it.rationale}</span>}
+                      </span>
+                    </div>
+                    <span className="ghost-acts">
+                      <button className="pill pill-sm" onClick={() => keepShot(p.id, i)}>
+                        <Icon icon={CheckIcon} size={11} strokeWidth={2.4} />
+                        Keep
+                      </button>
+                      <button className="pill-icon sm" aria-label="Drop" onClick={() => dropShot(p.id, i)}>
+                        <Icon icon={CloseIcon} size={12} strokeWidth={2.2} />
+                      </button>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
+        ))}
+
         <Section
-          name={node.kind === "prompt" ? "Beats" : "Notes"}
+          name={node.kind === "prompt" ? "Beats and shots" : "Notes"}
           note={node.kind === "prompt" ? "The scene in order. Each opens as its own page." : "Kept with it. Each opens as its own page."}
           action={
             <button className="pill pill-sm" onClick={addNote}>
@@ -154,25 +210,31 @@ function Beat({ node, n }: { node: GraphNode; n: number }) {
     if (!el) return;
     el.style.height = "0";
     el.style.height = `${el.scrollHeight}px`;
-  }, [node.data.text]);
+  }, [node.data.text, node.data.description]);
   const open = (e: React.MouseEvent) => {
     const r = e.currentTarget.getBoundingClientRect();
     enter(node.id, undefined, { x: r.left + r.width / 2, y: r.top + r.height / 2 });
   };
+  const key = node.kind === "shot" ? "description" : "text";
   return (
-    <li className="beat">
-      <span className="beat-n px">{n}</span>
+    <li className={`beat${node.kind === "shot" ? " is-shot" : ""}`}>
+      <span className="beat-n px">{node.kind === "shot" ? <Icon icon={ShotIcon} size={12} strokeWidth={1.8} /> : n}</span>
       <div className="beat-what">
         <input className="beat-title" value={node.title} onChange={(e) => rename(node.id, e.target.value)} spellCheck={false} aria-label="Title" />
         <textarea
           ref={ref}
           className="beat-text"
           rows={1}
-          value={String(node.data.text ?? "")}
-          placeholder="Write it here"
-          onChange={(e) => updateData(node.id, { text: e.target.value })}
+          value={String(node.data[key] ?? "")}
+          placeholder={node.kind === "shot" ? "What the camera sees" : "Write it here"}
+          onChange={(e) => updateData(node.id, { [key]: e.target.value })}
           spellCheck
         />
+        {node.kind === "shot" && (
+          <span className="ghost-cam px">
+            {String(node.data.shotSize)} · {String(node.data.lensMm)}mm · {String(node.data.movement)} · {(Number(node.data.durationMs) / 1000).toFixed(1)}s
+          </span>
+        )}
       </div>
       <button className="pill-icon sm beat-open" aria-label="Open" title="Open as its own page" onClick={open}>
         <Icon icon={ChevronRightIcon} size={13} strokeWidth={2} />
@@ -310,6 +372,19 @@ function Body({ node }: { node: GraphNode }) {
           ))}
         </>
       );
+    case "shot":
+      return (
+        <>
+          <Prose node={node} field="description" />
+          <Section name="Camera">
+            <div className="group">
+              {def.groups[0].fields.filter((f) => f.key !== "description").map((f) => (
+                <FieldRow key={f.key} node={node} field={f} />
+              ))}
+            </div>
+          </Section>
+        </>
+      );
     case "model":
       return (
         <Section name={def.groups[0].name}>
@@ -323,21 +398,21 @@ function Body({ node }: { node: GraphNode }) {
   }
 }
 
-function Prose({ node }: { node: GraphNode }) {
+function Prose({ node, field = "text" }: { node: GraphNode; field?: string }) {
   const ref = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     el.style.height = "0";
     el.style.height = `${Math.max(120, el.scrollHeight)}px`;
-  }, [node.data.text]);
+  }, [node.data[field]]);
   return (
     <textarea
       ref={ref}
       className="prose selectable"
-      value={String(node.data.text ?? "")}
+      value={String(node.data[field] ?? "")}
       placeholder={node.kind === "page" ? "Nothing written yet. Wire a writer in and run, or write here." : "Write it the way you would say it. Expand it from the bar when it is enough."}
-      onChange={(e) => updateData(node.id, { text: e.target.value })}
+      onChange={(e) => updateData(node.id, { [field]: e.target.value })}
       spellCheck
     />
   );

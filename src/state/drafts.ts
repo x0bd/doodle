@@ -56,7 +56,7 @@ export async function propose(nodeId: string, ask: Ask, instruction = "") {
 }
 
 /** where a kind keeps its words */
-export const proseKey = (kind: string) => (kind === "character" || kind === "style" ? "description" : "text");
+export const proseKey = (kind: string) => (kind === "character" || kind === "style" || kind === "shot" ? "description" : "text");
 
 export function accept(id: string) {
   const d = drafts.get()[id];

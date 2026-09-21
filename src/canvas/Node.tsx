@@ -197,6 +197,13 @@ function Body({ node }: { node: GraphNode }) {
           ))}
         </div>
       );
+    case "shot":
+      return (
+        <div className="node-body node-shot">
+          <p className="node-desc">{String(node.data.description || "What the camera sees")}</p>
+          <span className="node-cam px">{String(node.data.shotSize)} · {String(node.data.lensMm)}mm · {String(node.data.movement)}</span>
+        </div>
+      );
     case "note":
       return (
         <div className="node-body well">

@@ -5,6 +5,7 @@ import { jobs, enqueue, generators, current, latest, mainPort } from "../state/j
 import { openSettings } from "../state/ui";
 import { nav } from "../state/nav";
 import { propose } from "../state/drafts";
+import { proposeShots } from "../state/shots";
 import { useState } from "react";
 import { History } from "./History";
 
@@ -39,6 +40,9 @@ export function Bar() {
           />
         </div>
         <div className="bar-acts">
+          {entered.kind === "prompt" && (
+            <button className="pill pill-sm" onClick={() => void proposeShots(entered.id, 6, ask.trim())} title="Propose six shots for this scene">Shots</button>
+          )}
           {(prose || described) && (
             <>
               <button className="pill pill-sm" onClick={() => void propose(entered.id, "expand")}>Expand</button>

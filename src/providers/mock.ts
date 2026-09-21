@@ -8,6 +8,16 @@ import type { ImageRequest, ImageResult, Progress, Provider, TextRequest } from 
 
 const STEP_MS = 70;
 
+/** a shot list the mock proposes for any scene — quiet, in order */
+const SHOTS = [
+  { title: "The door", description: "Wide on the greenhouse door from inside, dust in the one shaft of light. It has not opened in years.", shotSize: "WS", lensMm: 24, movement: "static", durationMs: 4000, rationale: "Establish the room and the stillness before anything moves" },
+  { title: "It opens", description: "The door, closer. It gives, slowly, and R-404's silhouette fills the gap.", shotSize: "MS", lensMm: 35, movement: "static", durationMs: 3000, rationale: "The first change in a still world" },
+  { title: "The plant", description: "Close on one leaf in a dry bed, the only green in frame.", shotSize: "CU", lensMm: 85, movement: "static", durationMs: 2500, rationale: "What all of this is about" },
+  { title: "Reach", description: "R-404's hand enters, stops short of the leaf, pulls back.", shotSize: "MCU", lensMm: 50, movement: "handheld", durationMs: 3500, rationale: "Hesitation, in the hands" },
+  { title: "Reserve", description: "Low angle: the reserve tank, a gauge near empty, R-404 unscrewing the valve.", shotSize: "MS", lensMm: 35, movement: "dolly-in", durationMs: 4000, rationale: "The cost is shown, not said" },
+  { title: "Water", description: "Overhead. A thin line of water finds the soil. The leaf does not move. Hold.", shotSize: "CU", lensMm: 50, movement: "static", durationMs: 5000, rationale: "The act, and nothing answering it yet" },
+];
+
 /** The fixture, varied by the seed — a flip, a shift of tone — so
  *  candidates can be told apart. Rendered once per seed into a PNG. */
 async function vary(seed: number): Promise<string> {
@@ -47,6 +57,10 @@ export const mock: Provider = {
   async generateText(req: TextRequest, signal: AbortSignal): Promise<string> {
     await new Promise((r) => setTimeout(r, 1200));
     if (signal.aborted) throw new DOMException("Cancelled", "AbortError");
+    if (req.system?.includes("JSON array only")) {
+      const n = Number(req.system.match(/Propose (\d+) shots/)?.[1] ?? 6);
+      return JSON.stringify(SHOTS.slice(0, Math.max(1, Math.min(SHOTS.length, n))));
+    }
     const brief = req.prompt.trim().replace(/\.$/, "");
     return `${brief}.\n\nThe wind comes in off the water before the light does. She is on the gallery with the glass still in her hand when she sees it — a hull where no hull should be, riding low, no lamp lit, no one at the rail. She counts to ten. Nothing on it moves.\n\n(Mock. Wire a real writer in Settings when there is one.)`;
   },

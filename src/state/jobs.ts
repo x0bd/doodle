@@ -64,6 +64,7 @@ function describe(n: GraphNode | undefined): string {
   const d = n.data;
   if (n.kind === "character") return [d.name, d.description].filter(Boolean).join(": ");
   if (n.kind === "style") return [d.description, d.palette && `palette: ${d.palette}`, d.lighting && `lighting: ${d.lighting}`].filter(Boolean).join(", ");
+  if (n.kind === "shot") return [d.description, `${d.shotSize} shot`, `${d.lensMm}mm`, `${d.movement}`].filter(Boolean).join(", ");
   return String(d.text ?? "");
 }
 
@@ -75,7 +76,7 @@ export function requestFor(gen: GraphNode): ImageRequest {
   const neg = fed(gen, "negative");
   const d = gen.data;
   const seed = d.control === "Random" ? Math.floor(Math.random() * 1_000_000) : Number(d.seed);
-  const prompt = [String(pos?.data.text ?? ""), describe(fed(gen, "character")), describe(fed(gen, "style"))].filter(Boolean).join(". ");
+  const prompt = [describe(pos), describe(fed(gen, "character")), describe(fed(gen, "style"))].filter(Boolean).join(". ");
   return {
     prompt,
     negative: String(neg?.data.text ?? ""),

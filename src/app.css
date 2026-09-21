@@ -223,6 +223,29 @@ html, body, #root { height: 100%; }
 .contact-take.on { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--ink); }
 .runrow { min-height: 32px; }
 
+/* ghosts: shots proposed, translucent until kept */
+.proposal { margin-top: var(--gap-wide); }
+.ghosts { list-style: none; display: flex; flex-direction: column; gap: 1px; border-radius: 10px; overflow: hidden; background: var(--surface-raised); }
+.ghost {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 10px 12px 14px;
+  background: var(--surface);
+  opacity: 0.78;
+  transition: opacity var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+@media (hover: hover) and (pointer: fine) { .ghost:hover { opacity: 1; background: var(--surface-raised); } }
+.ghost-title { font-size: var(--t-body); font-weight: var(--w-mid); color: var(--fg); }
+.ghost-text { font-size: 15px; line-height: 1.5; color: var(--fg-muted); }
+.ghost-cam { margin-top: 3px; font-size: var(--t-micro); color: var(--fg-faint); }
+.ghost-why { color: var(--fg-faint); font-family: var(--font-ui); letter-spacing: 0; }
+.ghost-acts { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; margin-top: 2px; }
+.ghost-acts .pill-sm { --rim-gap: var(--surface); }
+.beat.is-shot .beat-n { padding-top: 5px; color: var(--fg-muted); }
+.node-shot { display: flex; flex-direction: column; gap: 4px; padding: 2px 4px 0; }
+.node-cam { font-size: var(--t-micro); color: var(--fg-faint); }
+
 /* a draft: the agent's proposal, set apart, waiting */
 .draft {
   margin-top: 18px;
