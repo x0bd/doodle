@@ -89,6 +89,59 @@ html, body, #root { height: 100%; }
   pointer-events: none;
 }
 
+/* ─── The panes ─────────────────────────────────────────────────────────────
+   Two cards floating on the field, under the title line and clear of the
+   readouts: the navigator on the left (where you are, what is here), the
+   inspector on the right (what this is, and its every setting). */
+.pane {
+  position: absolute;
+  top: var(--head-h);
+  max-height: calc(100% - var(--head-h) - 68px);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  z-index: 5;
+}
+.pane.left  { left: 18px;  width: 216px; }
+.pane.right { right: 18px; width: 264px; }
+.pane-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 10px 6px 16px;
+  flex-shrink: 0;
+}
+.pane-title { font-size: var(--t-body); font-weight: var(--w-declare); line-height: 1.3; }
+.pane-note  { font-size: var(--t-micro); color: var(--fg-faint); margin-top: 1px; }
+.pane-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 8px 8px;
+}
+.pane.right .pane-body { padding-bottom: 10px; }
+.pill-icon.sm { width: 26px; height: 26px; }
+
+/* the inspector's form: the group, at pane density */
+.pane .group-head { padding: 10px 8px 6px; }
+.pane .group-head:first-child { padding-top: 6px; }
+.pane .group-row { min-height: 36px; padding: 5px 6px 5px 12px; gap: 10px; }
+.pane .group-name { font-size: var(--t-label); }
+.pane .group { background: var(--surface-raised); }
+.group-ctl { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.group-ctl .px { font-size: var(--t-label); color: var(--fg-muted); padding-right: 6px; }
+.group-ctl .pill-sm { padding: 4px 8px 4px 10px; gap: 4px; }
+.seg-btn.key { padding: 3px 6px; }
+.seg-val {
+  display: grid;
+  place-items: center;
+  min-width: 34px;
+  font-size: var(--t-micro);
+  color: var(--fg);
+}
+
 /* ─── The foot ──────────────────────────────────────────────────────────────
    Left: settings, then the mono readouts in a row — elapsed, iteration,
    nodes. Right: the view cluster, fit / reveal / lens and the zoom with its
