@@ -5,6 +5,7 @@
  */
 import { createStore } from "./store";
 import type { Rect } from "../canvas/camera";
+import { FIXTURES } from "../providers/fixtures";
 
 export type NodeKind = "note";
 
@@ -12,6 +13,8 @@ export interface GraphNode extends Rect {
   id: string;
   kind: NodeKind;
   title: string;
+  /** an image the node holds, shown in its well */
+  asset?: string;
 }
 
 export interface GraphState {
@@ -25,7 +28,7 @@ const seed: GraphNode[] = [
   { id: "n2", kind: "note", title: "Prompt", x: 400, y: 40, w: 220, h: 150 },
   { id: "n3", kind: "note", title: "Negative", x: 400, y: 260, w: 220, h: 120 },
   { id: "n4", kind: "note", title: "Image Generator", x: 720, y: 140, w: 240, h: 260 },
-  { id: "n5", kind: "note", title: "Preview", x: 1060, y: 100, w: 260, h: 340 },
+  { id: "n5", kind: "note", title: "Preview", x: 1060, y: 100, w: 260, h: 300, asset: FIXTURES.blackBear },
 ];
 
 export const graph = createStore<GraphState>({

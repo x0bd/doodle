@@ -24,7 +24,9 @@ export function Node({
         <span className="node-dot" />
         <span className="node-name">{node.title}</span>
       </div>
-      <div className="node-body well" />
+      <div className="node-body well">
+        {node.asset && <img className="node-img" src={node.asset} alt="" draggable={false} />}
+      </div>
     </div>
   );
 }
