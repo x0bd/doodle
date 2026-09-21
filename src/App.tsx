@@ -6,10 +6,10 @@ import { Inspector } from "./shell/Inspector";
 import { Foot } from "./shell/Foot";
 import { Settings } from "./shell/Settings";
 import { Bar } from "./shell/Bar";
-import { ui, togglePanes } from "./state/ui";
+import { ui, togglePanes, openChooser } from "./state/ui";
 import { listenToMenu } from "./platform/menu";
-import { newGraph, restoreLast } from "./state/doc";
-import { fitAll } from "./canvas/view";
+import { restoreLast } from "./state/doc";
+import { NewGraph } from "./shell/NewGraph";
 
 export function App() {
   const { navigator, inspector } = ui.use();
@@ -19,10 +19,7 @@ export function App() {
     let live = true;
     restoreLast().then((restored) => {
       if (!live) return;
-      if (!restored) {
-        newGraph();
-        requestAnimationFrame(fitAll);
-      }
+      if (!restored) openChooser();
     });
     return () => {
       live = false;
@@ -49,6 +46,7 @@ export function App() {
       <Bar />
       <Foot />
       <Settings />
+      <NewGraph />
     </div>
   );
 }

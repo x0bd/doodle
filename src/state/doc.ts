@@ -8,7 +8,7 @@ import { graph, type GraphState } from "./graph";
 import { camera, type Camera } from "../canvas/camera";
 import { history, reset as resetHistory } from "./history";
 import { inTauri, loadGraph, pickOpenDir, pickSaveDir, saveGraph, graphExists } from "../platform/fs";
-import { seedGraph } from "../graph/seed";
+import { templateById, type TemplateId } from "../graph/templates";
 
 export type SaveState = "idle" | "saving" | "saved" | "failed";
 
@@ -103,7 +103,11 @@ history.subscribe(() => {
 
 /* ── reading ── */
 function load(file: FileGraph, path: string | null) {
-  graph.set({ nodes: file.nodes, order: file.order, edges: file.edges, selection: [], edgeSelection: [] });
+  const nodes = { ...file.nodes };
+  file.order.forEach((id, i) => {
+    if (nodes[id] && nodes[id].seq == null) nodes[id] = { ...nodes[id], seq: i + 1 };
+  });
+  graph.set({ nodes, order: file.order, edges: file.edges, selection: [], edgeSelection: [] });
   if (file.camera) camera.set(file.camera);
   resetHistory();
   doc.set({ path, name: file.name ?? (path ? nameOf(path) : "Untitled"), dirty: false, save: path ? "saved" : "idle" });
@@ -133,13 +137,19 @@ export async function openDialog() {
   if (path) await openFrom(path);
 }
 
-/** A fresh graph from the images template. */
-export function newGraph() {
-  const g = seedGraph();
-  graph.set({ ...g, selection: [], edgeSelection: [] });
+/** A fresh graph from one of the templates. */
+export function newGraph(template: TemplateId = "images") {
+  const t = templateById(template);
+  const { nodes, edges } = t.build();
+  graph.set({
+    nodes: Object.fromEntries(nodes.map((n) => [n.id, n])),
+    order: nodes.map((n) => n.id),
+    edges: Object.fromEntries(edges.map((e) => [e.id, e])),
+    selection: [],
+    edgeSelection: [],
+  });
   resetHistory();
-  doc.set({ path: null, name: "Untitled", dirty: false, save: "idle" });
-  return true;
+  doc.set({ path: null, name: `Untitled ${t.name.toLowerCase()}`, dirty: false, save: "idle" });
 }
 
 /** On launch: the last graph if it is still there, else the template. Tells

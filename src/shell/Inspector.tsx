@@ -41,6 +41,15 @@ function FieldRow({ node, field }: { node: GraphNode; field: Field }) {
   const v = node.data[field.key];
   const set = (val: string | number) => updateData(node.id, { [field.key]: val });
 
+  if (field.type === "line") {
+    return (
+      <div className="group-row col">
+        <div className="group-name">{field.label}</div>
+        <input className="inp" value={String(v ?? "")} onChange={(e) => set(e.target.value)} spellCheck={false} />
+      </div>
+    );
+  }
+
   if (field.type === "text") {
     return (
       <div className="group-row col">

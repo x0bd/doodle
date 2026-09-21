@@ -15,7 +15,7 @@ export function Node({ node, selected, handlers }: { node: GraphNode; selected: 
   const outs = outputs(node);
   const rows = Math.max(ins.length, outs.length);
   const edges = graph.use((g) => g.edges);
-  const job = jobs.use((s) => (node.kind === "generate" ? jobFor(s, node.id) : undefined));
+  const job = jobs.use((s) => (node.kind === "generate" || node.kind === "write" ? jobFor(s, node.id) : undefined));
   const running = job?.state === "running";
   const connected = (ref: PortRef) =>
     Object.values(edges).some(
@@ -128,6 +128,47 @@ function Body({ node }: { node: GraphNode }) {
       return (
         <div className="node-body well">
           {node.asset && <img className="node-img" src={node.asset} alt="" draggable={false} />}
+        </div>
+      );
+    case "character":
+      return (
+        <div className="node-body node-char">
+          <div className={`node-ref well${node.asset ? "" : " diag"}`}>
+            {node.asset && <img className="node-img" src={node.asset} alt="" draggable={false} />}
+          </div>
+          <div className="node-char-what">
+            <div className="node-char-name">{String(node.data.name || node.title)}</div>
+            <div className="node-char-desc">{String(node.data.description || "No description yet")}</div>
+          </div>
+        </div>
+      );
+    case "style":
+      return (
+        <div className="node-body node-rows">
+          <div className="node-desc">{String(node.data.description || "No description yet")}</div>
+          {(NODE_ROWS.style ?? []).filter((r) => node.data[r.key]).map((r) => (
+            <div key={r.key} className="node-row">
+              <span className="node-row-k">{r.label}</span>
+              <span className="node-row-v">{String(node.data[r.key])}</span>
+            </div>
+          ))}
+        </div>
+      );
+    case "write":
+      return (
+        <div className="node-body node-rows">
+          {(NODE_ROWS.write ?? []).map((r) => (
+            <div key={r.key} className="node-row">
+              <span className="node-row-k">{r.label}</span>
+              <span className="node-row-v">{String(node.data[r.key])}</span>
+            </div>
+          ))}
+        </div>
+      );
+    case "page":
+      return (
+        <div className="node-body well node-page">
+          {node.data.text ? <p className="node-page-text selectable">{String(node.data.text)}</p> : <p className="node-page-empty">Nothing written yet</p>}
         </div>
       );
   }

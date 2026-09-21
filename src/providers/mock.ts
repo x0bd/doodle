@@ -23,8 +23,10 @@ export const mock: Provider = {
     }
     return { asset: FIXTURES.blackBear, seed: req.seed, elapsedMs: performance.now() - t0 };
   },
-  async generateText(req: TextRequest): Promise<string> {
-    await new Promise((r) => setTimeout(r, 300));
-    return `${req.prompt.trim()}, rendered with care`;
+  async generateText(req: TextRequest, signal: AbortSignal): Promise<string> {
+    await new Promise((r) => setTimeout(r, 1200));
+    if (signal.aborted) throw new DOMException("Cancelled", "AbortError");
+    const brief = req.prompt.trim().replace(/\.$/, "");
+    return `${brief}.\n\nThe wind comes in off the water before the light does. She is on the gallery with the glass still in her hand when she sees it — a hull where no hull should be, riding low, no lamp lit, no one at the rail. She counts to ten. Nothing on it moves.\n\n(Mock. Wire a real writer in Settings when there is one.)`;
   },
 };

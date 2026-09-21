@@ -4,9 +4,9 @@
  * the platform already did the work.
  */
 import { listen } from "@tauri-apps/api/event";
-import { openSettings, toggleInspector, toggleNavigator, togglePanes, toggleTheme } from "../state/ui";
+import { openChooser, openSettings, toggleInspector, toggleNavigator, togglePanes, toggleTheme } from "../state/ui";
 import { fitAll, zoomActual, zoomIn, zoomOut } from "../canvas/view";
-import { newGraph, openDialog, save, saveAs } from "../state/doc";
+import { openDialog, save, saveAs } from "../state/doc";
 import { redo, undo } from "../state/history";
 import { deleteSelected, duplicateSelected, selectAll } from "../state/graph";
 import { clearQueue, enqueue } from "../state/jobs";
@@ -19,7 +19,7 @@ const typing = () => {
 
 export const actions: Record<string, () => void> = {
   "app.settings": openSettings,
-  "file.new": newGraph,
+  "file.new": openChooser,
   "file.open": () => void openDialog(),
   "file.save": () => void save(),
   "file.save-as": () => void saveAs(),
@@ -63,6 +63,7 @@ function devKeys() {
       : k === "d" ? "edit.duplicate"
       : k === "a" ? "edit.select-all"
       : k === "s" ? "file.save"
+      : k === "n" ? "file.new"
       : k === "=" || k === "+" ? "view.zoom-in"
       : k === "-" ? "view.zoom-out"
       : k === "0" ? "view.zoom-fit"

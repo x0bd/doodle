@@ -4,7 +4,7 @@ Updated 2026-09-21. Read this, then `../v00v/the-soft-machine.md` for the design
 
 ## What Doodle is
 
-A recursively zoomable creative document. The first surface is the **image workflow graph** — Model → Prompt / Negative → Image Generator → Preview — from the dark node-graph mockup, translated into The Soft Machine. The plan's "Lab" came first; Studio (scenes, shots, pages) grows out of it. Four base workflows are the intended templates: **Book, Manga, Film, Images**. Images is the one that exists.
+A recursively zoomable creative document. The first surface is the **image workflow graph** — Model → Prompt / Negative → Image Generator → Preview — from the dark node-graph mockup, translated into The Soft Machine. The plan's "Lab" came first; Studio (scenes, shots, pages) grows out of it. Four base workflows are templates (`src/graph/templates.ts`): **Images, Film, Manga, Book** — each a graph of kinds. File › New (⌘N) opens the chooser; so does an empty launch.
 
 ## Decisions
 
@@ -31,17 +31,18 @@ src/
            Node.tsx     the card by kind; ports on the edges (data-port for hit-testing); progress in the head
            Wires.tsx    one SVG; wire-hit under wire-line; the live wire
            layout.ts    PORTS_TOP 36, PORT_ROW 18 — the CSS and the wires agree here
-  graph/   kinds.ts     the registry: ports, size, default data, inspector groups per kind
-           seed.ts      the images template
+  graph/   kinds.ts     the registry: model prompt generate preview character style write page
+           templates.ts images film manga book
   state/   store.ts     createStore — value, set, subscribe, use (useSyncExternalStore)
            graph.ts     nodes, order (z), edges, selection; journaled mutations; *Now forms for drags
            history.ts   snapshot journal: commit / begin+end; coalesce by key within 1 s; undo, redo
            doc.ts       path, name, dirty, save state; save/saveAs/open/new; autosave 600 ms; restoreLast
-           jobs.ts      queue, one job at a time; requestFor reads through the wires; result → journal entry
+           jobs.ts      queue, one job at a time; requestFor / textRequestFor read through the wires
+                        (the prompt compiler: scene, then character, then style); result → journal entry
            ui.ts        panes, theme, motion, settings sheet
   providers/ types.ts mock.ts ollama.ts registry.ts fixtures.ts
   platform/ fs.ts (invoke save_graph/load_graph/graph_exists, dialogs) menu.ts (ids → actions; dev keys in a browser)
-  shell/   Head Navigator Inspector Foot Bar Settings
+  shell/   Head Navigator Inspector Foot Bar Settings NewGraph
 src-tauri/src/ lib.rs menu.rs commands.rs (atomic write of graph.json)
 public/fixtures/black-bear.png   the mock's output and the Preview's default
 ```
@@ -56,7 +57,7 @@ Rules kept: no `border:` anywhere (`grep -rn "border[a-z-]*:" src/ | grep -v bor
 
 - Inert: bar's History / Model / Image keys, cluster's reveal and lens, `⋮`, the tab's `‹ ›`, `⋮` and the Queue chevron.
 - `Control mode: Random` reseeds; the mock always returns the bear.
-- No templates yet beyond Images — New Graph should offer Book / Manga / Film / Images.
+- Character nodes have a reference well (the hatch when empty) but no way to put an image in it yet — that needs the assets folder and an import path.
 - No run history or candidates; no real adapter; no keychain; no assets folder use yet.
-- The Ollama adapter is unused; a "Rewrite" action on the prompt is its first job.
+- The Write kind runs through `text.generate`; the mock answers. Its Model select lists Ollama but the registry still hands out the mock — route by the node's choice next.
 - An unexplained early flip of the pane state to off/off happened twice during HMR + process swaps and never on a clean launch; the store key was bumped to `doodle.ui.v1`. If it recurs, log `togglePanes` callers.

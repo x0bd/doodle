@@ -16,6 +16,8 @@ export interface GraphNode extends Rect {
   data: Record<string, string | number>;
   /** an image the node holds, shown in its well */
   asset?: string;
+  /** creation order, for lists that should not follow the stack */
+  seq: number;
 }
 
 export interface PortRef {
@@ -39,10 +41,12 @@ export interface GraphState {
 
 let counter = 0;
 export const newId = (p = "n") => `${p}${Date.now().toString(36)}${(counter++).toString(36)}`;
+let seq = 0;
+export const nextSeq = () => ++seq;
 
 export function makeNode(kind: NodeKind, x: number, y: number, extra: Partial<GraphNode> = {}): GraphNode {
   const def = KINDS[kind];
-  return { id: newId(), kind, title: def.title, x, y, ...def.size, data: { ...def.data }, ...extra };
+  return { id: newId(), kind, title: def.title, x, y, ...def.size, data: { ...def.data }, seq: nextSeq(), ...extra };
 }
 
 export const graph = createStore<GraphState>({
@@ -122,7 +126,7 @@ export function duplicateSelected() {
   const map = new Map<string, string>();
   const copies = g.selection.map((id) => {
     const n = g.nodes[id];
-    const c = { ...n, id: newId(), x: n.x + 24, y: n.y + 24, data: { ...n.data } };
+    const c = { ...n, id: newId(), x: n.x + 24, y: n.y + 24, data: { ...n.data }, seq: nextSeq() };
     map.set(id, c.id);
     return c;
   });

@@ -1,4 +1,4 @@
-import { Icon, CheckIcon, PlusIcon, ModelIcon, TextIcon, GenerateIcon, ImageIcon, GraphIcon, type IconSvgElement } from "../icons";
+import { Icon, CheckIcon, PlusIcon, ModelIcon, TextIcon, GenerateIcon, ImageIcon, GraphIcon, CharacterIcon, StyleIcon, WriteIcon, PageIcon, type IconSvgElement } from "../icons";
 import { graph, select, makeNode, addNode } from "../state/graph";
 import { fitRect, camera } from "../canvas/camera";
 import { screenRect } from "../canvas/view";
@@ -10,6 +10,10 @@ const GLYPH: Record<NodeKind, IconSvgElement> = {
   prompt: TextIcon,
   generate: GenerateIcon,
   preview: ImageIcon,
+  character: CharacterIcon,
+  style: StyleIcon,
+  write: WriteIcon,
+  page: PageIcon,
 };
 
 /** The left pane: where you are, and what is here. */
@@ -42,7 +46,7 @@ export function Navigator() {
           <Row icon={GraphIcon} on>{name}</Row>
           <div className="list-gap" />
           <div className="list-head">Nodes</div>
-          {[...g.order].sort().map((id) => {
+          {[...g.order].sort((a, b) => (g.nodes[a].seq ?? 0) - (g.nodes[b].seq ?? 0)).map((id) => {
             const n = g.nodes[id];
             return (
               <Row key={id} icon={GLYPH[n.kind]} hl={g.selection.includes(id)} onClick={() => go(id)} onDoubleClick={() => go(id)}>

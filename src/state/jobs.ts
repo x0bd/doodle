@@ -7,7 +7,7 @@ import { createStore } from "./store";
 import { graph, type GraphNode } from "./graph";
 import { commit } from "./history";
 import { providerFor } from "../providers/registry";
-import type { ImageRequest, Progress } from "../providers/types";
+import type { ImageRequest, Progress, TextRequest } from "../providers/types";
 
 export type JobState = "queued" | "running" | "completed" | "failed" | "cancelled";
 
@@ -21,7 +21,8 @@ export interface Job {
   startedAt?: number;
   endedAt?: number;
   error?: string;
-  request: ImageRequest;
+  request: ImageRequest | TextRequest;
+  kind: "image" | "text";
 }
 
 export interface JobsState {
@@ -48,14 +49,26 @@ function fed(node: GraphNode, port: string): GraphNode | undefined {
   return e ? g.nodes[e.from.node] : undefined;
 }
 
+/** what a character or style contributes to a prompt, in words */
+function describe(n: GraphNode | undefined): string {
+  if (!n) return "";
+  const d = n.data;
+  if (n.kind === "character") return [d.name, d.description].filter(Boolean).join(": ");
+  if (n.kind === "style") return [d.description, d.palette && `palette: ${d.palette}`, d.lighting && `lighting: ${d.lighting}`].filter(Boolean).join(", ");
+  return String(d.text ?? "");
+}
+
+/** The prompt compiler, in its smallest form: the scene, then who is in
+ *  it, then how it looks. */
 export function requestFor(gen: GraphNode): ImageRequest {
   const model = fed(gen, "model");
   const pos = fed(gen, "positive");
   const neg = fed(gen, "negative");
   const d = gen.data;
   const seed = d.control === "Random" ? Math.floor(Math.random() * 1_000_000) : Number(d.seed);
+  const prompt = [String(pos?.data.text ?? ""), describe(fed(gen, "character")), describe(fed(gen, "style"))].filter(Boolean).join(". ");
   return {
-    prompt: String(pos?.data.text ?? ""),
+    prompt,
     negative: String(neg?.data.text ?? ""),
     model: String(model?.data.model ?? "Mock"),
     seed,
@@ -67,22 +80,34 @@ export function requestFor(gen: GraphNode): ImageRequest {
   };
 }
 
-/** every generator, in wire order from the left */
+export function textRequestFor(w: GraphNode): TextRequest {
+  const brief = fed(w, "brief");
+  const system = [describe(fed(w, "character")), describe(fed(w, "style")), `Length: ${w.data.length}`].filter(Boolean).join("\n");
+  return { prompt: String(brief?.data.text ?? ""), system, model: String(w.data.model) };
+}
+
+export const RUNNABLE = new Set(["generate", "write"]);
+/** every generator and writer, in wire order from the left */
 export const generators = () => {
   const g = graph.get();
-  return g.order.map((id) => g.nodes[id]).filter((n) => n.kind === "generate").sort((a, b) => a.x - b.x);
+  return g.order.map((id) => g.nodes[id]).filter((n) => RUNNABLE.has(n.kind)).sort((a, b) => a.x - b.x);
 };
+/** the text input a runnable node is mostly about */
+export const mainPort = (n: GraphNode) => (n.kind === "write" ? "brief" : "positive");
 
 /* ── the queue ── */
 
 export function enqueue(nodeIds?: string[]) {
-  const gens = nodeIds ? nodeIds.map((id) => graph.get().nodes[id]).filter((n) => n?.kind === "generate") : generators();
+  const gens = nodeIds ? nodeIds.map((id) => graph.get().nodes[id]).filter((n) => n && RUNNABLE.has(n.kind)) : generators();
   if (!gens.length) return;
   jobs.set((s) => {
     const next = { ...s, jobs: { ...s.jobs }, order: [...s.order] };
     for (const gen of gens) {
       const id = `j${++seq}`;
-      next.jobs[id] = { id, nodeId: gen.id, state: "queued", progress: 0, queuedAt: Date.now(), request: requestFor(gen) };
+      next.jobs[id] =
+        gen.kind === "write"
+          ? { id, nodeId: gen.id, state: "queued", progress: 0, queuedAt: Date.now(), kind: "text", request: textRequestFor(gen) }
+          : { id, nodeId: gen.id, state: "queued", progress: 0, queuedAt: Date.now(), kind: "image", request: requestFor(gen) };
       next.order.push(id);
     }
     return next;
@@ -136,24 +161,43 @@ async function run(id: string) {
   controllers.set(id, ctl);
   patch(id, { state: "running", startedAt: Date.now(), progress: 0 });
   try {
-    const provider = providerFor("image.generate");
     const onProgress = (p: Progress) => patch(id, { progress: p.fraction, note: p.note });
-    const result = await provider.generateImage!(job.request, onProgress, ctl.signal);
-    if (ctl.signal.aborted) throw new DOMException("Cancelled", "AbortError");
-    // the result lands on the generator and flows into whatever its image feeds
-    commit("Generate", () => {
-      const g = graph.get();
-      const targets = Object.values(g.edges)
-        .filter((e) => e.from.node === gen.id && e.from.port === "image")
-        .map((e) => e.to.node);
-      graph.set((x) => {
-        const me = x.nodes[gen.id];
-        const data = me.data.control === "Random" ? { ...me.data, seed: result.seed } : me.data;
-        const nodes = { ...x.nodes, [gen.id]: { ...me, data, asset: result.asset } };
-        for (const t of targets) if (nodes[t]) nodes[t] = { ...nodes[t], asset: result.asset };
-        return { ...x, nodes };
+    if (job.kind === "text") {
+      const provider = providerFor("text.generate");
+      patch(id, { note: "writing" });
+      const text = await provider.generateText!(job.request as TextRequest, ctl.signal);
+      if (ctl.signal.aborted) throw new DOMException("Cancelled", "AbortError");
+      // the words land on the writer and flow into whatever its text feeds
+      commit("Write", () => {
+        const g = graph.get();
+        const targets = Object.values(g.edges)
+          .filter((e) => e.from.node === gen.id && e.from.port === "text")
+          .map((e) => e.to.node);
+        graph.set((x) => {
+          const nodes = { ...x.nodes, [gen.id]: { ...x.nodes[gen.id], data: { ...x.nodes[gen.id].data, output: text } } };
+          for (const t of targets) if (nodes[t]) nodes[t] = { ...nodes[t], data: { ...nodes[t].data, text } };
+          return { ...x, nodes };
+        });
       });
-    });
+    } else {
+      const provider = providerFor("image.generate");
+      const result = await provider.generateImage!(job.request as ImageRequest, onProgress, ctl.signal);
+      if (ctl.signal.aborted) throw new DOMException("Cancelled", "AbortError");
+      // the result lands on the generator and flows into whatever its image feeds
+      commit("Generate", () => {
+        const g = graph.get();
+        const targets = Object.values(g.edges)
+          .filter((e) => e.from.node === gen.id && e.from.port === "image")
+          .map((e) => e.to.node);
+        graph.set((x) => {
+          const me = x.nodes[gen.id];
+          const data = me.data.control === "Random" ? { ...me.data, seed: result.seed } : me.data;
+          const nodes = { ...x.nodes, [gen.id]: { ...me, data, asset: result.asset } };
+          for (const t of targets) if (nodes[t]) nodes[t] = { ...nodes[t], asset: result.asset };
+          return { ...x, nodes };
+        });
+      });
+    }
     patch(id, { state: "completed", progress: 1, endedAt: Date.now() });
     jobs.set((s) => ({ ...s, iterations: s.iterations + 1 }));
   } catch (e) {

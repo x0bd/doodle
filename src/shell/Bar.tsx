@@ -1,7 +1,7 @@
 import { Icon, HistoryIcon, SaveIcon, ModelIcon, ImageIcon, GenerateIcon, SettingsIcon } from "../icons";
 import { save } from "../state/doc";
 import { graph, updateData } from "../state/graph";
-import { jobs, enqueue, generators, current, latest } from "../state/jobs";
+import { jobs, enqueue, generators, current, latest, mainPort } from "../state/jobs";
 import { openSettings } from "../state/ui";
 
 /** The prompt bar at the foot of the field: the positive prompt of the
@@ -10,12 +10,12 @@ export function Bar() {
   const g = graph.use();
   const j = jobs.use();
   const gen = generators()[0];
-  const edge = gen && Object.values(g.edges).find((e) => e.to.node === gen.id && e.to.port === "positive");
+  const edge = gen && Object.values(g.edges).find((e) => e.to.node === gen.id && e.to.port === mainPort(gen));
   const promptNode = edge ? g.nodes[edge.from.node] : undefined;
   const running = current(j);
   const last = latest(j);
   const note = running
-    ? `Rendering ${running.note ?? ""}`
+    ? (running.kind === "text" ? "Writing…" : `Rendering ${running.note ?? ""}`)
     : last?.state === "completed" && last.startedAt && last.endedAt
       ? `Done in ${((last.endedAt - last.startedAt) / 1000).toFixed(1)}s`
       : last?.state === "failed"
@@ -42,7 +42,7 @@ export function Bar() {
             }}
           />
         ) : (
-          <p className="bar-none">Wire a prompt into a generator's positive input.</p>
+          <p className="bar-none">Wire a prompt into a generator or a writer.</p>
         )}
       </div>
       <div className="bar-acts">

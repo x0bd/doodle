@@ -175,6 +175,27 @@ html, body, #root { height: 100%; }
 .node-row-k { font-size: var(--t-micro); color: var(--fg-muted); }
 .node-row-v { font-size: var(--t-micro); color: var(--fg); }
 
+/* character: a reference beside a name and a line */
+.node-char { display: flex; gap: 8px; }
+.node-ref { width: 72px; flex-shrink: 0; border-radius: var(--r-plate); overflow: hidden; }
+.node-char-what { flex: 1; min-width: 0; padding: 2px 2px 0 0; }
+.node-char-name { font-size: var(--t-label); font-weight: var(--w-mid); color: var(--fg); }
+.node-char-desc {
+  margin-top: 3px;
+  font-size: var(--t-micro);
+  line-height: 1.45;
+  color: var(--fg-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.node-desc { padding: 2px 4px 6px; font-size: var(--t-micro); line-height: 1.45; color: var(--fg-muted); }
+/* page: what was written, set to read */
+.node-page { padding: 12px 14px; overflow: auto; }
+.node-page-text { font-size: var(--t-label); line-height: 1.55; color: var(--fg); white-space: pre-wrap; }
+.node-page-empty { font-size: var(--t-label); color: var(--fg-faint); }
+
 /* the wires */
 .wires { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; pointer-events: none; }
 .wire-hit { fill: none; stroke: transparent; stroke-width: 14; pointer-events: stroke; cursor: default; }
@@ -490,6 +511,40 @@ html, body, #root { height: 100%; }
 .mode.on .mode-word { color: var(--fg); }
 .mode-check { display: inline-grid; place-items: center; width: 12px; opacity: 0; }
 .mode.on .mode-check { opacity: 1; }
+
+/* the chooser: four ways to begin */
+.sheet.chooser { flex-direction: column; width: min(560px, 100%); height: auto; }
+.tpls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 4px 14px 14px; }
+.tpl {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 14px 14px 12px;
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: inset 0 1px 1px var(--rim-in), inset 0 -1px 0 var(--rim-lit);
+  text-align: left;
+  transition: background var(--fast) var(--ease), box-shadow var(--fast) var(--ease), transform var(--press) var(--ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  .tpl:hover { background: var(--surface-raised); box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), var(--lift); }
+}
+.tpl:focus-visible { background: var(--surface-raised); box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), var(--lift); }
+.tpl:active { transform: translateY(1px); }
+.tpl-glyph {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 6px;
+  border-radius: 10px;
+  background: var(--surface-raised);
+  box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade);
+  color: var(--fg);
+}
+.tpl-name { font-size: var(--t-body); font-weight: var(--w-declare); color: var(--fg); }
+.tpl-note { font-size: var(--t-label); line-height: 1.45; color: var(--fg-muted); }
 
 /* about: the mark, the name, the note */
 .about { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 14px 4px 0; }

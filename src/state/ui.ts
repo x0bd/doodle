@@ -10,15 +10,17 @@ export interface UiState {
   motion: Motion;
   /** the settings sheet — never remembered */
   settings: boolean;
+  /** the new-graph chooser — never remembered */
+  chooser: boolean;
 }
 
 const KEY = "doodle.ui.v1";
-const base: UiState = { navigator: true, inspector: true, theme: "dark", motion: "full", settings: false };
+const base: UiState = { navigator: true, inspector: true, theme: "dark", motion: "full", settings: false, chooser: false };
 
 function load(): UiState {
   try {
     const raw = localStorage.getItem(KEY);
-    return raw ? { ...base, ...JSON.parse(raw), settings: false } : base;
+    return raw ? { ...base, ...JSON.parse(raw), settings: false, chooser: false } : base;
   } catch {
     return base;
   }
@@ -37,7 +39,7 @@ dark.addEventListener("change", apply);
 apply();
 
 ui.subscribe(() => {
-  const { settings: _settings, ...rest } = ui.get();
+  const { settings: _settings, chooser: _chooser, ...rest } = ui.get();
   try {
     localStorage.setItem(KEY, JSON.stringify(rest));
   } catch {
@@ -60,3 +62,5 @@ export const toggleTheme = () =>
 export const setMotion = (motion: Motion) => ui.set((s) => ({ ...s, motion }));
 export const openSettings = () => ui.set((s) => ({ ...s, settings: true }));
 export const closeSettings = () => ui.set((s) => ({ ...s, settings: false }));
+export const openChooser = () => ui.set((s) => ({ ...s, chooser: true }));
+export const closeChooser = () => ui.set((s) => ({ ...s, chooser: false }));
