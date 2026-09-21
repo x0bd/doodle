@@ -1,23 +1,12 @@
-import { Icon, CheckIcon, PlusIcon, ModelIcon, TextIcon, GenerateIcon, ImageIcon, GraphIcon, CharacterIcon, StyleIcon, WriteIcon, PageIcon, NoteIcon, UpIcon, type IconSvgElement } from "../icons";
+import { Icon, CheckIcon, PlusIcon, GraphIcon, UpIcon, type IconSvgElement } from "../icons";
 import { graph, select, makeNode, addNode, childrenOf } from "../state/graph";
 import { nav, enter, rise, trail } from "../state/nav";
 import { fitAll } from "../canvas/view";
 import { fitRect, camera } from "../canvas/camera";
 import { screenRect } from "../canvas/view";
-import type { NodeKind } from "../graph/kinds";
 import { doc } from "../state/doc";
 
-const GLYPH: Record<NodeKind, IconSvgElement> = {
-  model: ModelIcon,
-  prompt: TextIcon,
-  generate: GenerateIcon,
-  preview: ImageIcon,
-  character: CharacterIcon,
-  style: StyleIcon,
-  write: WriteIcon,
-  page: PageIcon,
-  note: NoteIcon,
-};
+import { GLYPH } from "../canvas/Doc";
 
 /** The left pane: where you are, and what is here. */
 export function Navigator() {

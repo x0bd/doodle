@@ -2,7 +2,6 @@ import { Icon, SettingsIcon, PlusIcon, MinusIcon, FitIcon, EyeIcon, LinkIcon } f
 import { openSettings } from "../state/ui";
 import { graph, childrenOf } from "../state/graph";
 import { nav } from "../state/nav";
-import { WRITER_KINDS } from "../canvas/Writer";
 import { jobs, current, latest } from "../state/jobs";
 import { useEffect, useState } from "react";
 import { camera, fitAll, zoomIn, zoomOut } from "../canvas/view";
@@ -13,7 +12,7 @@ export function Foot() {
   const zoom = camera.use((c) => c.zoom);
   const focus = nav.use((x) => x.focus);
   const n = graph.use((g) => childrenOf(g, focus).length);
-  const writing = graph.use((g) => !!focus && WRITER_KINDS.has(g.nodes[focus]?.kind));
+  const writing = !!focus;
   const j = jobs.use();
   const running = current(j);
   const last = latest(j);

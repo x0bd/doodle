@@ -5,7 +5,6 @@
 import { camera, fitRect, zoomAt, zoomStep, type Point, type Rect } from "./camera";
 import { bounds, graph, childrenOf } from "../state/graph";
 import { nav } from "../state/nav";
-import { WS_RECT } from "./Workspace";
 
 import { ui } from "../state/ui";
 
@@ -30,7 +29,6 @@ export function fitAll() {
   const focus = nav.get().focus;
   const ids = g.selection.length ? g.selection : childrenOf(g, focus);
   const rects: Rect[] = ids.map((id) => g.nodes[id]).filter(Boolean);
-  if (!g.selection.length && focus) rects.push(WS_RECT);
   const b = bounds(rects);
   if (b) fitRect(b, screenRect(), 120);
 }

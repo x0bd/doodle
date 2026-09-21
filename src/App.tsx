@@ -13,13 +13,11 @@ import { NewGraph } from "./shell/NewGraph";
 import { onFileDrop } from "./platform/fs";
 import { attachFiles, attachTo } from "./state/assets";
 import { nav } from "./state/nav";
-import { graph } from "./state/graph";
-import { WRITER_KINDS } from "./canvas/Writer";
 
 export function App() {
   const { navigator, inspector } = ui.use();
   const focus = nav.use((n) => n.focus);
-  const writing = graph.use((g) => !!focus && WRITER_KINDS.has(g.nodes[focus]?.kind));
+  const writing = !!focus;
   useEffect(listenToMenu, []);
   // the last graph if it is still there — with its view — else the template, framed
   useEffect(() => {
@@ -40,7 +38,7 @@ export function App() {
       const el = document.elementFromPoint(at.x / scale, at.y / scale) as HTMLElement | null;
       const under = el?.closest<HTMLElement>("[data-node]")?.dataset.node;
       const focus = nav.get().focus;
-      const target = under ?? (focus && WRITER_KINDS.has(graph.get().nodes[focus]?.kind) ? focus : focus);
+      const target = under ?? focus;
       if (!target) return;
       const refs = await attachFiles(paths.filter((p) => /\.(png|jpe?g|webp|gif|avif)$/i.test(p)));
       attachTo(target, refs);

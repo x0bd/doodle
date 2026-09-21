@@ -11,8 +11,7 @@ import { ui } from "../state/ui";
 import { childrenOf } from "../state/graph";
 import { fitAll } from "./view";
 import { Wires } from "./Wires";
-import { Workspace } from "./Workspace";
-import { Writer, WRITER_KINDS } from "./Writer";
+import { Doc } from "./Doc";
 import { portPos } from "./layout";
 
 type Drag =
@@ -58,7 +57,7 @@ export function Canvas() {
       ? ({ "--ox": `${arrival.x}px`, "--oy": `${arrival.y}px` } as React.CSSProperties)
       : undefined;
   const arriveClass = arriveStyle ? ` arrive-${arrival!.dir}` : "";
-  const writing = !!focus && WRITER_KINDS.has(g.nodes[focus]?.kind);
+  const writing = !!focus;
   const ref = useRef<HTMLDivElement>(null);
   const drag = useRef<Drag | null>(null);
   const [marquee, setMarquee] = useState<Rect | null>(null);
@@ -71,6 +70,7 @@ export function Canvas() {
   // the wheel: a trackpad pans, a pinch (ctrlKey) or ⌘-wheel zooms about the pointer
   useEffect(() => {
     const el = ref.current!;
+    if (writing) return; // a page scrolls; the wheel is the platform's
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       if (e.ctrlKey || e.metaKey) {
@@ -82,7 +82,7 @@ export function Canvas() {
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
-  }, []);
+  }, [writing]);
 
   // the keys: space to pan, arrows to nudge, delete to remove, escape to let go
   useEffect(() => {
@@ -272,8 +272,8 @@ export function Canvas() {
 
   if (writing) {
     return (
-      <div ref={ref} className={`field doc${arriveClass}`} style={arriveStyle} onAnimationEnd={(e) => e.target === e.currentTarget && clearArrival()}>
-        <Writer id={focus!} />
+      <div ref={ref} className={`stage reading${arriveClass}`} style={arriveStyle} onAnimationEnd={(e) => e.target === e.currentTarget && clearArrival()}>
+        <Doc id={focus!} />
       </div>
     );
   }
@@ -281,7 +281,7 @@ export function Canvas() {
   return (
     <div
       ref={ref}
-      className={`field${live ? " wiring" : ""}${arriveClass}`}
+      className={`stage${live ? " wiring" : ""}${arriveClass}`}
       style={{
         backgroundSize: `${gap}px ${gap}px`,
         backgroundPosition: `${cam.x + 12 * cam.zoom}px ${cam.y + 12 * cam.zoom}px`,
@@ -296,7 +296,6 @@ export function Canvas() {
       onPointerCancel={onUp}
     >
       <div className="world" style={{ transform: `translate(${cam.x}px, ${cam.y}px) scale(${cam.zoom})` }}>
-        {focus && <Workspace id={focus} />}
         <Wires live={live} />
         {here.map((id) => (
           <Node key={id} node={g.nodes[id]} selected={g.selection.includes(id)} into={into === id} handlers={handlers} />

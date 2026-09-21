@@ -21,7 +21,7 @@ Overlay title bar, lights at `{20, 32}` so every row in the head centres on y 30
 
 ## Entering, the writer, drafts, assets
 
-A node has a `parent`; the field shows the entered node's children (`state/nav.ts`: focus, a view per workspace, `enter`/`rise`/`riseTo`, the trail). Double-click or Enter enters; Escape leaves a field, then rises. Inside a **canvas-ish** node (generate, model, preview, character, style) the node itself is a plate at the head of its field (`canvas/Workspace.tsx`, `WS_RECT`), edited in place. Inside a **text** node (prompt, note, page — `WRITER_KINDS`) the field is a **writer** (`canvas/Writer.tsx`): a page with title, prose, a context strip (child notes as cards, attached images) and the ask bar (Expand / Continue / Rewrite / free ask) that runs `text.generate` and puts a **draft** beneath the text (`state/drafts.ts`) — Keep appends (Replace for rewrite) as one journal entry; discard drops it. Nothing the agent says becomes the document on its own.
+A node has a `parent` (`state/nav.ts`: focus, a view per workspace, `enter`/`rise`/`riseTo`, the trail). Double-click or Enter enters; Escape leaves a field, then rises. **Entered, every node is a document** (`canvas/Doc.tsx`): a page with a glyph tile, title and meta; then what it is — prose for prompt/note/page, a character sheet (reference well, name, appearance), a style sheet (look, palette as chips, lighting), a contact sheet of takes plus settings and runs for a generator, the print for a preview, output and settings for a writer, the checkpoint for a model; then **Beats/Notes** — its children as a numbered list written in place, each openable — and **Media**. The sub-canvas no longer appears; children live on the page. The bar is the **ask** on every page (Expand / Continue / Rewrite where there is prose; a free ask everywhere); the answer is a **draft** on the page (`state/drafts.ts`) — Keep appends into the kind's own words (`proseKey`: text, or description for character/style; Replace for rewrite), discard drops it. Nothing the agent says becomes the document on its own. The canvas surface class is `.stage` (`.stage.reading` for a page) — `.field`, `.doc`, `.page`, `.sec` are the system's; check `soft-machine.css` before naming a class.
 
 Assets: `import_asset(dir, path)` hashes and copies into `Name.doodle/assets/<sha>.<ext>`; `read_asset` returns a data URL (the webview never reads disk; no asset protocol scope). `state/assets.ts` caches URLs (`urlFor`), `attachFiles` saves first if the graph has no home, `attachTo` puts refs on a node (first becomes its picture). Dropped files arrive through Tauri's drag-drop event (paths) in `App.tsx`: onto the card under the pointer, else onto the page being written.
 
@@ -41,7 +41,8 @@ src/
   App.tsx               launch: restore the last graph or the template; keys
   canvas/  camera.ts    x, y, zoom; zoomAt, zoomStep (fixed stops), fitRect
            view.ts      zoomIn/Out/Actual, fitAll (selection or all)
-           Canvas.tsx   pan (trackpad, space-drag, middle), pinch/⌘-wheel zoom, marquee, move, wire drags, keys
+           Canvas.tsx   pan (trackpad, space-drag, middle), pinch/⌘-wheel zoom, marquee, move, wire drags, keys; Doc when entered
+           Doc.tsx      the document a node becomes when entered
            Node.tsx     the card by kind; ports on the edges (data-port for hit-testing); progress in the head
            Wires.tsx    one SVG; wire-hit under wire-line; the live wire
            layout.ts    PORTS_TOP 36, PORT_ROW 18 — the CSS and the wires agree here

@@ -47,21 +47,25 @@ export async function propose(nodeId: string, ask: Ask, instruction = "") {
   try {
     const provider = await pickAny("text.generate");
     drafts.set((d) => (d[id] ? { ...d, [id]: { ...d[id], provider: provider.descriptor.name } } : d));
-    const text = await provider.generateText!({ prompt: String(node.data.text ?? ""), system }, new AbortController().signal);
+    const text = await provider.generateText!({ prompt: String(node.data[proseKey(node.kind)] ?? ""), system }, new AbortController().signal);
     drafts.set((d) => (d[id] ? { ...d, [id]: { ...d[id], text, state: "ready" } } : d));
   } catch (e) {
     drafts.set((d) => (d[id] ? { ...d, [id]: { ...d[id], state: "failed", error: String(e) } } : d));
   }
 }
 
+/** where a kind keeps its words */
+export const proseKey = (kind: string) => (kind === "character" || kind === "style" ? "description" : "text");
+
 export function accept(id: string) {
   const d = drafts.get()[id];
   if (!d || d.state !== "ready") return;
   const node = graph.get().nodes[d.nodeId];
   if (!node) return;
-  const current = String(node.data.text ?? "");
+  const key = proseKey(node.kind);
+  const current = String(node.data[key] ?? "");
   const text = d.ask === "rewrite" ? d.text : `${current.trimEnd()}\n\n${d.text}`.trim();
-  updateData(d.nodeId, { text });
+  updateData(d.nodeId, { [key]: text });
   reject(id);
 }
 

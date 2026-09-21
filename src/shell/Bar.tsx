@@ -4,7 +4,6 @@ import { graph, updateData } from "../state/graph";
 import { jobs, enqueue, generators, current, latest, mainPort } from "../state/jobs";
 import { openSettings } from "../state/ui";
 import { nav } from "../state/nav";
-import { WRITER_KINDS } from "../canvas/Writer";
 import { propose } from "../state/drafts";
 import { useState } from "react";
 import { History } from "./History";
@@ -17,10 +16,13 @@ export function Bar() {
   const focus = nav.use((n) => n.focus);
   const [ask, setAsk] = useState("");
   const [hist, setHist] = useState(false);
-  if (focus && WRITER_KINDS.has(g.nodes[focus]?.kind)) {
+  const entered = focus ? g.nodes[focus] : undefined;
+  if (entered) {
+    const prose = entered.kind === "prompt" || entered.kind === "note" || entered.kind === "page";
+    const described = entered.kind === "character" || entered.kind === "style";
     const send = () => {
       if (!ask.trim()) return;
-      void propose(focus, "ask", ask.trim());
+      void propose(entered.id, "ask", ask.trim());
       setAsk("");
     };
     return (
@@ -30,18 +32,22 @@ export function Bar() {
           <input
             className="bar-text"
             value={ask}
-            placeholder="What should happen to this passage?"
+            placeholder={prose ? "What should happen to this passage?" : described ? `What should the agent add to ${entered.title}?` : "Ask about this"}
             onChange={(e) => setAsk(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), send())}
             spellCheck={false}
           />
         </div>
         <div className="bar-acts">
-          <button className="pill pill-sm" onClick={() => void propose(focus, "expand")}>Expand</button>
-          <button className="pill pill-sm" onClick={() => void propose(focus, "continue")}>Continue</button>
-          <button className="pill pill-sm" onClick={() => void propose(focus, "rewrite")}>Rewrite</button>
+          {(prose || described) && (
+            <>
+              <button className="pill pill-sm" onClick={() => void propose(entered.id, "expand")}>Expand</button>
+              {prose && <button className="pill pill-sm" onClick={() => void propose(entered.id, "continue")}>Continue</button>}
+              <button className="pill pill-sm" onClick={() => void propose(entered.id, "rewrite")}>Rewrite</button>
+            </>
+          )}
           <div className="gap" />
-          <span className="bar-note px">Drafts wait below the text until you keep them</span>
+          <span className="bar-note px">{prose || described ? "Drafts wait on the page until you keep them" : "Answers arrive as drafts on the page"}</span>
         </div>
       </div>
     );

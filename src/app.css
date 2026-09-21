@@ -33,10 +33,10 @@ html, body, #root { height: 100%; }
   background: var(--bg);
 }
 
-/* ─── The field ─────────────────────────────────────────────────────────────
+/* ─── The stage ─────────────────────────────────────────────────────────────
    The world layer, edge to edge under the chrome. The dots are the world's
    grid and move with it; the camera is one transform on .world. */
-.field {
+.stage {
   position: absolute;
   inset: 0;
   overflow: hidden;
@@ -47,11 +47,11 @@ html, body, #root { height: 100%; }
 /* the move the pointer made: entering grows out of the card it came from,
    rising settles back from a touch too close. Once, 220 ms, and never for a
    key (the store only records the pointer's moves). */
-.field.arrive-in  { animation: arrive-in var(--base) var(--ease-out) both; transform-origin: var(--ox, 50%) var(--oy, 50%); }
-.field.arrive-out { animation: arrive-out var(--base) var(--ease-out) both; transform-origin: var(--ox, 50%) var(--oy, 50%); }
+.stage.arrive-in  { animation: arrive-in var(--base) var(--ease-out) both; transform-origin: var(--ox, 50%) var(--oy, 50%); }
+.stage.arrive-out { animation: arrive-out var(--base) var(--ease-out) both; transform-origin: var(--ox, 50%) var(--oy, 50%); }
 @keyframes arrive-in  { from { opacity: 0; transform: scale(0.82); } to { opacity: 1; transform: none; } }
 @keyframes arrive-out { from { opacity: 0; transform: scale(1.08); } to { opacity: 1; transform: none; } }
-.reduce-motion .field.arrive-in, .reduce-motion .field.arrive-out { animation: none; }
+.reduce-motion .stage.arrive-in, .reduce-motion .stage.arrive-out { animation: none; }
 
 .world {
   position: absolute;
@@ -68,38 +68,56 @@ html, body, #root { height: 100%; }
   pointer-events: none;
 }
 
-/* ─── The writer ────────────────────────────────────────────────────────────
-   A text node entered is a page: no dots, no camera. The paper is a
-   measure of prose on the ground; what the page carries sits beneath it;
-   what the agent proposes waits between the two. */
-.field.doc { background-image: none; overflow-y: auto; cursor: auto; }
-.writer { min-height: 100%; padding: 88px 40px 200px; }
+/* ─── The document ──────────────────────────────────────────────────────────
+   A node entered is a page: no dots, no camera. One idiom for every kind —
+   a head that names it, sections that are what it is, lists of what it
+   holds. Prose reads at a reading size on a measure; forms are groups;
+   pictures are prints. */
+.stage.reading { background-image: none; overflow-y: auto; cursor: auto; }
+.docpage { min-height: 100%; padding: 84px 40px 220px; }
 .paper {
-  width: min(720px, 100%);
+  width: min(760px, 100%);
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
+.paper-head { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 18px; }
+.paper-glyph {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-top: 2px;
+  border-radius: 12px;
+  background: var(--surface-raised);
+  box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), var(--lift);
+  color: var(--fg);
+  flex-shrink: 0;
+}
+.paper-name { flex: 1; min-width: 0; }
+.paper-head .pill-ink { margin-top: 8px; }
 .paper-title {
   width: 100%;
   font-family: var(--font-ui);
-  font-size: 28px;
+  font-size: 26px;
   font-weight: var(--w-declare);
   letter-spacing: -0.02em;
   line-height: 1.2;
   color: var(--fg);
   outline: none;
   border-radius: var(--r-sm);
-  padding: 4px 6px;
+  padding: 3px 6px;
   margin: 0 -6px;
   cursor: text;
 }
 .paper-title:focus { background: var(--tint); }
-.paper-meta { font-size: var(--t-label); color: var(--fg-faint); margin-bottom: 14px; }
-.paper-body {
+.paper-meta { font-size: var(--t-label); color: var(--fg-faint); margin-top: 1px; }
+
+/* prose: written at a reading size, grows as it goes */
+.prose {
   width: 100%;
-  min-height: 160px;
+  min-height: 120px;
   padding: 0;
   background: none;
   resize: none;
@@ -111,7 +129,99 @@ html, body, #root { height: 100%; }
   cursor: text;
   overflow: hidden;
 }
-.paper-body::placeholder { color: var(--fg-faint); }
+.prose::placeholder { color: var(--fg-faint); }
+.prose-read { font-size: 17px; line-height: 1.65; color: var(--fg); white-space: pre-wrap; }
+
+/* sections: a name, a note, an action; then the thing */
+/* .sec and .sec-head are the system's — space and a label, never a rule */
+.paper .sec-head { margin-bottom: 10px; }
+.sec-name { font-size: var(--t-body); font-weight: var(--w-declare); color: var(--fg); }
+.sec-note { flex: 1; font-size: var(--t-label); color: var(--fg-faint); }
+.sec-empty { font-size: var(--t-body); color: var(--fg-faint); }
+.paper .group-row { min-height: 42px; padding: 8px 12px 8px 14px; }
+.paper .group-row.col .inp { background: var(--surface-raised); }
+
+/* the beats: what the page holds, in order, written in place */
+.beats { list-style: none; display: flex; flex-direction: column; gap: 1px; border-radius: 10px; overflow: hidden; background: var(--surface-raised); }
+.beat {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 10px 12px 14px;
+  background: var(--surface);
+  transition: background var(--fast) var(--ease);
+}
+@media (hover: hover) and (pointer: fine) { .beat:hover { background: var(--surface-raised); } }
+.beat-n { width: 18px; padding-top: 3px; font-size: var(--t-micro); color: var(--fg-faint); text-align: right; flex-shrink: 0; }
+.beat-what { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.beat-title {
+  width: 100%;
+  font-family: var(--font-ui);
+  font-size: var(--t-body);
+  font-weight: var(--w-mid);
+  color: var(--fg);
+  outline: none;
+  cursor: text;
+  border-radius: var(--r-sm);
+  padding: 1px 4px;
+  margin: 0 -4px;
+}
+.beat-title:focus { background: var(--tint); }
+.beat-text {
+  width: 100%;
+  resize: none;
+  outline: none;
+  background: none;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--fg-muted);
+  cursor: text;
+  overflow: hidden;
+}
+.beat-text:focus { color: var(--fg); }
+.beat-text::placeholder { color: var(--fg-faint); }
+.beat-open { opacity: 0; flex-shrink: 0; margin-top: 2px; }
+.beat:hover .beat-open, .beat:focus-within .beat-open { opacity: 1; }
+
+/* media: prints in a row */
+.media { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.media-img { aspect-ratio: 1; border-radius: 10px; overflow: hidden; }
+.media-img img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.media-empty { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 88px; border-radius: 10px; color: var(--fg-faint); font-size: var(--t-label); }
+
+/* the character sheet, the style sheet */
+.sheet-char { display: flex; gap: 18px; }
+.sheet-ref { width: 220px; height: 220px; flex-shrink: 0; border-radius: 12px; overflow: hidden; display: grid; place-items: center; }
+.sheet-ref img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.sheet-ref-hint { font-size: var(--t-label); color: var(--fg-faint); }
+.sheet-fields { display: flex; flex-direction: column; gap: 12px; flex: 1; min-width: 0; }
+.sheet-field { display: flex; flex-direction: column; gap: 6px; }
+.sheet-field.grow { flex: 1; }
+.sheet-field .inp { resize: none; font-size: var(--t-body); line-height: 1.5; }
+.sheet-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.swatches { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+
+/* the print: a frame, large */
+.sheet-print { max-height: 520px; border-radius: 12px; overflow: hidden; display: grid; place-items: center; min-height: 200px; }
+.sheet-print img { display: block; max-width: 100%; max-height: 520px; object-fit: contain; }
+
+/* the contact sheet: takes, the chosen one ringed */
+.contact { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.contact-take {
+  aspect-ratio: 1;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--surface);
+  box-shadow: inset 0 1px 2px var(--rim-in);
+  transition: box-shadow var(--fast) var(--ease), transform var(--press) var(--ease);
+}
+.contact-take img { display: block; width: 100%; height: 100%; object-fit: cover; }
+@media (hover: hover) and (pointer: fine) { .contact-take:hover { box-shadow: 0 0 0 1.5px var(--fg-muted); } }
+.contact-take:focus-visible { box-shadow: 0 0 0 1.5px var(--fg-muted); background: var(--surface); }
+.contact-take:active { transform: translateY(1px); }
+.contact-take.on { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--ink); }
+.runrow { min-height: 32px; }
 
 /* a draft: the agent's proposal, set apart, waiting */
 .draft {
@@ -128,72 +238,6 @@ html, body, #root { height: 100%; }
 .draft.thinking .lbl { animation: pulse 1.2s var(--ease-in-out) infinite alternate; }
 @keyframes pulse { from { opacity: 0.5; } to { opacity: 1; } }
 .reduce-motion .draft.thinking .lbl { animation: none; }
-
-/* context: what the page carries */
-.ctx { margin-top: var(--gap-wide); }
-.ctx-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
-.ctx-name { font-size: var(--t-body); font-weight: var(--w-declare); color: var(--fg); }
-.ctx-note { flex: 1; font-size: var(--t-label); color: var(--fg-faint); }
-.ctx-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
-.ctx-card {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-height: 96px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: var(--surface-raised);
-  box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), var(--lift);
-  text-align: left;
-  transition: background var(--fast) var(--ease), transform var(--press) var(--ease);
-}
-@media (hover: hover) and (pointer: fine) { .ctx-card:hover { background: var(--plate); } }
-.ctx-card:focus-visible { background: var(--plate); }
-.ctx-card:active { transform: translateY(1px); }
-.ctx-card-head { display: flex; align-items: center; gap: 6px; color: var(--fg-muted); }
-.ctx-card-title { font-size: var(--t-label); font-weight: var(--w-mid); color: var(--fg); }
-.ctx-card-text {
-  font-size: var(--t-micro);
-  line-height: 1.45;
-  color: var(--fg-muted);
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.ctx-img { aspect-ratio: 1; border-radius: 10px; overflow: hidden; }
-.ctx-img img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.ctx-img-wait { display: block; width: 100%; height: 100%; }
-.ctx-empty {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 96px;
-  border-radius: 10px;
-  color: var(--fg-faint);
-  font-size: var(--t-label);
-}
-
-/* runs: a menu above the bar */
-.hist {
-  position: absolute;
-  left: 0;
-  bottom: calc(100% + 8px);
-  width: min(360px, 100%);
-  max-height: 360px;
-  overflow-y: auto;
-  padding: 6px;
-  border-radius: var(--r-card);
-  box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), 0 0 0 1px var(--rim-edge), var(--lift-2);
-  animation: in var(--fast) var(--ease) both;
-}
-.hist-row { min-height: 44px; gap: 10px; }
-.hist-thumb { width: 32px; height: 32px; border-radius: var(--r-sm); overflow: hidden; flex-shrink: 0; }
-.hist-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.hist-what { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
-.hist-note { font-size: var(--t-micro); color: var(--fg-faint); }
 
 /* the ask bar */
 .bar.ask .bar-acts .pill-sm { margin-right: 4px; }
@@ -353,66 +397,6 @@ html, body, #root { height: 100%; }
 .node-page { padding: 12px 14px; overflow: auto; }
 .node-page-text { font-size: var(--t-label); line-height: 1.55; color: var(--fg); white-space: pre-wrap; }
 .node-page-empty { font-size: var(--t-label); color: var(--fg-faint); }
-
-/* ─── The workspace plate ───────────────────────────────────────────────────
-   The entered node, large, at the head of its own field. Part of the
-   world — it pans with everything — and edited in place. */
-.ws {
-  position: absolute;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 18px 20px 20px;
-  border-radius: 14px;
-  background: var(--plate);
-  cursor: default;
-}
-.ws-head { display: flex; flex-direction: column; gap: 3px; }
-.ws-title {
-  width: 100%;
-  font-family: var(--font-ui);
-  font-size: 20px;
-  font-weight: var(--w-declare);
-  letter-spacing: -0.01em;
-  line-height: 1.2;
-  color: var(--fg);
-  outline: none;
-  border-radius: var(--r-sm);
-  padding: 2px 4px;
-  margin: 0 -4px;
-  cursor: text;
-}
-.ws-title:focus { background: var(--tint); }
-.ws-note { font-size: var(--t-label); color: var(--fg-faint); }
-.ws-text {
-  width: 100%;
-  min-height: 130px;
-  padding: 12px 14px;
-  border-radius: var(--r-plate);
-  background: var(--surface);
-  box-shadow: inset 0 1px 2px var(--rim-in), inset 0 -1px 0 var(--rim-lit);
-  resize: none;
-  outline: none;
-  font-family: var(--font-ui);
-  font-size: 15px;
-  line-height: 1.55;
-  color: var(--fg);
-  cursor: text;
-}
-.ws-text::placeholder { color: var(--fg-faint); }
-.ws-read { font-size: 15px; line-height: 1.6; color: var(--fg); white-space: pre-wrap; max-width: 64ch; }
-.ws-empty { font-size: var(--t-body); color: var(--fg-faint); }
-.ws-char { display: flex; gap: 16px; }
-.ws-ref { width: 200px; height: 200px; flex-shrink: 0; border-radius: var(--r-plate); overflow: hidden; }
-.ws-fields { display: flex; flex-direction: column; gap: 10px; flex: 1; min-width: 0; }
-.ws-field { display: flex; flex-direction: column; gap: 5px; }
-.ws-field.grow { flex: 1; }
-.ws-field .inp { resize: none; }
-.ws-two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.ws-image { height: 360px; border-radius: var(--r-plate); overflow: hidden; display: grid; place-items: center; }
-.node-img.contain { object-fit: contain; }
-.ws-rows { display: flex; flex-direction: column; gap: 1px; }
-.ws .node-row { height: 34px; }
 
 /* the wires */
 .wires { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; pointer-events: none; }
