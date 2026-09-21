@@ -16,6 +16,8 @@ export interface GraphNode extends Rect {
   data: Record<string, string | number>;
   /** an image the node holds, shown in its well */
   asset?: string;
+  /** media attached to the node, by reference */
+  attachments?: string[];
   /** creation order, for lists that should not follow the stack */
   seq: number;
   /** the node this one lives inside; null at the root */
@@ -169,6 +171,23 @@ export function duplicateSelected() {
       selection: copies.map((c) => c.id),
       edgeSelection: [],
     })),
+  );
+}
+
+/** Move nodes inside another, laid out in a row at its head. */
+export function moveInto(ids: string[], parent: string) {
+  const g = graph.get();
+  const inside = descendants(g, ids);
+  if (inside.has(parent)) return; // a node cannot hold itself
+  const already = childrenOf(g, parent).length;
+  commit("Move into", () =>
+    graph.set((x) => {
+      const nodes = { ...x.nodes };
+      ids.forEach((id, i) => {
+        if (nodes[id]) nodes[id] = { ...nodes[id], parent, x: 60 + (already + i) * 260, y: 60 };
+      });
+      return { ...x, nodes, selection: [] };
+    }),
   );
 }
 

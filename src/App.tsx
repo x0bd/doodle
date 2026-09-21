@@ -10,9 +10,16 @@ import { ui, togglePanes, openChooser } from "./state/ui";
 import { listenToMenu } from "./platform/menu";
 import { restoreLast } from "./state/doc";
 import { NewGraph } from "./shell/NewGraph";
+import { onFileDrop } from "./platform/fs";
+import { attachFiles, attachTo } from "./state/assets";
+import { nav } from "./state/nav";
+import { graph } from "./state/graph";
+import { WRITER_KINDS } from "./canvas/Writer";
 
 export function App() {
   const { navigator, inspector } = ui.use();
+  const focus = nav.use((n) => n.focus);
+  const writing = graph.use((g) => !!focus && WRITER_KINDS.has(g.nodes[focus]?.kind));
   useEffect(listenToMenu, []);
   // the last graph if it is still there — with its view — else the template, framed
   useEffect(() => {
@@ -25,6 +32,22 @@ export function App() {
       live = false;
     };
   }, []);
+  // images dropped on the window: onto the node under them, or onto the page being written
+  useEffect(() => {
+    let off: (() => void) | undefined;
+    onFileDrop(async (paths, at) => {
+      const scale = window.devicePixelRatio || 1;
+      const el = document.elementFromPoint(at.x / scale, at.y / scale) as HTMLElement | null;
+      const under = el?.closest<HTMLElement>("[data-node]")?.dataset.node;
+      const focus = nav.get().focus;
+      const target = under ?? (focus && WRITER_KINDS.has(graph.get().nodes[focus]?.kind) ? focus : focus);
+      if (!target) return;
+      const refs = await attachFiles(paths.filter((p) => /\.(png|jpe?g|webp|gif|avif)$/i.test(p)));
+      attachTo(target, refs);
+    }).then((f) => (off = f));
+    return () => off?.();
+  }, []);
+
   // Tab hides and shows the panes — unless something is being typed into.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -38,7 +61,7 @@ export function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
   return (
-    <div className="win">
+    <div className={`win${writing ? " writing" : ""}`}>
       <Canvas />
       <Head />
       {navigator && <Navigator />}

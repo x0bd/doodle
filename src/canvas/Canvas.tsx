@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } f
 import { camera, panBy, toWorld, zoomAt, type Point, type Rect } from "./camera";
 import {
   graph, clearSelection, select, toggleSelect, moveNodes, raise, intersects, deleteSelected,
-  connectNow, canConnect, disconnectNow, edgeInto, type PortRef,
+  connectNow, canConnect, disconnectNow, edgeInto, moveInto, type PortRef,
 } from "../state/graph";
 import { begin as journalBegin, end as journalEnd, commit, type Snapshot } from "../state/history";
 import { Node, type NodeHandlers } from "./Node";
@@ -11,6 +11,7 @@ import { childrenOf } from "../state/graph";
 import { fitAll } from "./view";
 import { Wires } from "./Wires";
 import { Workspace } from "./Workspace";
+import { Writer, WRITER_KINDS } from "./Writer";
 import { portPos } from "./layout";
 
 type Drag =
@@ -23,6 +24,16 @@ const isTyping = (t: EventTarget | null) => {
   const el = t as HTMLElement | null;
   return !!el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
 };
+
+/** The node under a screen point that is not one of these, if any. */
+function nodeAt(x: number, y: number, not: string[]): string | null {
+  const els = document.elementsFromPoint(x, y) as HTMLElement[];
+  for (const el of els) {
+    const id = el.closest<HTMLElement>("[data-node]")?.dataset.node;
+    if (id && !not.includes(id)) return id;
+  }
+  return null;
+}
 
 /** The port under a screen point, if any. */
 function portAt(x: number, y: number): { ref: PortRef; dir: "in" | "out" } | null {
@@ -38,12 +49,15 @@ export function Canvas() {
   const g = graph.use();
   const focus = nav.use((n) => n.focus);
   const here = childrenOf(g, focus);
+  const writing = !!focus && WRITER_KINDS.has(g.nodes[focus]?.kind);
   const ref = useRef<HTMLDivElement>(null);
   const drag = useRef<Drag | null>(null);
   const [marquee, setMarquee] = useState<Rect | null>(null);
   const [live, setLive] = useState<{ a: Point; b: Point } | null>(null);
   const [space, setSpace] = useState(false);
   const [dragging, setDragging] = useState(false);
+  /** the node an ⌥-drag would drop into */
+  const [into, setInto] = useState<string | null>(null);
 
   // the wheel: a trackpad pans, a pinch (ctrlKey) or ⌘-wheel zooms about the pointer
   useEffect(() => {
@@ -179,6 +193,9 @@ export function Canvas() {
       const z = camera.get().zoom;
       moveNodes(d.ids, (p.x - d.last.x) / z, (p.y - d.last.y) / z);
       d.last = p;
+      // with ⌥ held, the card under the pointer is where this would go
+      const target = e.altKey ? nodeAt(p.x, p.y, d.ids) : null;
+      if (target !== into) setInto(target);
     } else if (d.mode === "wire") {
       const hit = portAt(p.x, p.y);
       const snap = hit && hit.dir === "in" && canConnect(d.from, hit.ref) ? portPos(graph.get().nodes[hit.ref.node], hit.ref, "in") : null;
@@ -222,7 +239,15 @@ export function Canvas() {
       setLive(null);
       journalEnd(d.before, "Wire");
     } else if (d.mode === "move") {
-      journalEnd(d.before, "Move");
+      const target = e.altKey ? nodeAt(e.clientX, e.clientY, d.ids) : null;
+      if (target) {
+        // undo the drag as a drag; the move-into is its own entry
+        journalEnd(d.before, "Move");
+        moveInto(d.ids, target);
+      } else {
+        journalEnd(d.before, "Move");
+      }
+      setInto(null);
     }
     ref.current!.releasePointerCapture(e.pointerId);
     drag.current = null;
@@ -234,6 +259,14 @@ export function Canvas() {
   let gap = 24 * cam.zoom;
   while (gap < 14) gap *= 2;
   const cursor = dragging && drag.current?.mode === "pan" ? "grabbing" : space ? "grab" : undefined;
+
+  if (writing) {
+    return (
+      <div ref={ref} className="field doc">
+        <Writer id={focus!} />
+      </div>
+    );
+  }
 
   return (
     <div
@@ -254,7 +287,7 @@ export function Canvas() {
         {focus && <Workspace id={focus} />}
         <Wires live={live} />
         {here.map((id) => (
-          <Node key={id} node={g.nodes[id]} selected={g.selection.includes(id)} handlers={handlers} />
+          <Node key={id} node={g.nodes[id]} selected={g.selection.includes(id)} into={into === id} handlers={handlers} />
         ))}
       </div>
       {marquee && (

@@ -1,0 +1,74 @@
+/**
+ * What the agent proposes. A draft belongs to a node and waits beneath its
+ * text until it is accepted — then it is text, one journal entry — or
+ * rejected, and gone. Nothing the agent says becomes the document on its
+ * own.
+ */
+import { createStore } from "./store";
+import { graph, updateData, childrenOf } from "./graph";
+import { providerFor } from "../providers/registry";
+
+export type Ask = "expand" | "continue" | "rewrite" | "ask";
+
+export interface Draft {
+  id: string;
+  nodeId: string;
+  ask: Ask;
+  instruction: string;
+  text: string;
+  state: "thinking" | "ready" | "failed";
+  error?: string;
+}
+
+export const drafts = createStore<Record<string, Draft>>({});
+let seq = 0;
+
+const PROMPTS: Record<Ask, string> = {
+  expand: "Expand this into a fuller passage. Keep every fact; add texture, motion and detail.",
+  continue: "Continue from where this leaves off, in the same voice.",
+  rewrite: "Rewrite this — same meaning, better sentences.",
+  ask: "",
+};
+
+/** Ask the agent about a node's text. The node's notes ride along as context. */
+export async function propose(nodeId: string, ask: Ask, instruction = "") {
+  const g = graph.get();
+  const node = g.nodes[nodeId];
+  if (!node) return;
+  const id = `d${++seq}`;
+  drafts.set((d) => ({ ...d, [id]: { id, nodeId, ask, instruction, text: "", state: "thinking" } }));
+  const notes = childrenOf(g, nodeId)
+    .map((c) => g.nodes[c])
+    .filter((n) => n.data.text)
+    .map((n) => `${n.title}: ${n.data.text}`)
+    .join("\n");
+  const system = [PROMPTS[ask], instruction, notes && `Context:\n${notes}`].filter(Boolean).join("\n\n");
+  try {
+    const provider = providerFor("text.generate");
+    const text = await provider.generateText!({ prompt: String(node.data.text ?? ""), system }, new AbortController().signal);
+    drafts.set((d) => (d[id] ? { ...d, [id]: { ...d[id], text, state: "ready" } } : d));
+  } catch (e) {
+    drafts.set((d) => (d[id] ? { ...d, [id]: { ...d[id], state: "failed", error: String(e) } } : d));
+  }
+}
+
+export function accept(id: string) {
+  const d = drafts.get()[id];
+  if (!d || d.state !== "ready") return;
+  const node = graph.get().nodes[d.nodeId];
+  if (!node) return;
+  const current = String(node.data.text ?? "");
+  const text = d.ask === "rewrite" ? d.text : `${current.trimEnd()}\n\n${d.text}`.trim();
+  updateData(d.nodeId, { text });
+  reject(id);
+}
+
+export function reject(id: string) {
+  drafts.set((d) => {
+    const next = { ...d };
+    delete next[id];
+    return next;
+  });
+}
+
+export const draftsFor = (all: Record<string, Draft>, nodeId: string) => Object.values(all).filter((d) => d.nodeId === nodeId);

@@ -19,6 +19,14 @@ A recursively zoomable creative document. The first surface is the **image workf
 
 Overlay title bar, lights at `{20, 32}` so every row in the head centres on y 30 (see Orb's HANDOFF for why). Left to right: the document tab between its chevrons (name + Unsaved / Edited / Saving… / Saved / Save failed), `⋮`, the ink **Queue** pill (count waiting, then percentage), `×` clear, duplicate, `≡` panes. Two panes float as cards at content height — **Navigator** (graphs, nodes; `+` adds a prompt) and **Inspector** (the selection's fields from the kind registry) — toggled by `≡`, View, or Tab when not typing. Foot: gear (settings sheet: Motion, Appearance light/dark/system, About) with the mono readouts `T I N`; the view cluster `fit · reveal · lens │ − 84% +` bottom-right. The prompt bar is a plate at the foot and *is* the positive prompt of the first generator.
 
+## Entering, the writer, drafts, assets
+
+A node has a `parent`; the field shows the entered node's children (`state/nav.ts`: focus, a view per workspace, `enter`/`rise`/`riseTo`, the trail). Double-click or Enter enters; Escape leaves a field, then rises. Inside a **canvas-ish** node (generate, model, preview, character, style) the node itself is a plate at the head of its field (`canvas/Workspace.tsx`, `WS_RECT`), edited in place. Inside a **text** node (prompt, note, page — `WRITER_KINDS`) the field is a **writer** (`canvas/Writer.tsx`): a page with title, prose, a context strip (child notes as cards, attached images) and the ask bar (Expand / Continue / Rewrite / free ask) that runs `text.generate` and puts a **draft** beneath the text (`state/drafts.ts`) — Keep appends (Replace for rewrite) as one journal entry; discard drops it. Nothing the agent says becomes the document on its own.
+
+Assets: `import_asset(dir, path)` hashes and copies into `Name.doodle/assets/<sha>.<ext>`; `read_asset` returns a data URL (the webview never reads disk; no asset protocol scope). `state/assets.ts` caches URLs (`urlFor`), `attachFiles` saves first if the graph has no home, `attachTo` puts refs on a node (first becomes its picture). Dropped files arrive through Tauri's drag-drop event (paths) in `App.tsx`: onto the card under the pointer, else onto the page being written.
+
+⌥-drag a card onto another card to move it inside (it wears the tint while it would).
+
 ## The code
 
 ```
@@ -57,7 +65,8 @@ Rules kept: no `border:` anywhere (`grep -rn "border[a-z-]*:" src/ | grep -v bor
 
 - Inert: bar's History / Model / Image keys, cluster's reveal and lens, `⋮`, the tab's `‹ ›`, `⋮` and the Queue chevron.
 - `Control mode: Random` reseeds; the mock always returns the bear.
-- Character nodes have a reference well (the hatch when empty) but no way to put an image in it yet — that needs the assets folder and an import path.
+- Wires that cross levels (a child wired to something outside) still feed data but are never drawn.
+- No transition when entering; the mock writer repeats the brief before its paragraph.
 - No run history or candidates; no real adapter; no keychain; no assets folder use yet.
 - The Write kind runs through `text.generate`; the mock answers. Its Model select lists Ollama but the registry still hands out the mock — route by the node's choice next.
 - An unexplained early flip of the pane state to off/off happened twice during HMR + process swaps and never on a clean launch; the store key was bumped to `doodle.ui.v1`. If it recurs, log `togglePanes` callers.

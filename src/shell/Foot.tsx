@@ -2,6 +2,7 @@ import { Icon, SettingsIcon, PlusIcon, MinusIcon, FitIcon, EyeIcon, LinkIcon } f
 import { openSettings } from "../state/ui";
 import { graph, childrenOf } from "../state/graph";
 import { nav } from "../state/nav";
+import { WRITER_KINDS } from "../canvas/Writer";
 import { jobs, current, latest } from "../state/jobs";
 import { useEffect, useState } from "react";
 import { camera, fitAll, zoomIn, zoomOut } from "../canvas/view";
@@ -12,6 +13,7 @@ export function Foot() {
   const zoom = camera.use((c) => c.zoom);
   const focus = nav.use((x) => x.focus);
   const n = graph.use((g) => childrenOf(g, focus).length);
+  const writing = graph.use((g) => !!focus && WRITER_KINDS.has(g.nodes[focus]?.kind));
   const j = jobs.use();
   const running = current(j);
   const last = latest(j);
@@ -41,7 +43,7 @@ export function Foot() {
         </div>
       </div>
 
-      <div className="cluster card">
+      {!writing && <div className="cluster card">
         <button className="pill-icon" aria-label="Fit to view" title="Fit — ⌘0" onClick={fitAll}>
           <Icon icon={FitIcon} size={14} strokeWidth={2} />
         </button>
@@ -59,7 +61,7 @@ export function Foot() {
         <button className="pill-icon" aria-label="Zoom in" title="Zoom in — ⌘+" onClick={zoomIn}>
           <Icon icon={PlusIcon} size={15} strokeWidth={2} />
         </button>
-      </div>
+      </div>}
     </>
   );
 }

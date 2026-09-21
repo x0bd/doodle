@@ -1,5 +1,6 @@
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { Icon, ChevronDownIcon } from "../icons";
+import { urlFor, assets } from "../state/assets";
 import { KINDS, NODE_ROWS } from "../graph/kinds";
 import { graph, inputs, outputs, updateData, childCount, type GraphNode, type PortRef } from "../state/graph";
 import { jobs, jobFor } from "../state/jobs";
@@ -10,7 +11,7 @@ export interface NodeHandlers {
 }
 
 /** A node: a card with its head, its ports on the edges, and its body by kind. */
-export function Node({ node, selected, handlers }: { node: GraphNode; selected: boolean; handlers: NodeHandlers }) {
+export function Node({ node, selected, into, handlers }: { node: GraphNode; selected: boolean; into?: boolean; handlers: NodeHandlers }) {
   const ins = inputs(node);
   const outs = outputs(node);
   const rows = Math.max(ins.length, outs.length);
@@ -18,6 +19,7 @@ export function Node({ node, selected, handlers }: { node: GraphNode; selected: 
   const job = jobs.use((s) => (node.kind === "generate" || node.kind === "write" ? jobFor(s, node.id) : undefined));
   const running = job?.state === "running";
   const inside = graph.use((g) => childCount(g, node.id));
+  assets.use();
   const connected = (ref: PortRef) =>
     Object.values(edges).some(
       (e) => (e.from.node === ref.node && e.from.port === ref.port) || (e.to.node === ref.node && e.to.port === ref.port),
@@ -25,7 +27,7 @@ export function Node({ node, selected, handlers }: { node: GraphNode; selected: 
 
   return (
     <div
-      className={`node card k-${node.kind}${selected ? " sel" : ""}${running ? " running" : ""}`}
+      className={`node card k-${node.kind}${selected ? " sel" : ""}${running ? " running" : ""}${into ? " into" : ""}`}
       style={{ left: node.x, top: node.y, width: node.w, height: node.h }}
       data-node={node.id}
       onPointerDown={(e) => handlers.onPointerDown(e, node)}
@@ -130,14 +132,14 @@ function Body({ node }: { node: GraphNode }) {
     case "preview":
       return (
         <div className="node-body well">
-          {node.asset && <img className="node-img" src={node.asset} alt="" draggable={false} />}
+          {node.asset && <img className="node-img" src={urlFor(node.asset)} alt="" draggable={false} />}
         </div>
       );
     case "character":
       return (
         <div className="node-body node-char">
           <div className={`node-ref well${node.asset ? "" : " diag"}`}>
-            {node.asset && <img className="node-img" src={node.asset} alt="" draggable={false} />}
+            {node.asset && <img className="node-img" src={urlFor(node.asset)} alt="" draggable={false} />}
           </div>
           <div className="node-char-what">
             <div className="node-char-name">{String(node.data.name || node.title)}</div>

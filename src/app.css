@@ -59,6 +59,117 @@ html, body, #root { height: 100%; }
   pointer-events: none;
 }
 
+/* ─── The writer ────────────────────────────────────────────────────────────
+   A text node entered is a page: no dots, no camera. The paper is a
+   measure of prose on the ground; what the page carries sits beneath it;
+   what the agent proposes waits between the two. */
+.field.doc { background-image: none; overflow-y: auto; cursor: auto; }
+.writer { min-height: 100%; padding: 88px 40px 200px; }
+.paper {
+  width: min(720px, 100%);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.paper-title {
+  width: 100%;
+  font-family: var(--font-ui);
+  font-size: 28px;
+  font-weight: var(--w-declare);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--fg);
+  outline: none;
+  border-radius: var(--r-sm);
+  padding: 4px 6px;
+  margin: 0 -6px;
+  cursor: text;
+}
+.paper-title:focus { background: var(--tint); }
+.paper-meta { font-size: var(--t-label); color: var(--fg-faint); margin-bottom: 14px; }
+.paper-body {
+  width: 100%;
+  min-height: 160px;
+  padding: 0;
+  background: none;
+  resize: none;
+  outline: none;
+  font-family: var(--font-ui);
+  font-size: 17px;
+  line-height: 1.65;
+  color: var(--fg);
+  cursor: text;
+  overflow: hidden;
+}
+.paper-body::placeholder { color: var(--fg-faint); }
+
+/* a draft: the agent's proposal, set apart, waiting */
+.draft {
+  margin-top: 18px;
+  padding: 14px 16px 16px;
+  border-radius: var(--r-card);
+  background: var(--surface);
+  box-shadow: inset 0 1px 2px var(--rim-in), inset 0 -1px 0 var(--rim-lit);
+}
+.draft-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 26px; }
+.draft-acts { display: inline-flex; align-items: center; gap: 4px; }
+.draft-acts .pill-sm { --rim-gap: var(--surface); }
+.draft-text { margin-top: 8px; font-size: 16px; line-height: 1.6; color: var(--fg-muted); white-space: pre-wrap; }
+.draft.thinking .lbl { animation: pulse 1.2s var(--ease-in-out) infinite alternate; }
+@keyframes pulse { from { opacity: 0.5; } to { opacity: 1; } }
+.reduce-motion .draft.thinking .lbl { animation: none; }
+
+/* context: what the page carries */
+.ctx { margin-top: var(--gap-wide); }
+.ctx-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+.ctx-name { font-size: var(--t-body); font-weight: var(--w-declare); color: var(--fg); }
+.ctx-note { flex: 1; font-size: var(--t-label); color: var(--fg-faint); }
+.ctx-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
+.ctx-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 96px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface-raised);
+  box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), var(--lift);
+  text-align: left;
+  transition: background var(--fast) var(--ease), transform var(--press) var(--ease);
+}
+@media (hover: hover) and (pointer: fine) { .ctx-card:hover { background: var(--plate); } }
+.ctx-card:focus-visible { background: var(--plate); }
+.ctx-card:active { transform: translateY(1px); }
+.ctx-card-head { display: flex; align-items: center; gap: 6px; color: var(--fg-muted); }
+.ctx-card-title { font-size: var(--t-label); font-weight: var(--w-mid); color: var(--fg); }
+.ctx-card-text {
+  font-size: var(--t-micro);
+  line-height: 1.45;
+  color: var(--fg-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ctx-img { aspect-ratio: 1; border-radius: 10px; overflow: hidden; }
+.ctx-img img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.ctx-img-wait { display: block; width: 100%; height: 100%; }
+.ctx-empty {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 96px;
+  border-radius: 10px;
+  color: var(--fg-faint);
+  font-size: var(--t-label);
+}
+
+/* the ask bar */
+.bar.ask .bar-acts .pill-sm { margin-right: 4px; }
+
 /* ─── A node ────────────────────────────────────────────────────────────────
    A card on the field: a head row with its dot and its name, a well for
    what it holds. Selected, it wears the ink ring — the one place on the
@@ -71,6 +182,8 @@ html, body, #root { height: 100%; }
   padding: 8px;
   cursor: default;
 }
+/* an ⌥-drag would drop into this one: it wears the tint */
+.node.into { background: var(--tint-2); }
 .node.sel { box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), 0 0 0 2px var(--bg), 0 0 0 4px var(--ink), var(--lift); }
 .node-head {
   position: relative;
@@ -276,6 +389,16 @@ html, body, #root { height: 100%; }
   gap: var(--gap-near);
   padding: 0 20px;
   z-index: 10;
+}
+/* in a writer the page scrolls under the head; a fade of the ground keeps
+   the lights and the trail legible — a fade, not a bar */
+.writing .head::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 -28px 0;
+  background: linear-gradient(var(--bg) 60%, transparent);
+  pointer-events: none;
+  z-index: -1;
 }
 /* where the platform draws the lights: three 12px discs, 20px apart */
 .lights-room { width: 52px; height: 12px; flex-shrink: 0; }

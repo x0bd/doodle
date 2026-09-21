@@ -10,7 +10,9 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::save_graph,
             commands::load_graph,
-            commands::graph_exists
+            commands::graph_exists,
+            commands::import_asset,
+            commands::read_asset
         ])
         .setup(|app| {
             // The boring things live on the platform's own menu bar. Every

@@ -1,3 +1,4 @@
+import { urlFor, assets } from "../state/assets";
 import { KINDS, NODE_ROWS } from "../graph/kinds";
 import { graph, updateData, rename, type GraphNode } from "../state/graph";
 import type { Rect } from "./camera";
@@ -9,6 +10,7 @@ export const WS_RECT: Rect = { x: 0, y: -300, w: 740, h: 240 };
  *  its own field. What it holds sits below. */
 export function Workspace({ id }: { id: string }) {
   const node = graph.use((g) => g.nodes[id]);
+  assets.use();
   if (!node) return null;
   const def = KINDS[node.kind];
   return (
@@ -51,7 +53,7 @@ function WsBody({ node }: { node: GraphNode }) {
       return (
         <div className="ws-char">
           <div className={`ws-ref well${node.asset ? "" : " diag"}`}>
-            {node.asset && <img className="node-img" src={node.asset} alt="" draggable={false} />}
+            {node.asset && <img className="node-img" src={urlFor(node.asset)} alt="" draggable={false} />}
           </div>
           <div className="ws-fields">
             <label className="ws-field">
@@ -87,7 +89,7 @@ function WsBody({ node }: { node: GraphNode }) {
     case "preview":
       return (
         <div className="ws-image well">
-          {node.asset ? <img className="node-img contain" src={node.asset} alt="" draggable={false} /> : <p className="ws-empty">Nothing yet. Run the graph.</p>}
+          {node.asset ? <img className="node-img contain" src={urlFor(node.asset)} alt="" draggable={false} /> : <p className="ws-empty">Nothing yet. Run the graph.</p>}
         </div>
       );
     default: {
