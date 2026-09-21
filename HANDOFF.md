@@ -33,6 +33,10 @@ Runs: a generator has a `Candidates` count (1–4); a job renders that many, eac
 
 The user's ChatGPT subscription answers through the Codex CLI the way T3 Code drives it: Doodle spawns the CLI, the CLI holds the login. `src-tauri/src/codex.rs` finds the binary (`DOODLE_CODEX`, Homebrew, `/Applications/ChatGPT.app/Contents/Resources/codex`, `~/.local/bin`), reads only `auth_mode` from `~/.codex/auth.json`, and runs `codex exec --ephemeral --skip-git-repo-check -s <sandbox> -C <scratch> -o <file> -` with the prompt on stdin: text in a read-only sandbox, images in a scratch folder under the app cache with the CLI's own `image_generation` tool (stable in 0.155), the newest PNG in the folder taken as the result. `providers/codex.ts` is the provider (`text.generate`, `image.generate`); the Model select's "ChatGPT (Codex)" and the Write select's "ChatGPT (Codex)" route to it; the writer's ask prefers it. Settings › Providers shows who is up. Every call carries Codex's preamble (~10–15k tokens) — scenes and pictures, not keystrokes. Claude would be API-key only (Anthropic's terms on claude.ai login); nothing of that exists yet. Streaming via `codex app-server` (JSON-RPC over stdio) is the next step there; `codex app-server generate-ts` emits the bindings.
 
+## Safety
+
+CSP is set (`tauri.conf.json`: self only; images from self/data/blob; connect to ipc, Ollama; a looser `devCsp` for Vite's HMR). `save_graph` keeps the previous `graph.json` in `backups/` at most once every ten minutes, newest ten. Runs persist beside the graph as `jobs.json` (`save_record`/`load_record`, a fixed name list) and come back on open — anything queued or running at close is marked cancelled, never resumed. On first save, outputs held as data URLs are written into `assets/` and the file holds references.
+
 ## The code
 
 ```
@@ -74,7 +78,6 @@ Rules kept: no `border:` anywhere (`grep -rn "border[a-z-]*:" src/ | grep -v bor
 - `Control mode: Random` reseeds; the mock always returns the bear.
 - Wires that cross levels (a child wired to something outside) still feed data but are never drawn.
 - The mock writer repeats the brief before its paragraph.
-- Outputs of an unsaved graph are data URLs; if that graph is then saved they land in graph.json rather than assets/ — move them on save.
 - No run history or candidates; no real adapter; no keychain; no assets folder use yet.
 - Ollama shows "Not running" both when it is down and when it is up without a writer model; say which.
 - Codex image runs cannot be cancelled mid-flight yet (the child is not killed); the job just ignores the result.

@@ -8,7 +8,7 @@ import { graph, type GraphNode } from "./graph";
 import { commit } from "./history";
 import { pick } from "../providers/registry";
 import { doc } from "./doc";
-import { writeAsset } from "../platform/fs";
+import { writeAsset, saveRecord, loadRecord, inTauri } from "../platform/fs";
 import { ui } from "./ui";
 import type { ImageRequest, Progress, TextRequest } from "../providers/types";
 
@@ -247,3 +247,46 @@ async function run(id: string) {
     controllers.delete(id);
   }
 }
+
+/* ── on disk ── */
+// Runs are kept beside the graph (jobs.json), written a moment after they
+// change. On open they come back; anything that was queued or running when
+// the app closed is marked cancelled — a mock or a CLI cannot be resumed —
+// so the record is always true.
+let writeTimer: number | undefined;
+jobs.subscribe(() => {
+  const dir = doc.get().path;
+  if (!dir || !inTauri) return;
+  clearTimeout(writeTimer);
+  writeTimer = window.setTimeout(() => {
+    const s = jobs.get();
+    const keep = s.order.slice(-100);
+    const file = { format: "doodle-jobs", version: 1, iterations: s.iterations, order: keep, jobs: Object.fromEntries(keep.map((id) => [id, s.jobs[id]])) };
+    saveRecord(dir, "jobs", JSON.stringify(file)).catch(() => undefined);
+  }, 800);
+});
+
+export async function restoreJobs(dir: string) {
+  if (!inTauri) return;
+  try {
+    const raw = await loadRecord(dir, "jobs");
+    if (!raw) {
+      jobs.set({ jobs: {}, order: [], iterations: 0 });
+      return;
+    }
+    const file = JSON.parse(raw) as { order: string[]; jobs: Record<string, Job>; iterations: number };
+    const restored: Record<string, Job> = {};
+    for (const id of file.order) {
+      const j = file.jobs[id];
+      if (!j) continue;
+      restored[id] = j.state === "queued" || j.state === "running" ? { ...j, state: "cancelled", endedAt: j.endedAt ?? Date.now(), note: "closed mid-run" } : j;
+      const n = Number(id.slice(1));
+      if (n > seq) seq = n;
+    }
+    jobs.set({ jobs: restored, order: file.order.filter((id) => restored[id]), iterations: file.iterations ?? 0 });
+  } catch {
+    jobs.set({ jobs: {}, order: [], iterations: 0 });
+  }
+}
+
+export const forgetJobs = () => jobs.set({ jobs: {}, order: [], iterations: 0 });

@@ -12,6 +12,8 @@ pub fn run() {
             commands::save_graph,
             commands::load_graph,
             commands::graph_exists,
+            commands::save_record,
+            commands::load_record,
             commands::import_asset,
             commands::read_asset,
             commands::write_asset,

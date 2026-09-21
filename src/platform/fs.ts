@@ -11,6 +11,9 @@ export const saveGraph = (dir: string, json: string) => invoke<void>("save_graph
 export const loadGraph = (dir: string) => invoke<string>("load_graph", { dir });
 export const graphExists = (dir: string) => invoke<boolean>("graph_exists", { dir });
 
+export const saveRecord = (dir: string, name: "jobs", json: string) => invoke<void>("save_record", { dir, name, json });
+export const loadRecord = (dir: string, name: "jobs") => invoke<string | null>("load_record", { dir, name });
+
 export interface ImportedAsset {
   rel: string;
   name: string;

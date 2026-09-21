@@ -8,7 +8,8 @@ import { graph, type GraphState } from "./graph";
 import { camera, type Camera } from "../canvas/camera";
 import { history, reset as resetHistory } from "./history";
 import { nav, resetNav } from "./nav";
-import { inTauri, loadGraph, pickOpenDir, pickSaveDir, saveGraph, graphExists } from "../platform/fs";
+import { restoreJobs, forgetJobs } from "./jobs";
+import { inTauri, loadGraph, pickOpenDir, pickSaveDir, saveGraph, graphExists, writeAsset } from "../platform/fs";
 import { templateById, type TemplateId } from "../graph/templates";
 
 export type SaveState = "idle" | "saving" | "saved" | "failed";
@@ -57,9 +58,38 @@ const nameOf = (path: string) => path.split("/").pop()!.replace(/\.doodle$/, "")
 /* ── writing ── */
 let timer: number | undefined;
 
+/** Images still held as data URLs — outputs made before the graph had a
+ *  home — go into assets/ so the file holds references, not pictures. */
+async function materialize(path: string) {
+  const g = graph.get();
+  const moves = new Map<string, string>();
+  const refs = new Set<string>();
+  for (const n of Object.values(g.nodes)) {
+    for (const r of [n.asset, ...(n.outputs ?? []), ...(n.attachments ?? [])]) if (r?.startsWith("data:")) refs.add(r);
+  }
+  for (const r of refs) {
+    try {
+      moves.set(r, (await writeAsset(path, r)).rel);
+    } catch {
+      /* it stays a data URL this time */
+    }
+  }
+  if (!moves.size) return;
+  const swap = (r: string | undefined) => (r && moves.get(r)) || r;
+  graph.set((x) => {
+    const nodes = { ...x.nodes };
+    for (const id of Object.keys(nodes)) {
+      const n = nodes[id];
+      nodes[id] = { ...n, asset: swap(n.asset), outputs: n.outputs?.map((r) => swap(r)!), attachments: n.attachments?.map((r) => swap(r)!) };
+    }
+    return { ...x, nodes };
+  });
+}
+
 async function write(path: string) {
   doc.set((d) => ({ ...d, save: "saving" }));
   try {
+    await materialize(path);
     await saveGraph(path, serialize());
     doc.set((d) => ({ ...d, dirty: false, save: "saved", error: undefined }));
   } catch (e) {
@@ -125,6 +155,7 @@ export async function openFrom(path: string): Promise<boolean> {
     const file = JSON.parse(raw) as FileGraph;
     if (file.format !== "doodle-graph") throw new Error("Not a Doodle graph");
     load(file, path);
+    await restoreJobs(path);
     try {
       localStorage.setItem(LAST, path);
     } catch {
@@ -156,6 +187,7 @@ export function newGraph(template: TemplateId = "images") {
   });
   resetHistory();
   resetNav();
+  forgetJobs();
   doc.set({ path: null, name: `Untitled ${t.name.toLowerCase()}`, dirty: false, save: "idle" });
 }
 
