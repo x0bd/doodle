@@ -11,6 +11,7 @@ import { listenToMenu } from "./platform/menu";
 import { restoreLast } from "./state/doc";
 import { NewGraph } from "./shell/NewGraph";
 import { Palette } from "./shell/Palette";
+import { Shortcuts } from "./shell/Shortcuts";
 import { onFileDrop } from "./platform/fs";
 import { attachFiles, attachTo } from "./state/assets";
 import { nav } from "./state/nav";
@@ -70,6 +71,7 @@ export function App() {
       <Settings />
       <NewGraph />
       <Palette />
+      <Shortcuts />
     </div>
   );
 }

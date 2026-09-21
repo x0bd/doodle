@@ -330,6 +330,8 @@ html, body, #root { height: 100%; }
 }
 .node.sel .node-dot { background: var(--fg); }
 .node-name {
+  flex: 1;
+  min-width: 0;
   font-size: var(--t-label);
   font-weight: var(--w-mid);
   color: var(--fg);
@@ -468,6 +470,23 @@ html, body, #root { height: 100%; }
 .node-page { padding: 12px 14px; overflow: auto; }
 .node-page-text { font-size: var(--t-label); line-height: 1.55; color: var(--fg); white-space: pre-wrap; }
 .node-page-empty { font-size: var(--t-label); color: var(--fg-faint); }
+
+/* the open key on a card: there under the pointer, gone otherwise */
+.node-open { width: 22px; height: 22px; margin-left: 2px; opacity: 0; transition: opacity var(--fast) var(--ease), background var(--fast) var(--ease), color var(--fast) var(--ease); }
+.node:hover .node-open, .node-open:focus-visible { opacity: 1; }
+.node-inside + .node-open, .node-state + .node-open, .node-st + .node-open { margin-left: 2px; }
+.lod-map .node-open { display: none; }
+
+/* the right-click menu */
+.cmenu {
+  position: absolute;
+  width: 228px;
+  padding: 6px;
+  border-radius: var(--r-card);
+  box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), 0 0 0 1px var(--rim-edge), var(--lift-2);
+  z-index: 20;
+  animation: in var(--fast) var(--ease) both;
+}
 
 /* the offer: a wire let go on the field */
 .offer {
@@ -882,6 +901,14 @@ html, body, #root { height: 100%; }
 .pal-list { flex: 1; min-height: 0; overflow-y: auto; padding: 0 8px 8px; }
 .pal-list .list-row { min-height: 34px; }
 .hist-row.failed .list-word { color: var(--fg-muted); }
+
+/* the shortcuts sheet: four columns of key and meaning */
+.sheet.keys { flex-direction: column; width: min(760px, 100%); height: auto; }
+.keys-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 28px; padding: 6px 20px 22px; }
+.keys-list { display: flex; flex-direction: column; gap: 7px; }
+.keys-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: baseline; }
+.keys-row dt { font-size: var(--t-micro); color: var(--fg-muted); }
+.keys-row dd { font-size: var(--t-label); color: var(--fg); }
 
 /* about: the mark, the name, the note */
 .about { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 14px 4px 0; }

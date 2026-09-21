@@ -4,7 +4,7 @@
  * the platform already did the work.
  */
 import { listen } from "@tauri-apps/api/event";
-import { openChooser, openPalette, openSettings, toggleInspector, toggleNavigator, togglePanes, toggleTheme } from "../state/ui";
+import { openChooser, openPalette, openSettings, openShortcuts, toggleInspector, toggleNavigator, togglePanes, toggleTheme } from "../state/ui";
 import { fitAll, zoomActual, zoomIn, zoomOut } from "../canvas/view";
 import { openDialog, save, saveAs, duplicate, reveal } from "../state/doc";
 import { redo, undo } from "../state/history";
@@ -26,6 +26,7 @@ export const actions: Record<string, () => void> = {
   "file.duplicate": () => void duplicate(),
   "file.reveal": () => void reveal(),
   "view.search": openPalette,
+  "help.shortcuts": openShortcuts,
   // inside a field the platform's own text undo applies; on the field, the journal's
   "edit.undo": () => (typing() ? document.execCommand("undo") : undo()),
   "edit.redo": () => (typing() ? document.execCommand("redo") : redo()),
@@ -68,6 +69,7 @@ function devKeys() {
       : k === "s" ? "file.save"
       : k === "n" ? "file.new"
       : k === "k" ? "view.search"
+      : k === "/" ? "help.shortcuts"
       : k === "=" || k === "+" ? "view.zoom-in"
       : k === "-" ? "view.zoom-out"
       : k === "0" ? "view.zoom-fit"

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Icon, CloseIcon, CheckIcon, GeneralIcon, AppearanceIcon, AboutIcon, ProvidersIcon } from "../icons";
-import { ui, closeSettings, setTheme, setMotion, type Theme } from "../state/ui";
+import { ui, closeSettings, setTheme, setMotion, openShortcuts, type Theme } from "../state/ui";
 import { providers, statusOf } from "../providers/registry";
 import { codexStatus, type CodexStatus } from "../providers/codex";
 import type { ProviderStatus } from "../providers/types";
@@ -78,6 +78,19 @@ export function Settings() {
 function General() {
   const motion = ui.use((s) => s.motion);
   return (
+    <>
+    <section className="grp">
+      <p className="group-head">Keyboard</p>
+      <div className="group">
+        <div className="group-row">
+          <div className="group-what">
+            <p className="group-name">Shortcuts</p>
+            <p className="group-note">Every key Doodle answers to, on one sheet.</p>
+          </div>
+          <button className="pill" onClick={() => (closeSettings(), openShortcuts())}>Show</button>
+        </div>
+      </div>
+    </section>
     <section className="grp">
       <p className="group-head">Motion</p>
       <div className="group">
@@ -93,6 +106,7 @@ function General() {
         </div>
       </div>
     </section>
+    </>
   );
 }
 

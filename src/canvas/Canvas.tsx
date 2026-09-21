@@ -7,6 +7,7 @@ import {
 import { KINDS, type NodeKind } from "../graph/kinds";
 import { Icon, CloseIcon } from "../icons";
 import { GLYPH } from "./Doc";
+import { ContextMenu, type Menu } from "./ContextMenu";
 import { begin as journalBegin, end as journalEnd, commit, type Snapshot } from "../state/history";
 import { Node, type NodeHandlers } from "./Node";
 import { nav, enter, rise, clearArrival } from "../state/nav";
@@ -72,6 +73,8 @@ export function Canvas() {
   const drag = useRef<Drag | null>(null);
   const [marquee, setMarquee] = useState<Rect | null>(null);
   const [live, setLive] = useState<{ a: Point; b: Point } | null>(null);
+  /** the right-click menu, where it was asked for */
+  const [menu, setMenu] = useState<Menu | null>(null);
   /** a wire let go on the field: what could take it */
   const [offer, setOffer] = useState<{ from: PortRef; at: Point; world: Point } | null>(null);
   const liveType = live && drag.current?.mode === "wire" ? portOf(drag.current.from, "out")?.type : undefined;
@@ -200,6 +203,9 @@ export function Canvas() {
   };
 
   const handlers: NodeHandlers = {
+    onOpen(node) {
+      enter(node.id, () => requestAnimationFrame(fitAll), { x: window.innerWidth / 2, y: window.innerHeight / 2 });
+    },
     onPointerDown(e, node) {
       if (space || e.button === 1) return; // the field pans
       if (e.button !== 0) return;
@@ -275,6 +281,14 @@ export function Canvas() {
     }
   };
 
+  const onContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+    const id = el?.closest<HTMLElement>("[data-node]")?.dataset.node;
+    if (id && !graph.get().selection.includes(id)) select([id]);
+    setMenu({ at: { x: e.clientX, y: e.clientY }, world: toWorld(camera.get(), { x: e.clientX, y: e.clientY }), node: id });
+  };
+
   // a double-click enters the node under it — pointer capture retargets the
   // click to the field, so the node is found by hit-test, not by bubbling
   const onDoubleClick = (e: React.MouseEvent) => {
@@ -285,6 +299,9 @@ export function Canvas() {
       const r = el.closest<HTMLElement>("[data-node]")!.getBoundingClientRect();
       enter(id, () => requestAnimationFrame(fitAll), { x: r.left + r.width / 2, y: r.top + r.height / 2 });
       requestAnimationFrame(() => (document.activeElement as HTMLElement | null)?.blur());
+    } else if (el.closest(".stage") && !el.closest(".wire-hit")) {
+      // empty field: what to put here
+      setMenu({ at: { x: e.clientX, y: e.clientY }, world: toWorld(camera.get(), { x: e.clientX, y: e.clientY }) });
     }
   };
 
@@ -305,6 +322,12 @@ export function Canvas() {
       }
       setLive(null);
     } else if (d.mode === "move") {
+      // land on the 8px grid — the world's own — so cards line up without trying
+      const g = graph.get();
+      for (const id of d.ids) {
+        const n = g.nodes[id];
+        if (n) moveNodes([id], Math.round(n.x / 8) * 8 - n.x, Math.round(n.y / 8) * 8 - n.y);
+      }
       const target = e.altKey ? nodeAt(e.clientX, e.clientY, d.ids) : null;
       if (target) {
         // undo the drag as a drag; the move-into is its own entry
@@ -347,6 +370,7 @@ export function Canvas() {
       onAnimationEnd={(e) => e.target === e.currentTarget && clearArrival()}
       onPointerDown={onFieldDown}
       onDoubleClick={onDoubleClick}
+      onContextMenu={onContextMenu}
       onPointerMove={onMove}
       onPointerUp={onUp}
       onPointerCancel={onUp}
@@ -360,6 +384,7 @@ export function Canvas() {
       {marquee && (
         <div className="marquee" style={{ left: marquee.x, top: marquee.y, width: marquee.w, height: marquee.h }} />
       )}
+      {menu && <ContextMenu menu={menu} onClose={() => setMenu(null)} />}
       {offer && (
         <Offer
           offer={offer}

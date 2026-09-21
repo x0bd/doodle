@@ -1,5 +1,5 @@
 import type { PointerEvent as ReactPointerEvent } from "react";
-import { Icon, ChevronDownIcon } from "../icons";
+import { Icon, ChevronDownIcon, ChevronRightIcon } from "../icons";
 import { urlFor, assets } from "../state/assets";
 import { KINDS, NODE_ROWS } from "../graph/kinds";
 import { graph, inputs, outputs, updateData, childCount, takeOutput, type GraphNode, type PortRef } from "../state/graph";
@@ -7,6 +7,7 @@ import { jobs, jobFor } from "../state/jobs";
 
 export interface NodeHandlers {
   onPointerDown: (e: ReactPointerEvent, node: GraphNode) => void;
+  onOpen: (node: GraphNode) => void;
   onPortDown: (e: ReactPointerEvent, ref: PortRef, dir: "in" | "out") => void;
 }
 
@@ -43,6 +44,9 @@ export function Node({ node, selected, into, dim, handlers }: { node: GraphNode;
         <span className="node-name">{node.title}</span>
         {node.status !== "canon" && <span className="node-st">{node.status === "exploration" ? "explore" : node.status}</span>}
         {inside > 0 && <span className="node-inside badge" title={`${inside} inside — double-click to enter`}>{inside}</span>}
+        <button className="node-open pill-icon sm" aria-label="Open" title="Open — double-click or ⏎" onPointerDown={(e) => e.stopPropagation()} onClick={() => handlers.onOpen(node)}>
+          <Icon icon={ChevronRightIcon} size={12} strokeWidth={2.2} />
+        </button>
         {job && job.state !== "completed" && (
           <span className="node-state px">
             {job.state === "running" ? job.note : job.state === "queued" ? "queued" : job.state === "failed" ? "failed" : "stopped"}
