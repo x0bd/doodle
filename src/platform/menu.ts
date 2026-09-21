@@ -9,6 +9,7 @@ import { fitAll, zoomActual, zoomIn, zoomOut } from "../canvas/view";
 import { newGraph, openDialog, save, saveAs } from "../state/doc";
 import { redo, undo } from "../state/history";
 import { deleteSelected, duplicateSelected, selectAll } from "../state/graph";
+import { clearQueue, enqueue } from "../state/jobs";
 import { inTauri } from "./fs";
 
 const typing = () => {
@@ -28,6 +29,8 @@ export const actions: Record<string, () => void> = {
   "edit.duplicate": () => !typing() && duplicateSelected(),
   "edit.delete": () => !typing() && deleteSelected(),
   "edit.select-all": () => (typing() ? document.execCommand("selectAll") : selectAll()),
+  "graph.run": () => enqueue(),
+  "graph.stop": clearQueue,
   "view.zoom-in": zoomIn,
   "view.zoom-out": zoomOut,
   "view.zoom-fit": fitAll,
@@ -65,6 +68,8 @@ function devKeys() {
       : k === "0" ? "view.zoom-fit"
       : k === "1" ? "view.zoom-100"
       : k === "," ? "app.settings"
+      : k === "enter" ? "graph.run"
+      : k === "." ? "graph.stop"
       : null;
     if (!id) return;
     if (typing() && (id === "edit.undo" || id === "edit.redo" || id === "edit.select-all")) return;

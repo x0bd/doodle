@@ -2,6 +2,7 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import { Icon, ChevronDownIcon } from "../icons";
 import { KINDS, NODE_ROWS } from "../graph/kinds";
 import { graph, inputs, outputs, updateData, type GraphNode, type PortRef } from "../state/graph";
+import { jobs, jobFor } from "../state/jobs";
 
 export interface NodeHandlers {
   onPointerDown: (e: ReactPointerEvent, node: GraphNode) => void;
@@ -14,6 +15,8 @@ export function Node({ node, selected, handlers }: { node: GraphNode; selected: 
   const outs = outputs(node);
   const rows = Math.max(ins.length, outs.length);
   const edges = graph.use((g) => g.edges);
+  const job = jobs.use((s) => (node.kind === "generate" ? jobFor(s, node.id) : undefined));
+  const running = job?.state === "running";
   const connected = (ref: PortRef) =>
     Object.values(edges).some(
       (e) => (e.from.node === ref.node && e.from.port === ref.port) || (e.to.node === ref.node && e.to.port === ref.port),
@@ -21,7 +24,7 @@ export function Node({ node, selected, handlers }: { node: GraphNode; selected: 
 
   return (
     <div
-      className={`node card k-${node.kind}${selected ? " sel" : ""}`}
+      className={`node card k-${node.kind}${selected ? " sel" : ""}${running ? " running" : ""}`}
       style={{ left: node.x, top: node.y, width: node.w, height: node.h }}
       onPointerDown={(e) => handlers.onPointerDown(e, node)}
       role="group"
@@ -30,6 +33,16 @@ export function Node({ node, selected, handlers }: { node: GraphNode; selected: 
       <div className="node-head">
         <span className="node-dot" />
         <span className="node-name">{node.title}</span>
+        {job && job.state !== "completed" && (
+          <span className="node-state px">
+            {job.state === "running" ? job.note : job.state === "queued" ? "queued" : job.state === "failed" ? "failed" : "stopped"}
+          </span>
+        )}
+        {running && (
+          <div className="node-progress" aria-hidden>
+            <div className="node-progress-bar" style={{ width: `${job.progress * 100}%` }} />
+          </div>
+        )}
       </div>
 
       {rows > 0 && (

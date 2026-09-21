@@ -1,45 +1,71 @@
-import {
-  Icon,
-  HistoryIcon,
-  SaveIcon,
-  ModelIcon,
-  ImageIcon,
-  GenerateIcon,
-  SettingsIcon,
-} from "../icons";
+import { Icon, HistoryIcon, SaveIcon, ModelIcon, ImageIcon, GenerateIcon, SettingsIcon } from "../icons";
 import { save } from "../state/doc";
+import { graph, updateData } from "../state/graph";
+import { jobs, enqueue, generators, current, latest } from "../state/jobs";
+import { openSettings } from "../state/ui";
 
-/** The prompt bar at the foot of the field. */
+/** The prompt bar at the foot of the field: the positive prompt of the
+ *  first generator, and the run. */
 export function Bar() {
+  const g = graph.use();
+  const j = jobs.use();
+  const gen = generators()[0];
+  const edge = gen && Object.values(g.edges).find((e) => e.to.node === gen.id && e.to.port === "positive");
+  const promptNode = edge ? g.nodes[edge.from.node] : undefined;
+  const running = current(j);
+  const last = latest(j);
+  const note = running
+    ? `Rendering ${running.note ?? ""}`
+    : last?.state === "completed" && last.startedAt && last.endedAt
+      ? `Done in ${((last.endedAt - last.startedAt) / 1000).toFixed(1)}s`
+      : last?.state === "failed"
+        ? "Failed"
+        : "";
+
   return (
     <div className="bar card">
       <div className="bar-ask well">
         <span className="lbl">Prompt</span>
-        <p>
-          Minimalist illustration of a black bear with a pink snout, soft gradients, and smooth
-          shapes, against a clear blue sky
-        </p>
+        {promptNode ? (
+          <textarea
+            className="bar-text"
+            rows={2}
+            value={String(promptNode.data.text ?? "")}
+            placeholder="What you want to get"
+            spellCheck={false}
+            onChange={(e) => updateData(promptNode.id, { text: e.target.value })}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                enqueue();
+              }
+            }}
+          />
+        ) : (
+          <p className="bar-none">Wire a prompt into a generator's positive input.</p>
+        )}
       </div>
       <div className="bar-acts">
-        <button className="pill-icon on" aria-label="History">
+        <button className="pill-icon" aria-label="History" title="Runs">
           <Icon icon={HistoryIcon} size={15} strokeWidth={2} />
         </button>
         <button className="pill-icon" aria-label="Save" title="Save — ⌘S" onClick={() => void save()}>
           <Icon icon={SaveIcon} size={15} strokeWidth={2} />
         </button>
-        <button className="pill-icon" aria-label="Model">
+        <button className="pill-icon" aria-label="Model" title="Model">
           <Icon icon={ModelIcon} size={15} strokeWidth={2} />
         </button>
-        <button className="pill-icon" aria-label="Image">
+        <button className="pill-icon" aria-label="Image" title="Image">
           <Icon icon={ImageIcon} size={15} strokeWidth={2} />
         </button>
         <div className="gap" />
-        <button className="pill-icon" aria-label="Generate">
+        <button className="pill-icon" aria-label="Generate" title="Generate — ⌘↩" onClick={() => enqueue()}>
           <Icon icon={GenerateIcon} size={15} strokeWidth={2} />
         </button>
-        <button className="pill-icon" aria-label="Settings">
+        <button className="pill-icon" aria-label="Settings" onClick={openSettings}>
           <Icon icon={SettingsIcon} size={15} strokeWidth={2} />
         </button>
+        {note && <span className="bar-note px">{note}</span>}
       </div>
     </div>
   );

@@ -1,6 +1,8 @@
 import { Icon, SettingsIcon, PlusIcon, MinusIcon, FitIcon, EyeIcon, LinkIcon } from "../icons";
 import { openSettings } from "../state/ui";
 import { graph } from "../state/graph";
+import { jobs, current, latest } from "../state/jobs";
+import { useEffect, useState } from "react";
 import { camera, fitAll, zoomIn, zoomOut } from "../canvas/view";
 
 /** The foot of the field: settings and the readouts on the left, the view
@@ -8,6 +10,22 @@ import { camera, fitAll, zoomIn, zoomOut } from "../canvas/view";
 export function Foot() {
   const zoom = camera.use((c) => c.zoom);
   const n = graph.use((g) => g.order.length);
+  const j = jobs.use();
+  const running = current(j);
+  const last = latest(j);
+  // the clock ticks while a job runs, then holds at how long it took
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    if (!running) return;
+    setNow(Date.now());
+    const t = setInterval(() => setNow(Date.now()), 100);
+    return () => clearInterval(t);
+  }, [running]);
+  const elapsed = running
+    ? Math.max(0, now - (running.startedAt ?? now)) / 1000
+    : last?.startedAt && last.endedAt
+      ? (last.endedAt - last.startedAt) / 1000
+      : 0;
   return (
     <>
       <div className="foot-l">
@@ -15,8 +33,8 @@ export function Foot() {
           <Icon icon={SettingsIcon} size={15} strokeWidth={2} />
         </button>
         <div className="readout" aria-hidden>
-          <span><span className="k">T</span>0.00s</span>
-          <span><span className="k">I</span>0</span>
+          <span><span className="k">T</span>{elapsed.toFixed(2)}s</span>
+          <span><span className="k">I</span>{j.iterations}</span>
           <span><span className="k">N</span>{n}</span>
         </div>
       </div>

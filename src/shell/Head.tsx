@@ -11,12 +11,16 @@ import {
 } from "../icons";
 import { ui, togglePanes } from "../state/ui";
 import { doc } from "../state/doc";
+import { jobs, enqueue, clearQueue, pending, current } from "../state/jobs";
 
 /** The title line. Everything centres on y 30, where the lights are. The
  *  boring menus are on the platform's bar; only the work is here. */
 export function Head() {
   const panes = ui.use((s) => s.navigator || s.inspector);
   const d = doc.use();
+  const j = jobs.use();
+  const waiting = pending(j).length;
+  const running = current(j);
   const status = d.save === "saving" ? "Saving…" : d.save === "failed" ? "Save failed" : d.path ? (d.dirty ? "Edited" : "Saved") : d.dirty ? "Unsaved" : "";
   return (
     <header className="head" data-tauri-drag-region>
@@ -46,13 +50,13 @@ export function Head() {
         <button className="pill-icon" aria-label="More">
           <Icon icon={MoreIcon} size={15} strokeWidth={2} />
         </button>
-        <button className="pill pill-ink queue">
+        <button className="pill pill-ink queue" onClick={() => enqueue()} title="Run the graph — ⌘↩">
           <Icon icon={RunIcon} size={13} strokeWidth={2.2} />
           Queue
-          <span className="n">1</span>
+          <span className="n">{running ? `${Math.round(running.progress * 100)}%` : waiting || ""}</span>
           <Icon icon={ChevronDownIcon} size={12} strokeWidth={2.2} />
         </button>
-        <button className="pill-icon" aria-label="Clear queue">
+        <button className="pill-icon" aria-label="Clear queue" title="Stop and clear the queue" onClick={clearQueue} disabled={!waiting}>
           <Icon icon={CloseIcon} size={14} strokeWidth={2} />
         </button>
         <button className="pill-icon" aria-label="Duplicate">

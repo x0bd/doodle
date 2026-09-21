@@ -53,6 +53,11 @@ pub fn build(app: &App) -> tauri::Result<Menu<Wry>> {
         .item(&item("edit.select-all", "Select All", Some("CmdOrCtrl+A"))?)
         .build()?;
 
+    let graph = SubmenuBuilder::new(app, "Graph")
+        .item(&item("graph.run", "Run", Some("CmdOrCtrl+Enter"))?)
+        .item(&item("graph.stop", "Stop and Clear Queue", Some("CmdOrCtrl+."))?)
+        .build()?;
+
     let view = SubmenuBuilder::new(app, "View")
         .item(&item("view.zoom-in", "Zoom In", Some("CmdOrCtrl+Equal"))?)
         .item(&item("view.zoom-out", "Zoom Out", Some("CmdOrCtrl+Minus"))?)
@@ -81,6 +86,6 @@ pub fn build(app: &App) -> tauri::Result<Menu<Wry>> {
         .build()?;
 
     MenuBuilder::new(app)
-        .items(&[&doodle, &file, &edit, &view, &window, &help])
+        .items(&[&doodle, &file, &edit, &graph, &view, &window, &help])
         .build()
 }
