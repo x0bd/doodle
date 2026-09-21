@@ -3,7 +3,8 @@
  * centre of the field, frame everything, go to 1:1.
  */
 import { camera, fitRect, zoomAt, zoomStep, type Point, type Rect } from "./camera";
-import { bounds, graph } from "../state/graph";
+import { bounds, graph, childrenOf } from "../state/graph";
+import { nav } from "../state/nav";
 
 /** the field is the whole window; the chrome floats on it */
 export const screenRect = (): Rect => ({ x: 0, y: 0, w: window.innerWidth, h: window.innerHeight });
@@ -15,7 +16,7 @@ export const zoomActual = () => zoomAt(screenCentre(), 1);
 
 export function fitAll() {
   const g = graph.get();
-  const ids = g.selection.length ? g.selection : g.order;
+  const ids = g.selection.length ? g.selection : childrenOf(g, nav.get().focus);
   const b = bounds(ids.map((id) => g.nodes[id]).filter(Boolean));
   if (b) fitRect(b, screenRect(), 120);
 }

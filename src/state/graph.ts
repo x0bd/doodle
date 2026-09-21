@@ -18,6 +18,8 @@ export interface GraphNode extends Rect {
   asset?: string;
   /** creation order, for lists that should not follow the stack */
   seq: number;
+  /** the node this one lives inside; null at the root */
+  parent: string | null;
 }
 
 export interface PortRef {
@@ -46,7 +48,7 @@ export const nextSeq = () => ++seq;
 
 export function makeNode(kind: NodeKind, x: number, y: number, extra: Partial<GraphNode> = {}): GraphNode {
   const def = KINDS[kind];
-  return { id: newId(), kind, title: def.title, x, y, ...def.size, data: { ...def.data }, seq: nextSeq(), ...extra };
+  return { id: newId(), kind, title: def.title, x, y, ...def.size, data: { ...def.data }, seq: nextSeq(), parent: null, ...extra };
 }
 
 export const graph = createStore<GraphState>({
@@ -68,6 +70,22 @@ export const isConnected = (ref: PortRef) =>
   Object.values(graph.get().edges).some(
     (e) => (e.from.node === ref.node && e.from.port === ref.port) || (e.to.node === ref.node && e.to.port === ref.port),
   );
+
+/* ── where ── */
+/** the nodes that live in a workspace, in stack order */
+export const childrenOf = (g: GraphState, parent: string | null) => g.order.filter((id) => g.nodes[id].parent === parent);
+export const childCount = (g: GraphState, id: string) => g.order.filter((n) => g.nodes[n].parent === id).length;
+/** a node and everything inside it, however deep */
+export function descendants(g: GraphState, ids: Iterable<string>): Set<string> {
+  const out = new Set<string>();
+  const walk = (id: string) => {
+    if (out.has(id)) return;
+    out.add(id);
+    for (const c of g.order) if (g.nodes[c].parent === id) walk(c);
+  };
+  for (const id of ids) walk(id);
+  return out;
+}
 
 /* ── selection ── */
 export const select = (ids: string[]) => graph.set((g) => ({ ...g, selection: ids, edgeSelection: [] }));
@@ -154,7 +172,7 @@ export function deleteSelected() {
 function deleteSelectedNow() {
   graph.set((g) => {
     if (!g.selection.length && !g.edgeSelection.length) return g;
-    const gone = new Set(g.selection);
+    const gone = descendants(g, g.selection);
     const nodes = { ...g.nodes };
     for (const id of gone) delete nodes[id];
     const edges: Record<string, Edge> = {};

@@ -7,6 +7,7 @@ import { createStore } from "./store";
 import { graph, type GraphState } from "./graph";
 import { camera, type Camera } from "../canvas/camera";
 import { history, reset as resetHistory } from "./history";
+import { nav, resetNav } from "./nav";
 import { inTauri, loadGraph, pickOpenDir, pickSaveDir, saveGraph, graphExists } from "../platform/fs";
 import { templateById, type TemplateId } from "../graph/templates";
 
@@ -32,6 +33,8 @@ interface FileGraph {
   order: GraphState["order"];
   edges: GraphState["edges"];
   camera: Camera;
+  /** each workspace's last view, by node id; "root" for the top */
+  views?: Record<string, Camera>;
 }
 
 function serialize(): string {
@@ -44,6 +47,7 @@ function serialize(): string {
     order: g.order,
     edges: g.edges,
     camera: camera.get(),
+    views: { ...nav.get().views, [nav.get().focus ?? "root"]: camera.get() },
   };
   return JSON.stringify(file, null, 2);
 }
@@ -105,10 +109,12 @@ history.subscribe(() => {
 function load(file: FileGraph, path: string | null) {
   const nodes = { ...file.nodes };
   file.order.forEach((id, i) => {
-    if (nodes[id] && nodes[id].seq == null) nodes[id] = { ...nodes[id], seq: i + 1 };
+    const n = nodes[id];
+    if (n && (n.seq == null || n.parent === undefined)) nodes[id] = { ...n, seq: n.seq ?? i + 1, parent: n.parent ?? null };
   });
   graph.set({ nodes, order: file.order, edges: file.edges, selection: [], edgeSelection: [] });
-  if (file.camera) camera.set(file.camera);
+  resetNav(file.views ?? {});
+  if (!file.views?.root && file.camera) camera.set(file.camera);
   resetHistory();
   doc.set({ path, name: file.name ?? (path ? nameOf(path) : "Untitled"), dirty: false, save: path ? "saved" : "idle" });
 }
@@ -149,6 +155,7 @@ export function newGraph(template: TemplateId = "images") {
     edgeSelection: [],
   });
   resetHistory();
+  resetNav();
   doc.set({ path: null, name: `Untitled ${t.name.toLowerCase()}`, dirty: false, save: "idle" });
 }
 

@@ -55,6 +55,13 @@ export const TEMPLATES: Template[] = [
         makeNode("model", 360, 290, { id: "m1" }),
         makeNode("generate", 680, 80, { id: "g1", title: "Storyboard" }),
         makeNode("preview", 1020, 60, { id: "v1", title: "Frame" }),
+        // inside R-404
+        makeNode("note", 60, 60, { id: "c1n1", title: "Voice", parent: "c1", data: { text: "Never speaks first. Answers in the fewest words that are still kind." } }),
+        makeNode("note", 320, 60, { id: "c1n2", title: "History", parent: "c1", data: { text: "Built for the orbital greenhouse. Stayed after everyone left. Has not been told why." } }),
+        // inside Scene 08
+        makeNode("note", 60, 60, { id: "p1b1", title: "Beat 1", parent: "p1", data: { text: "The door. It has not opened in years and it opens for R-404." } }),
+        makeNode("note", 320, 60, { id: "p1b2", title: "Beat 2", parent: "p1", data: { text: "The plant. One leaf. R-404 reaches, stops, reaches again." } }),
+        makeNode("note", 580, 60, { id: "p1b3", title: "Beat 3", parent: "p1", data: { text: "It waters it with what is left in the reserve. That was for something else." } }),
       ];
       const edges = [
         wire(["m1", "model"], ["g1", "model"]),

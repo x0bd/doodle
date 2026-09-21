@@ -4,7 +4,7 @@
  * the inspector edits. The canvas and the inspector both read from here;
  * neither knows a kind by name.
  */
-export type NodeKind = "model" | "prompt" | "generate" | "preview" | "character" | "style" | "write" | "page";
+export type NodeKind = "model" | "prompt" | "generate" | "preview" | "character" | "style" | "write" | "page" | "note";
 export type PortType = "model" | "text" | "image";
 
 export interface Port {
@@ -162,6 +162,16 @@ export const KINDS: Record<NodeKind, KindDef> = {
         ],
       },
     ],
+  },
+  note: {
+    kind: "note",
+    title: "Note",
+    note: "A thought, kept where it belongs",
+    inputs: [],
+    outputs: [],
+    size: { w: 220, h: 140 },
+    data: { text: "" },
+    groups: [{ name: "Note", fields: [{ key: "text", label: "Text", type: "text", rows: 6 }] }],
   },
   page: {
     kind: "page",

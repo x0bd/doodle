@@ -1,6 +1,7 @@
 import { Icon, SettingsIcon, PlusIcon, MinusIcon, FitIcon, EyeIcon, LinkIcon } from "../icons";
 import { openSettings } from "../state/ui";
-import { graph } from "../state/graph";
+import { graph, childrenOf } from "../state/graph";
+import { nav } from "../state/nav";
 import { jobs, current, latest } from "../state/jobs";
 import { useEffect, useState } from "react";
 import { camera, fitAll, zoomIn, zoomOut } from "../canvas/view";
@@ -9,7 +10,8 @@ import { camera, fitAll, zoomIn, zoomOut } from "../canvas/view";
  *  cluster on the right. */
 export function Foot() {
   const zoom = camera.use((c) => c.zoom);
-  const n = graph.use((g) => g.order.length);
+  const focus = nav.use((x) => x.focus);
+  const n = graph.use((g) => childrenOf(g, focus).length);
   const j = jobs.use();
   const running = current(j);
   const last = latest(j);

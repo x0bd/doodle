@@ -6,6 +6,9 @@ import {
 } from "../state/graph";
 import { begin as journalBegin, end as journalEnd, commit, type Snapshot } from "../state/history";
 import { Node, type NodeHandlers } from "./Node";
+import { nav, enter, rise } from "../state/nav";
+import { childrenOf } from "../state/graph";
+import { fitAll } from "./view";
 import { Wires } from "./Wires";
 import { portPos } from "./layout";
 
@@ -32,6 +35,8 @@ function portAt(x: number, y: number): { ref: PortRef; dir: "in" | "out" } | nul
 export function Canvas() {
   const cam = camera.use();
   const g = graph.use();
+  const focus = nav.use((n) => n.focus);
+  const here = childrenOf(g, focus);
   const ref = useRef<HTMLDivElement>(null);
   const drag = useRef<Drag | null>(null);
   const [marquee, setMarquee] = useState<Rect | null>(null);
@@ -63,7 +68,16 @@ export function Canvas() {
         e.preventDefault();
         setSpace(true);
       } else if (e.key === "Escape") {
-        clearSelection();
+        // with a selection, let go; with none, rise out of this workspace
+        const s = graph.get();
+        if (s.selection.length || s.edgeSelection.length) clearSelection();
+        else rise(() => requestAnimationFrame(fitAll));
+      } else if (e.key === "Enter") {
+        const sel = graph.get().selection;
+        if (sel.length === 1) {
+          e.preventDefault();
+          enter(sel[0], () => requestAnimationFrame(fitAll));
+        }
       } else if (e.key === "Backspace" || e.key === "Delete") {
         e.preventDefault();
         deleteSelected();
@@ -176,9 +190,19 @@ export function Canvas() {
       const a = toWorld(c, r);
       const b = toWorld(c, { x: r.x + r.w, y: r.y + r.h });
       const world = { x: a.x, y: a.y, w: b.x - a.x, h: b.y - a.y };
-      const hit = graph.get().order.filter((id) => intersects(graph.get().nodes[id], world));
+      const s = graph.get();
+      const hit = childrenOf(s, nav.get().focus).filter((id) => intersects(s.nodes[id], world));
       select([...new Set([...d.additive, ...hit])]);
     }
+  };
+
+  // a double-click enters the node under it — pointer capture retargets the
+  // click to the field, so the node is found by hit-test, not by bubbling
+  const onDoubleClick = (e: React.MouseEvent) => {
+    const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+    if (!el || el.closest("textarea, input, [data-port]")) return;
+    const id = el.closest<HTMLElement>("[data-node]")?.dataset.node;
+    if (id) enter(id, () => requestAnimationFrame(fitAll));
   };
 
   const onUp = (e: ReactPointerEvent<HTMLDivElement>) => {
@@ -213,13 +237,14 @@ export function Canvas() {
         cursor,
       }}
       onPointerDown={onFieldDown}
+      onDoubleClick={onDoubleClick}
       onPointerMove={onMove}
       onPointerUp={onUp}
       onPointerCancel={onUp}
     >
       <div className="world" style={{ transform: `translate(${cam.x}px, ${cam.y}px) scale(${cam.zoom})` }}>
         <Wires live={live} />
-        {g.order.map((id) => (
+        {here.map((id) => (
           <Node key={id} node={g.nodes[id]} selected={g.selection.includes(id)} handlers={handlers} />
         ))}
       </div>

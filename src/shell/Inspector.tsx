@@ -1,12 +1,15 @@
 import { Icon, ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, DiceIcon } from "../icons";
 import { KINDS, type Field } from "../graph/kinds";
 import { graph, updateData, type GraphNode } from "../state/graph";
+import { nav } from "../state/nav";
 
 /** The right pane: what the selection is, and its every setting. */
 export function Inspector() {
   const g = graph.use();
+  const focus = nav.use((n) => n.focus);
   const ids = g.selection;
-  const node = ids.length === 1 ? g.nodes[ids[0]] : undefined;
+  const node = ids.length === 1 ? g.nodes[ids[0]] : ids.length === 0 && focus ? g.nodes[focus] : undefined;
+  const isWorkspace = !ids.length && !!focus;
 
   return (
     <aside className="pane right card" aria-label="Inspector">
@@ -14,7 +17,7 @@ export function Inspector() {
         <div>
           <div className="pane-title">{node ? node.title : ids.length > 1 ? `${ids.length} nodes` : "Nothing selected"}</div>
           <div className="pane-note">
-            {node ? KINDS[node.kind].note : ids.length > 1 ? "Select one to edit it" : "Select a node on the field"}
+            {node ? (isWorkspace ? `This workspace · ${KINDS[node.kind].title}` : KINDS[node.kind].note) : ids.length > 1 ? "Select one to edit it" : "Select a node on the field"}
           </div>
         </div>
       </div>

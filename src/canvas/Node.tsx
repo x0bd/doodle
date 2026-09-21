@@ -1,7 +1,7 @@
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { Icon, ChevronDownIcon } from "../icons";
 import { KINDS, NODE_ROWS } from "../graph/kinds";
-import { graph, inputs, outputs, updateData, type GraphNode, type PortRef } from "../state/graph";
+import { graph, inputs, outputs, updateData, childCount, type GraphNode, type PortRef } from "../state/graph";
 import { jobs, jobFor } from "../state/jobs";
 
 export interface NodeHandlers {
@@ -17,6 +17,7 @@ export function Node({ node, selected, handlers }: { node: GraphNode; selected: 
   const edges = graph.use((g) => g.edges);
   const job = jobs.use((s) => (node.kind === "generate" || node.kind === "write" ? jobFor(s, node.id) : undefined));
   const running = job?.state === "running";
+  const inside = graph.use((g) => childCount(g, node.id));
   const connected = (ref: PortRef) =>
     Object.values(edges).some(
       (e) => (e.from.node === ref.node && e.from.port === ref.port) || (e.to.node === ref.node && e.to.port === ref.port),
@@ -26,6 +27,7 @@ export function Node({ node, selected, handlers }: { node: GraphNode; selected: 
     <div
       className={`node card k-${node.kind}${selected ? " sel" : ""}${running ? " running" : ""}`}
       style={{ left: node.x, top: node.y, width: node.w, height: node.h }}
+      data-node={node.id}
       onPointerDown={(e) => handlers.onPointerDown(e, node)}
       role="group"
       aria-label={`${node.title}, ${KINDS[node.kind].title}`}
@@ -33,6 +35,7 @@ export function Node({ node, selected, handlers }: { node: GraphNode; selected: 
       <div className="node-head">
         <span className="node-dot" />
         <span className="node-name">{node.title}</span>
+        {inside > 0 && <span className="node-inside badge" title={`${inside} inside — double-click to enter`}>{inside}</span>}
         {job && job.state !== "completed" && (
           <span className="node-state px">
             {job.state === "running" ? job.note : job.state === "queued" ? "queued" : job.state === "failed" ? "failed" : "stopped"}
@@ -163,6 +166,19 @@ function Body({ node }: { node: GraphNode }) {
               <span className="node-row-v">{String(node.data[r.key])}</span>
             </div>
           ))}
+        </div>
+      );
+    case "note":
+      return (
+        <div className="node-body well">
+          <textarea
+            className="node-text"
+            value={String(node.data.text ?? "")}
+            placeholder="A thought"
+            onChange={(e) => updateData(node.id, { text: e.target.value })}
+            onPointerDown={(e) => e.stopPropagation()}
+            spellCheck={false}
+          />
         </div>
       );
     case "page":

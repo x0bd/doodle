@@ -40,6 +40,8 @@ export {
   PaintBrush01Icon as StyleIcon,
   PenTool03Icon as WriteIcon,
   File01Icon as PageIcon,
+  StickyNote01Icon as NoteIcon,
+  ArrowUp01Icon as UpIcon,
   Settings02Icon as GeneralIcon,
   PaintBoardIcon as AppearanceIcon,
   InformationCircleIcon as AboutIcon,
