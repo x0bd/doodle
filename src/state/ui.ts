@@ -14,18 +14,20 @@ export interface UiState {
   chooser: boolean;
   /** ⌘K — never remembered */
   palette: boolean;
+  /** the lens, held on from the cluster — never remembered */
+  lens: boolean;
   /** who draws and who writes when Queue is pressed */
   drawWith: string;
   writeWith: string;
 }
 
 const KEY = "doodle.ui.v1";
-const base: UiState = { navigator: true, inspector: true, theme: "dark", motion: "full", settings: false, chooser: false, palette: false, drawWith: "mock", writeWith: "mock" };
+const base: UiState = { navigator: true, inspector: true, theme: "dark", motion: "full", settings: false, chooser: false, palette: false, lens: false, drawWith: "mock", writeWith: "mock" };
 
 function load(): UiState {
   try {
     const raw = localStorage.getItem(KEY);
-    return raw ? { ...base, ...JSON.parse(raw), settings: false, chooser: false, palette: false } : base;
+    return raw ? { ...base, ...JSON.parse(raw), settings: false, chooser: false, palette: false, lens: false } : base;
   } catch {
     return base;
   }
@@ -44,7 +46,7 @@ dark.addEventListener("change", apply);
 apply();
 
 ui.subscribe(() => {
-  const { settings: _settings, chooser: _chooser, palette: _palette, ...rest } = ui.get();
+  const { settings: _settings, chooser: _chooser, palette: _palette, lens: _lens, ...rest } = ui.get();
   try {
     localStorage.setItem(KEY, JSON.stringify(rest));
   } catch {
@@ -73,3 +75,4 @@ export const setDrawWith = (id: string) => ui.set((s) => ({ ...s, drawWith: id }
 export const setWriteWith = (id: string) => ui.set((s) => ({ ...s, writeWith: id }));
 export const openPalette = () => ui.set((s) => ({ ...s, palette: true }));
 export const closePalette = () => ui.set((s) => ({ ...s, palette: false }));
+export const toggleLens = () => ui.set((s) => ({ ...s, lens: !s.lens }));

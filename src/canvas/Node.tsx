@@ -11,7 +11,7 @@ export interface NodeHandlers {
 }
 
 /** A node: a card with its head, its ports on the edges, and its body by kind. */
-export function Node({ node, selected, into, handlers }: { node: GraphNode; selected: boolean; into?: boolean; handlers: NodeHandlers }) {
+export function Node({ node, selected, into, dim, handlers }: { node: GraphNode; selected: boolean; into?: boolean; dim?: boolean; handlers: NodeHandlers }) {
   const ins = inputs(node);
   const outs = outputs(node);
   const rows = Math.max(ins.length, outs.length);
@@ -27,7 +27,7 @@ export function Node({ node, selected, into, handlers }: { node: GraphNode; sele
 
   return (
     <div
-      className={`node card k-${node.kind} st-${node.status}${selected ? " sel" : ""}${running ? " running" : ""}${into ? " into" : ""}`}
+      className={`node card k-${node.kind} st-${node.status}${selected ? " sel" : ""}${running ? " running" : ""}${into ? " into" : ""}${dim ? " dim" : ""}`}
       style={
         node.kind === "generate" && node.outputs?.length
           ? { left: node.x, top: node.y, width: node.w, minHeight: node.h }

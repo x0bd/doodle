@@ -279,6 +279,24 @@ html, body, #root { height: 100%; }
 /* the ask bar */
 .bar.ask .bar-acts .pill-sm { margin-right: 4px; }
 
+/* ─── Far out: the map ──────────────────────────────────────────────────────
+   Below 0.4 a card is its title. Bodies and port words go; the title
+   grows so it reads at that size; wires thicken to stay visible. */
+.lod-map .node-body, .lod-map .port-name, .lod-map .node-progress { display: none; }
+.lod-map .node { min-height: 0 !important; height: auto !important; gap: 4px; }
+.lod-map .node-head { height: 34px; }
+.lod-map .node-name { font-size: 22px; }
+.lod-map .node-inside { display: none; }
+.lod-map .port-dot { width: 12px; height: 12px; }  /* rows keep their 18px so wires still land */
+.lod-map .wire-line { stroke-width: 3; }
+
+/* ─── The lens ──────────────────────────────────────────────────────────────
+   Only what the selection touches stays; everything else steps back.
+   Nothing moves; release restores exactly what was there. */
+.lens .node.dim { opacity: 0.18; }
+.lens .wire.dim .wire-line { opacity: 0.12; }
+.node, .wire-line { transition: opacity var(--fast) var(--ease); }
+
 /* ─── A node ────────────────────────────────────────────────────────────────
    A card on the field: a head row with its dot and its name, a well for
    what it holds. Selected, it wears the ink ring — the one place on the

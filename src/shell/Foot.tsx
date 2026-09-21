@@ -1,5 +1,5 @@
 import { Icon, SettingsIcon, PlusIcon, MinusIcon, FitIcon, EyeIcon, LinkIcon } from "../icons";
-import { openSettings } from "../state/ui";
+import { openSettings, ui, toggleLens } from "../state/ui";
 import { graph, childrenOf } from "../state/graph";
 import { nav } from "../state/nav";
 import { jobs, current, latest } from "../state/jobs";
@@ -13,6 +13,7 @@ export function Foot() {
   const focus = nav.use((x) => x.focus);
   const n = graph.use((g) => childrenOf(g, focus).length);
   const writing = !!focus;
+  const lens = ui.use((u) => u.lens);
   const j = jobs.use();
   const running = current(j);
   const last = latest(j);
@@ -49,7 +50,7 @@ export function Foot() {
         <button className="pill-icon" aria-label="Reveal">
           <Icon icon={EyeIcon} size={15} strokeWidth={2} />
         </button>
-        <button className="pill-icon" aria-label="Lens">
+        <button className={`pill-icon${lens ? " on" : ""}`} aria-label="Lens" aria-pressed={lens} title="Lens — only what the selection touches stays lit (hold L)" onClick={toggleLens}>
           <Icon icon={LinkIcon} size={15} strokeWidth={2} />
         </button>
         <span className="gap" />

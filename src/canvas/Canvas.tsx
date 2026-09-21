@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { camera, panBy, toWorld, zoomAt, type Point, type Rect } from "./camera";
 import {
   graph, clearSelection, select, toggleSelect, moveNodes, raise, intersects, deleteSelected,
@@ -66,6 +66,26 @@ export function Canvas() {
   const [dragging, setDragging] = useState(false);
   /** the node an ⌥-drag would drop into */
   const [into, setInto] = useState<string | null>(null);
+  // far out, cards become titles: below 0.4 the map, back above 0.5 — a
+  // hysteresis so the threshold never flickers
+  const [map, setMap] = useState(false);
+  useEffect(() => {
+    if (!map && cam.zoom < 0.4) setMap(true);
+    else if (map && cam.zoom > 0.5) setMap(false);
+  }, [cam.zoom, map]);
+  // the lens: hold L, or the cluster's key, and only what the selection touches stays lit
+  const lens = ui.use((u) => u.lens);
+  const [lHeld, setLHeld] = useState(false);
+  const lensOn = lens || lHeld;
+  const lit = useMemo(() => {
+    if (!lensOn) return null;
+    const set = new Set<string>(g.selection);
+    for (const e of Object.values(g.edges)) {
+      if (g.selection.includes(e.from.node)) set.add(e.to.node);
+      if (g.selection.includes(e.to.node)) set.add(e.from.node);
+    }
+    return set;
+  }, [lensOn, g.selection, g.edges]);
 
   // the wheel: a trackpad pans, a pinch (ctrlKey) or ⌘-wheel zooms about the pointer
   useEffect(() => {
@@ -95,6 +115,8 @@ export function Canvas() {
       if (e.key === " " && !e.repeat) {
         e.preventDefault();
         setSpace(true);
+      } else if (e.key === "l" && !e.metaKey && !e.ctrlKey && !e.repeat) {
+        setLHeld(true);
       } else if (e.key === "Escape") {
         // with a selection, let go; with none, rise out of this workspace
         const s = graph.get();
@@ -121,8 +143,9 @@ export function Canvas() {
     };
     const up = (e: KeyboardEvent) => {
       if (e.key === " ") setSpace(false);
+      if (e.key === "l") setLHeld(false);
     };
-    const blur = () => setSpace(false);
+    const blur = () => (setSpace(false), setLHeld(false));
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
     window.addEventListener("blur", blur);
@@ -281,7 +304,7 @@ export function Canvas() {
   return (
     <div
       ref={ref}
-      className={`stage${live ? " wiring" : ""}${arriveClass}`}
+      className={`stage${live ? " wiring" : ""}${map ? " lod-map" : ""}${lensOn ? " lens" : ""}${arriveClass}`}
       style={{
         backgroundSize: `${gap}px ${gap}px`,
         backgroundPosition: `${cam.x + 12 * cam.zoom}px ${cam.y + 12 * cam.zoom}px`,
@@ -296,9 +319,9 @@ export function Canvas() {
       onPointerCancel={onUp}
     >
       <div className="world" style={{ transform: `translate(${cam.x}px, ${cam.y}px) scale(${cam.zoom})` }}>
-        <Wires live={live} />
+        <Wires live={live} lit={lit} />
         {here.map((id) => (
-          <Node key={id} node={g.nodes[id]} selected={g.selection.includes(id)} into={into === id} handlers={handlers} />
+          <Node key={id} node={g.nodes[id]} selected={g.selection.includes(id)} into={into === id} dim={!!lit && !lit.has(id)} handlers={handlers} />
         ))}
       </div>
       {marquee && (
