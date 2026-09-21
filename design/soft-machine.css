@@ -1,0 +1,906 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE SOFT MACHINE
+   Eased corners and capsule controls, surgical white and deep black, one face
+   that reads and one that reports — and not a single drawn line.
+
+   This file IS the system. the-soft-machine.md explains it; if the two
+   disagree, this file wins and the document is stale.
+
+   The five rules that ARE the system — drop any one and this becomes an
+   ordinary rounded design:
+     1. Nothing is drawn. No border, no hairline, no divider, no rule under a
+        head. A control may have an edge (--rim-edge); content may not.
+     2. Inter reads. Geist Mono reports data only — filenames, paths, figures.
+        Silkscreen survives on the mark and nowhere else.
+     3. Emphasis is inversion, and it is rare. Progress, selection, a warning
+        are ink. A chosen option, a hovered row, a toggle that is on are the
+        TINT — a wash of ink, never a fill of it.
+     4. One colour, and it is a ground. The yellow by default, charcoal for
+        an app that wants none, or the app's own — set once, in --signal.
+     5. Never animate a keyboard-initiated action.
+
+   Built with the platform, not over it: on a desktop the window's own chrome
+   (lights, corners, scrollbars, title-bar drag) is the system's, untouched.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Faces ───────────────────────────────────────────────────────────────────
+   Inter reads, Geist Mono reports, Silkscreen marks. All self-hosted — no
+   network request, no layout shift. */
+
+@font-face {
+  font-family: "Geist Mono";
+  src: url("./fonts/GeistMono-Variable.woff2") format("woff2-variations"),
+       url("./fonts/GeistMono-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "Inter";
+  src: url("./fonts/Inter-Variable.woff2") format("woff2-variations"),
+       url("./fonts/Inter-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "Silkscreen";
+  src: url("./fonts/Silkscreen-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
+/* ─── Tokens ─────────────────────────────────────────────────────────────────
+   --ink and --fg swap meaning between modes, and that is the trick. In light,
+   ink is dark and a disc is a black circle with pale type. In dark, ink is pale
+   and the same disc is a white circle with dark type. Nothing else in the
+   system has to know which mode it is in. */
+
+:root {
+  /* ── GROUND — surgical white, deep black. Not #fff (a lamp) and not #000 (a
+        hole): one degree off each, at full strength, with no warmth doing the
+        softening. The softness is entirely structural.
+
+        The ladder: PANELS RECESS and only the plate goes brighter. A surface
+        below the page is a SLOT; a surface above it is an OBJECT. ── */
+  --bg: #f2f2f0;               /* the ground                                 */
+  --surface: #e7e7e3;          /* a slot cut into the page       1.11 below  */
+  --surface-raised: #f8f8f6;   /* an object sitting on it        1.05 above  */
+  --plate: #fdfdfc;            /* the document. The white you print on       */
+  --ink: #0e0e0d;              /* the disc and the slab, where type is knocked out */
+
+  --fg: #0e0e0d;
+  --fg-muted: rgba(14, 14, 13, 0.72);   /* 7.4:1 */
+  --fg-faint: rgba(14, 14, 13, 0.58);   /* 4.6:1 */
+
+  /* texture only — the hatch. Never a border. */
+  --hair: rgba(14, 14, 13, 0.1);
+  --hair-2: rgba(14, 14, 13, 0.2);
+
+  /* ── THE TINT. What the pointer does to a row, and what a chip wears while
+        it is on: a wash of ink thin enough to sit on any surface. Emphasis
+        stays ink; the tint is only ever "here" and "this one". ── */
+  --tint: rgba(14, 14, 13, 0.06);
+  --tint-2: rgba(14, 14, 13, 0.11);
+
+  /* ── THE RIM. A stroke describes a shape; a rim is evidence the shape has
+        thickness. Never one colour — a lit lip and a shaded underside. Set
+        both to the same value and you have drawn a frame. ── */
+  --rim-lit:   rgba(255, 255, 255, 0.92);  /* the lip catching the light */
+  --rim-shade: rgba(14, 14, 13, 0.09);     /* the underside falling away */
+  --rim-edge:  rgba(14, 14, 13, 0.14);     /* CONTROLS ONLY — doctrine 1 */
+  --rim-in:    rgba(14, 14, 13, 0.11);     /* the well, and the press    */
+  --lift:   0 1px 1px rgba(14, 14, 13, 0.04), 0 3px 8px rgba(14, 14, 13, 0.045);
+  --lift-2: 0 1px 1px rgba(14, 14, 13, 0.05), 0 6px 18px rgba(14, 14, 13, 0.07);
+
+  /* ── THE SIGNAL. One per application, chosen here and nowhere else. It is
+        ALWAYS A GROUND, never type, and keeps one value in both modes.
+          the yellow (default):  --signal: #ffb347;    --signal-ink: #0e0e0d;
+          charcoal (no colour):  --signal: var(--ink); --signal-ink: var(--bg);
+          the app's own:         one value that fails as type on the light
+                                 ground (see the-soft-machine.md §7). ── */
+  --signal: #ffb347;
+  --signal-ink: #0e0e0d;
+
+  /* Scrims over photographs are the same in both modes — a photograph does not
+     have a light mode. */
+  --scrim: rgba(11, 11, 10, 0.6);
+  --scrim-fg: #f2f2f0;
+
+  /* ── FACES. Inter reads: every label, every sentence, every control.
+        Mono is kept for DATA only — filenames, paths, dimensions. Silkscreen
+        survives only on the mark. ── */
+  --font-ui:   "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", monospace;
+  --font-sys:  "Silkscreen", var(--font-mono);
+  --w-report: 400;  --w-mid: 500;  --w-declare: 600;
+
+  /* ── SCALE — tracking is part of the size. Mono tracks the opposite way to a
+        proportional face: positive below 14px, negative above 32px. ── */
+  --t-micro: 11px;                        --tr-micro: 0.06em;
+  --t-label: 12px;                        --tr-label: 0.02em;
+  --t-body: 13px;                         --tr-body: 0;
+  --t-lead: 16px;                         --tr-lead: -0.01em;
+  --t-display: clamp(26px, 4.4vw, 46px);  --tr-display: -0.03em;
+
+  /* ── MEASURE — typographic only ── */
+  --measure-prose: 64ch;
+
+  /* ── DISTANCE — semantic AND fluid. The air is a proportion of the screen,
+        not a count of rows. This is half of the SOFT. ── */
+  --gap-tight: 8px;                       /* one object, two parts */
+  --gap-near: 16px;                       /* siblings */
+  --gap-wide: clamp(26px, 4vh, 44px);     /* a new group begins */
+  --gap-vast: clamp(48px, 9vh, 92px);     /* a new context begins */
+
+  /* ── CORNERS — the other half of the SOFT ── */
+  --r-sm: 6px;
+  --r-card: 12px;    /* a panel, a field, a sheet, a window */
+  --r-ctl: 999px;    /* EVERY CONTROL KEEPS THE CAPSULE */
+  --r-pill: 999px;   /* the disc and the dot */
+  --r-plate: 8px;    /* a photograph */
+
+  /* ── MOTION ── */
+  --ease-out:    cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease: var(--ease-out);
+  --press: 140ms;  --fast: 180ms;  --base: 240ms;
+}
+
+.dark {
+  --bg: #0b0b0a;  --surface: #171715;  --surface-raised: #222220;
+  --plate: #2a2a27;
+  --ink: #f2f2f0; --fg: #f2f2f0;
+  --fg-muted: rgba(242, 242, 240, 0.68);   /* 8.3:1 */
+  --fg-faint: rgba(242, 242, 240, 0.5);    /* 4.9:1 */
+  --hair: rgba(242, 242, 240, 0.12);
+  --hair-2: rgba(242, 242, 240, 0.24);
+  --tint: rgba(242, 242, 240, 0.07);
+  --tint-2: rgba(242, 242, 240, 0.13);
+
+  /* THE RIM TURNS OVER, AND NOT SYMMETRICALLY. White at 92% on near-black is
+     a stripe, not a highlight, and the shadow has to work harder because
+     there is less room beneath the surface for it to fall into. */
+  --rim-lit:   rgba(255, 255, 255, 0.07);
+  --rim-shade: rgba(0, 0, 0, 0.45);
+  --rim-edge:  rgba(255, 255, 255, 0.11);
+  --rim-in:    rgba(0, 0, 0, 0.55);
+  --lift:   0 1px 1px rgba(0, 0, 0, 0.4), 0 3px 10px rgba(0, 0, 0, 0.4);
+  --lift-2: 0 1px 1px rgba(0, 0, 0, 0.45), 0 8px 22px rgba(0, 0, 0, 0.5);
+}
+
+/* ─── Reset ───────────────────────────────────────────────────────────────── */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border: 0;          /* doctrine 1, enforced at the root */
+}
+
+/* `ch` is font-relative: pin the root and scale type through the tokens. */
+html {
+  font-size: 16px;
+  color-scheme: light;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+html.dark { color-scheme: dark; }
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-ui);
+  font-size: var(--t-body);
+  font-weight: var(--w-report);
+  line-height: 1.45;
+  /* every number in a mono system is tabular by default, and the one place
+     you would forget it is the one place it shows */
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: "cv11", "ss01", "calt";
+  overflow: hidden;
+  user-select: none;
+  cursor: default;
+  transition: background var(--base) var(--ease), color var(--base) var(--ease);
+}
+
+input, textarea, [contenteditable], .selectable { user-select: text; }
+
+button, input, textarea, select {
+  font: inherit;
+  color: inherit;
+  background: none;
+}
+button { cursor: pointer; }
+
+::selection { background: var(--fg); color: var(--bg); }
+
+/* ─── Focus ──────────────────────────────────────────────────────────────────
+   This system has no outlines, so focus is a lift: a tone step and a shadow.
+
+   Pills invert instead, because a pill's contents inherit its colour and the
+   inversion is legible. The generic fallback deliberately does NOT invert: a
+   row whose children set their own --fg would put pale text on pale ink in dark
+   mode. Anything that wants inversion opts in for itself. */
+
+:focus-visible { outline: none; }
+:where(button, [role="button"], a, [tabindex]):focus-visible {
+  background: var(--surface-raised);
+  box-shadow: var(--lift);
+}
+
+/* ─── Scrollbars ─────────────────────────────────────────────────────────────
+   The system's own. Left unstyled, WebKit gives the overlay bar the platform
+   draws — present while you scroll and gone when you stop — which is the
+   only scrollbar that belongs in a native window. Styling ::-webkit-scrollbar
+   at all turns that off and hands you a gutter; do not. */
+
+/* ═══ PRIMITIVES ═══════════════════════════════════════════════════════════════
+   Twelve classes. Almost every screen is built from these alone, and not one
+   of them draws a line. Defined once, here, globally — never hand-copied into
+   a component. */
+
+/* ── the voices ── */
+
+/* The reporting voice — micro, uppercase, tracked, faint. For a field's
+   label and a strip's fields; NOT for naming a group (that is .list-head /
+   .group-head, in sentence case). */
+.lbl {
+  font-family: var(--font-ui);
+  font-size: var(--t-micro);
+  font-weight: var(--w-mid);
+  letter-spacing: var(--tr-micro);
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  line-height: 1;
+}
+/* a count on a row — a small tonal pill, tabular */
+.badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  color: var(--fg-faint);
+  font-family: var(--font-ui);
+  font-size: var(--t-micro);
+  font-weight: var(--w-mid);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+.lbl-strong { color: var(--fg-muted); }
+
+/* The figure — every number, filename and name that is DATA. Mono at 500,
+   tabular. This replaced the pixel face, which could not set a sentence and
+   was quietly becoming a second body face. */
+.px {
+  font-family: var(--font-mono);
+  font-weight: var(--w-mid);
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* The chassis — Silkscreen. The machine talking about ITSELF: the mark, and
+   only the mark. Never a sentence, never data, never a label, never a size
+   off the 8px grid. In an application it appears once — on the icon and the
+   About tile. */
+.sys {
+  font-family: var(--font-sys);
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+  text-transform: uppercase;
+}
+
+/* ── surfaces ── */
+
+/* THE OBJECT. A card sits ON the page: brighter than the ground, a lit lip
+   along its top edge, a shadow under it. A thing with thickness rather than a
+   region someone tinted. */
+.card {
+  border-radius: var(--r-card);
+  background: var(--surface-raised);
+  box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), var(--lift);
+  transition: background var(--fast) var(--ease), box-shadow var(--fast) var(--ease),
+    transform var(--fast) var(--ease);
+}
+
+/* THE RIM, AS A PRIMITIVE. `.rim` for anything that should read as raised,
+   `.well` for anything cut into the page. The same idea run in opposite
+   directions: a lit TOP edge is a lip, a lit BOTTOM edge is the far wall of a
+   recess. Reverse them and the object turns inside out. */
+.rim {
+  box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), var(--lift);
+}
+.well {
+  background: var(--surface);
+  box-shadow: inset 0 1px 2px var(--rim-in), inset 0 -1px 0 var(--rim-lit);
+}
+
+/* THE DOUBLE RIM — the tactile one. A lit lip, the control's own edge, a
+   sliver of the page, and a second ring: a keycap standing in a well. It
+   costs the screen's one break, so it goes on the one control that matters.
+   The gap ring is painted in --bg; on a panel, pass the panel's own colour as
+   --rim-gap. */
+.rim-2 {
+  box-shadow:
+    inset 0 1px 0 var(--rim-lit),
+    inset 0 -1px 0 var(--rim-shade),
+    0 0 0 1px var(--rim-edge),
+    0 0 0 3px var(--rim-gap, var(--bg)),
+    0 0 0 4px var(--rim-edge),
+    var(--lift-2);
+}
+
+/* The disc — a filled circle with type knocked out of it. The system's only
+   emphasis and its signature shape. */
+.disc {
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-pill);
+  background: var(--ink);
+  color: var(--bg);
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* The hatch — the texture of emptiness. It may fill a region that is
+   deliberately void and must never sit behind content. */
+.diag {
+  background-image: repeating-linear-gradient(-45deg, var(--hair-2) 0 1px, transparent 1px 9px);
+}
+
+/* ── controls ── */
+
+/* THE CONTROL. Raised, edged, and it goes IN when pressed. A control is the
+   one place an edge is not decoration: it answers "can I press this?", and
+   content never has to answer that question. */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  border-radius: var(--r-ctl);
+  background: var(--surface-raised);
+  padding: 7px 14px;
+  color: var(--fg);
+  font-family: var(--font-ui);
+  font-size: var(--t-label);
+  font-weight: var(--w-mid);
+  letter-spacing: 0;
+  white-space: nowrap;
+  box-shadow:
+    inset 0 1px 0 var(--rim-lit),
+    inset 0 -1px 0 var(--rim-shade),
+    0 0 0 1px var(--rim-edge),
+    var(--lift);
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease),
+    box-shadow var(--press) var(--ease), opacity var(--fast) var(--ease),
+    transform var(--press) var(--ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  .pill:hover     { background: var(--ink); color: var(--bg); }
+  .pill-ink:hover { background: var(--ink); opacity: 0.82; }
+}
+.pill:focus-visible { background: var(--ink); color: var(--bg); box-shadow: 0 0 0 1px var(--rim-edge), var(--lift); }
+/* THE PRESS IS THE POINT. A scale was the wrong verb — a control that shrinks
+   is moving AWAY from the finger. This one goes IN: the lit lip moves from the
+   top edge to the bottom, an inner shadow appears where the surface has
+   dropped below the rim, and the whole thing travels one pixel down. */
+.pill:active {
+  transform: translateY(1px);
+  box-shadow:
+    inset 0 2px 3px var(--rim-in),
+    inset 0 -1px 0 var(--rim-lit),
+    0 0 0 1px var(--rim-edge);
+}
+/* A pill that stays pressed: the key is down, the option is on. The same
+   travel as :active, held — which is what a tactile toggle is. */
+.pill.on {
+  background: var(--surface);
+  color: var(--fg);
+  transform: translateY(1px);
+  box-shadow:
+    inset 0 2px 3px var(--rim-in),
+    inset 0 -1px 0 var(--rim-lit),
+    0 0 0 1px var(--rim-edge);
+}
+@media (hover: hover) and (pointer: fine) {
+  .pill.on:hover { background: var(--surface); color: var(--fg); }
+}
+/* the small one: a set of options rather than a door */
+.pill-sm { padding: 5px 11px; font-size: var(--t-micro); gap: 6px; }
+
+/* Inked at rest — a permanent control that should read as one from across
+   the room. */
+.pill-ink {
+  background: var(--ink);
+  color: var(--bg);
+  box-shadow: 0 0 0 1px var(--rim-edge), var(--lift);
+}
+.pill-ink:active { box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.35), 0 0 0 1px var(--rim-edge); }
+/* A pill wearing the double rim — the keycap. The rim has to outrank the
+   pill's own edge, and the press drops the outer ring with everything else. */
+.pill.rim-2 {
+  box-shadow:
+    inset 0 1px 0 var(--rim-lit),
+    inset 0 -1px 0 var(--rim-shade),
+    0 0 0 1px var(--rim-edge),
+    0 0 0 3px var(--rim-gap, var(--bg)),
+    0 0 0 4px var(--rim-edge),
+    var(--lift-2);
+}
+.pill-ink.rim-2 {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3),
+    0 0 0 1px var(--rim-edge),
+    0 0 0 3px var(--rim-gap, var(--bg)),
+    0 0 0 4px var(--rim-edge),
+    var(--lift-2);
+}
+.pill.rim-2:active {
+  box-shadow:
+    inset 0 2px 3px var(--rim-in),
+    inset 0 -1px 0 var(--rim-lit),
+    0 0 0 1px var(--rim-edge),
+    0 0 0 3px var(--rim-gap, var(--bg)),
+    0 0 0 4px var(--rim-edge);
+}
+
+/* Quiet: no surface until addressed. For controls sitting inside a panel. */
+.pill-quiet { background: transparent; box-shadow: none; }
+@media (hover: hover) and (pointer: fine) {
+  .pill-quiet:hover { background: var(--ink); color: var(--bg); }
+}
+.pill-quiet:active { box-shadow: inset 0 2px 3px var(--rim-in); }
+.pill[disabled], .pill:disabled { opacity: 0.4; cursor: not-allowed; }
+.pill[disabled]:active, .pill:disabled:active { transform: none; }
+
+/* A pill reduced to a single glyph. Still a pill, still round; quiet until
+   addressed, because a row of edged circles is a remote control. On, it wears
+   the tint: emphasis is for what matters, and a toggle only reports. */
+.pill-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  gap: 0;
+  border-radius: var(--r-ctl);
+  background: transparent;
+  color: var(--fg-muted);
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease),
+    box-shadow var(--press) var(--ease), transform var(--press) var(--ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  .pill-icon:hover { background: var(--ink); color: var(--bg); }
+}
+.pill-icon:focus-visible { background: var(--ink); color: var(--bg); }
+.pill-icon:active        { transform: translateY(1px); box-shadow: inset 0 2px 3px var(--rim-in); }
+.pill-icon.on            { background: var(--tint-2); color: var(--fg); }
+
+/* ── the field: rows as SLOTS, with 2px of page showing between them ── */
+.field {
+  display: grid;
+  gap: 2px;
+  border-radius: var(--r-card);
+  overflow: hidden;
+}
+/* Recessed, with the light landing on the far wall rather than on a lip. The
+   rim run backwards — which is what stops a page of panels reading as one
+   flat grey mass. */
+.field-row {
+  display: grid;
+  gap: 7px;
+  padding: 15px clamp(16px, 2vw, 22px);
+  background: var(--surface);
+  box-shadow: inset 0 1px 1px var(--rim-in), inset 0 -1px 0 var(--rim-lit);
+  transition: background var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+}
+@media (min-width: 560px) {
+  .field-row { grid-template-columns: 132px 1fr; gap: 24px; align-items: baseline; }
+}
+/* A row that is itself a control: addressed, it rises out of its slot. */
+button.field-row { width: 100%; text-align: left; }
+@media (hover: hover) and (pointer: fine) {
+  button.field-row:hover {
+    background: var(--surface-raised);
+    box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade);
+  }
+}
+button.field-row:focus-visible {
+  background: var(--surface-raised);
+  box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), var(--lift);
+}
+.field-row.on { background: var(--tint-2); box-shadow: none; }
+
+/* ── THE CONSOLE: a raised, edged panel with a plain head — its name on the
+      left, its figures and controls on the right — and rows cut into its
+      floor. Every sheet, dialog and inspector is one of these. ── */
+.con {
+  border-radius: 14px;
+  background: var(--surface-raised);
+  box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade),
+    0 0 0 1px var(--rim-edge), var(--lift-2);
+  overflow: hidden;
+}
+/* the head: the panel's name and its controls, in the panel's own tone */
+.con-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 0 12px 0 18px;
+  color: var(--fg);
+  flex-shrink: 0;
+}
+.con-name {
+  font-family: var(--font-ui);
+  font-weight: var(--w-declare);
+  font-size: var(--t-body);
+  line-height: 1;
+  letter-spacing: 0;
+}
+/* a readout on the head: true figures, quiet */
+.con-fig {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-left: auto;
+  font-size: var(--t-micro);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}
+/* a control on the head: quiet, then a tonal disc */
+.con-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--r-pill);
+  color: var(--fg-muted);
+  opacity: 1;
+  flex-shrink: 0;
+  transition: opacity var(--fast) var(--ease), background var(--fast) var(--ease),
+    transform var(--press) var(--ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  .con-btn:hover { color: var(--fg); background: var(--surface); }
+}
+.con-btn:focus-visible { color: var(--fg); background: var(--surface); box-shadow: none; }
+.con-btn:active { transform: translateY(1px); }
+.con-btn.on { color: var(--fg); }
+/* a worded control on the head */
+.con-word {
+  padding: 6px 12px;
+  border-radius: var(--r-ctl);
+  color: inherit;
+  font-size: var(--t-label);
+  font-weight: var(--w-mid);
+  opacity: 0.8;
+  transition: opacity var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  .con-word:hover { opacity: 1; background: rgba(128, 128, 128, 0.22); }
+}
+.con-word:focus-visible { opacity: 1; background: rgba(128, 128, 128, 0.22); box-shadow: none; }
+/* rows in a panel are slots cut into it */
+.con .field-row {
+  background: var(--surface);
+  box-shadow: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .con button.field-row:hover {
+    background: var(--plate);
+    box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade);
+  }
+}
+.con .field-row.on { background: var(--tint-2); box-shadow: none; }
+
+/* ── THE LIST: rows the way a menu lays them out. Flat in the panel — no
+      slots, no lips — with a leading column for the check, the word, and
+      whatever trails it. The pointer washes a row with the tint; the current
+      row is a CHECK and a heavier word, never a fill. The right-click menu is
+      the reference: everything that lists things looks like it. ── */
+.list { display: flex; flex-direction: column; gap: 1px; }
+.list-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 28px;
+  padding: 0 10px 0 8px;
+  border-radius: var(--r-sm);
+  color: var(--fg);
+  font-family: var(--font-ui);
+  font-size: var(--t-body);
+  font-weight: var(--w-report);
+  text-align: left;
+  white-space: nowrap;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+.list-row svg { flex-shrink: 0; color: var(--fg-muted); }
+@media (hover: hover) and (pointer: fine) {
+  .list-row:hover { background: var(--tint); }
+}
+.list-row:focus-visible { background: var(--tint); box-shadow: none; }
+.list-row:active { background: var(--tint-2); }
+.list-row.hl { background: var(--tint-2); }        /* the keyboard is here */
+.list-row.on { font-weight: var(--w-mid); }        /* this one is chosen   */
+.list-row.on svg { color: var(--fg); }
+.list-row.strong { color: var(--fg); }
+.list-row:disabled { opacity: 0.45; cursor: not-allowed; }
+/* the check column: always there so the words line up, only ever drawn on
+   the chosen row */
+.list-check {
+  display: inline-grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  opacity: 0;
+}
+.list-row.on .list-check { opacity: 1; }
+.list-word { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.list-key { font-size: var(--t-micro); color: var(--fg-faint); flex-shrink: 0; }
+.list-row.on .list-key, .list-row:hover .list-key { color: var(--fg-muted); }
+/* a group's name inside a list: sentence case, small, faint — the way the
+   sidebar of every Mac app names its groups */
+.list-head {
+  padding: 8px 10px 4px;
+  font-size: var(--t-micro);
+  font-weight: var(--w-declare);
+  color: var(--fg-faint);
+  line-height: 1;
+}
+.list-head:first-child { padding-top: 4px; }
+/* a separator is a gap */
+.list-gap { height: 6px; }
+
+/* ── the chip: a small flat toggle for a set of options. Quiet until on. ── */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: var(--r-ctl);
+  color: var(--fg-muted);
+  font-family: var(--font-ui);
+  font-size: var(--t-label);
+  font-weight: var(--w-mid);
+  white-space: nowrap;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  .chip:hover { background: var(--tint); color: var(--fg); }
+}
+.chip:focus-visible { background: var(--tint); color: var(--fg); box-shadow: none; }
+.chip.on { background: var(--tint-2); color: var(--fg); }
+
+/* ── THE GROUP: a form's rows, the way the platform's settings lay them out.
+      One recess with the rows inside it, each row a name and a note on the
+      left and its control on the right; between rows, one pixel of the panel
+      showing through — a gap, not a rule. Nothing in it is a slot of its own
+      and nothing in it lifts under the pointer: a form is read, not pressed. ── */
+.group {
+  display: grid;
+  gap: 1px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--surface-raised);
+}
+.group-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-height: 48px;
+  padding: 10px 14px;
+  background: var(--surface);
+}
+.group-what { flex: 1; min-width: 0; }
+.group-name { font-size: var(--t-body); color: var(--fg); line-height: 1.3; }
+.group-note {
+  margin-top: 2px;
+  max-width: 48ch;
+  font-size: var(--t-label);
+  line-height: 1.5;
+  color: var(--fg-muted);
+}
+/* the group's name, above it */
+.group-head {
+  padding: 0 4px 6px;
+  font-size: var(--t-micro);
+  font-weight: var(--w-declare);
+  color: var(--fg-faint);
+}
+
+/* ── THE SEGMENT: a well with one raised key in it. ── */
+.seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--r-ctl);
+  background: var(--bg);
+  box-shadow: inset 0 1px 2px var(--rim-in), inset 0 -1px 0 var(--rim-lit);
+  flex-shrink: 0;
+}
+.seg-btn {
+  padding: 5px 12px;
+  border-radius: var(--r-ctl);
+  color: var(--fg-muted);
+  font-size: var(--t-label);
+  font-weight: var(--w-mid);
+  white-space: nowrap;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  .seg-btn:hover { color: var(--fg); }
+}
+.seg-btn:focus-visible { color: var(--fg); background: var(--surface); box-shadow: none; }
+.seg-btn.on {
+  background: var(--plate);
+  color: var(--fg);
+  box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade),
+    0 0 0 1px var(--rim-edge), var(--lift);
+}
+
+/* ── the technical strip, and the dot between its fields. Every field true. ── */
+.strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 22px;
+}
+.tick {
+  display: inline-block;
+  width: 2px;
+  height: 2px;
+  border-radius: var(--r-pill);
+  background: var(--fg-faint);
+  flex-shrink: 0;
+}
+
+/* ── a section is space and a label. Never a rule. ── */
+.sec { margin-top: var(--gap-wide); }
+.sec:first-child { margin-top: 0; }
+.sec-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: clamp(12px, 1.8vh, 18px);
+}
+
+/* ── an empty state spans whatever it is dropped into ── */
+.note {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  padding: 16px clamp(16px, 2vw, 22px);
+  border-radius: var(--r-card);
+  background: var(--surface);
+  box-shadow: inset 0 1px 2px var(--rim-in), inset 0 -1px 0 var(--rim-lit);
+  color: var(--fg-muted);
+  font-size: var(--t-label);
+}
+
+/* ── THE LIVE MARK. One dot, one live thing. With no signal colour it is an
+      inked disc with the page burning through the middle of it; with one, the
+      disc is the signal. It reads identically in both modes. ── */
+.sig {
+  display: inline-grid;
+  place-items: center;
+  width: 13px;
+  height: 13px;
+  border-radius: var(--r-pill);
+  background: var(--signal);
+  flex-shrink: 0;
+}
+.sig::after {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: var(--r-pill);
+  background: var(--signal-ink);
+}
+
+/* ── entrance: things fade rather than arrive ── */
+@keyframes in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+.in { animation: in var(--base) var(--ease) both; }
+
+/* ── popovers are origin-aware: they grow from their trigger, not from centre ── */
+@keyframes unfold {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: none; }
+}
+.unfold {
+  animation: unfold var(--fast) var(--ease) both;
+  /* callers set transform-origin to the trigger's corner */
+}
+
+/* ── a form input is a well, not a box ── */
+.inp {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  box-shadow: inset 0 1px 2px var(--rim-in), inset 0 -1px 0 var(--rim-lit);
+  color: var(--fg);
+  font-family: var(--font-ui);
+  font-size: var(--t-body);
+  outline: none;
+  transition: background var(--fast) var(--ease);
+}
+.inp::placeholder { color: var(--fg-faint); }
+.inp:focus { background: var(--plate); }
+
+/* ─── A page ─────────────────────────────────────────────────────────────────
+   Every view that is not the wall scrolls inside one of these. Bound to one
+   screen unless it has more to say than one holds; weight against the left edge
+   with the void opening to the right, never a centred column. */
+
+.page {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 10px clamp(16px, 3vw, 44px) clamp(40px, 8vh, 90px);
+}
+.page-in {
+  max-width: 1180px;
+}
+.page-head {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: clamp(8px, 2vh, 22px) 0 clamp(20px, 3vh, 32px);
+}
+/* The page's name is the chassis speaking — so it steps on the pixel grid
+   rather than clamping, and it is one of the screen's four. */
+.page-title {
+  font-family: var(--font-ui);
+  font-weight: var(--w-declare);
+  letter-spacing: -0.01em;
+  font-size: 20px;
+  line-height: 1.1;
+  color: var(--fg);
+}
+.page-sub {
+  max-width: 52ch;
+  font-size: var(--t-label);
+  line-height: 1.7;
+  color: var(--fg-muted);
+}
+.page-head .spacer { flex: 1; min-width: 8px; }
+
+/* ─── Motion ─────────────────────────────────────────────────────────────────
+   prefers-reduced-motion removes movement and keeps tone. Reduced, not off —
+   you still need to see a row take ink. The .reduce-motion class is the
+   in-app switch and behaves identically. */
+
+@media (prefers-reduced-motion: reduce) {
+  .in, .unfold { animation: none; opacity: 1; transform: none; }
+  .card, .pill, .field-row { transition: background var(--fast) var(--ease); }
+  .pill:active, .pill-icon:active { transform: none; }
+  body { transition: none; }
+}
+
+.reduce-motion .in,
+.reduce-motion .unfold { animation: none; opacity: 1; transform: none; }
+.reduce-motion .card,
+.reduce-motion .pill,
+.reduce-motion .field-row { transition: background var(--fast) var(--ease); }
+.reduce-motion .pill:active,
+.reduce-motion .pill-icon:active { transform: none; }
+.reduce-motion body { transition: none; }
