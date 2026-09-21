@@ -17,7 +17,7 @@ pub fn build(app: &App) -> tauri::Result<Menu<Wry>> {
     let doodle = SubmenuBuilder::new(app, "Doodle")
         .about(None)
         .separator()
-        .item(&item("app.settings", "Settings…", Some("CmdOrCtrl+,"))?)
+        .item(&item("app.settings", "Settings…", Some("CmdOrCtrl+Comma"))?)
         .separator()
         .services()
         .separator()
@@ -54,8 +54,8 @@ pub fn build(app: &App) -> tauri::Result<Menu<Wry>> {
         .build()?;
 
     let view = SubmenuBuilder::new(app, "View")
-        .item(&item("view.zoom-in", "Zoom In", Some("CmdOrCtrl+="))?)
-        .item(&item("view.zoom-out", "Zoom Out", Some("CmdOrCtrl+-"))?)
+        .item(&item("view.zoom-in", "Zoom In", Some("CmdOrCtrl+Equal"))?)
+        .item(&item("view.zoom-out", "Zoom Out", Some("CmdOrCtrl+Minus"))?)
         .item(&item("view.zoom-fit", "Fit to View", Some("CmdOrCtrl+0"))?)
         .item(&item("view.zoom-100", "Actual Size", Some("CmdOrCtrl+1"))?)
         .separator()
@@ -76,7 +76,7 @@ pub fn build(app: &App) -> tauri::Result<Menu<Wry>> {
         .build()?;
 
     let help = SubmenuBuilder::new(app, "Help")
-        .item(&item("help.shortcuts", "Keyboard Shortcuts", Some("CmdOrCtrl+/"))?)
+        .item(&item("help.shortcuts", "Keyboard Shortcuts", Some("CmdOrCtrl+Slash"))?)
         .item(&item("help.site", "Doodle on GitHub", None)?)
         .build()?;
 

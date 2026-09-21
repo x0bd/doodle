@@ -4,9 +4,10 @@
  * the platform already did the work.
  */
 import { listen } from "@tauri-apps/api/event";
-import { toggleInspector, toggleNavigator, togglePanes, toggleTheme } from "../state/ui";
+import { openSettings, toggleInspector, toggleNavigator, togglePanes, toggleTheme } from "../state/ui";
 
 const actions: Record<string, () => void> = {
+  "app.settings": openSettings,
   "view.navigator": toggleNavigator,
   "view.inspector": toggleInspector,
   "view.panes": togglePanes,

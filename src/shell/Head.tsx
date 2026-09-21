@@ -55,7 +55,7 @@ export function Head() {
           <Icon icon={CopyIcon} size={14} strokeWidth={2} />
         </button>
         <button
-          className={`pill-icon${panes ? " on" : ""}`}
+          className="pill-icon"
           aria-label="Panes"
           aria-pressed={panes}
           onClick={togglePanes}

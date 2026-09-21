@@ -2,8 +2,8 @@ import { useEffect } from "react";
 import { Head } from "./shell/Head";
 import { Navigator } from "./shell/Navigator";
 import { Inspector } from "./shell/Inspector";
-import { Readouts } from "./shell/Readouts";
-import { Rail } from "./shell/Rail";
+import { Foot } from "./shell/Foot";
+import { Settings } from "./shell/Settings";
 import { Bar } from "./shell/Bar";
 import { ui, togglePanes } from "./state/ui";
 import { listenToMenu } from "./platform/menu";
@@ -24,16 +24,16 @@ export function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
   return (
-    <div className={`win${inspector ? " has-right" : ""}`}>
+    <div className="win">
       <Head />
       <div className="sub" data-tauri-drag-region>
         image generation v3
       </div>
       {navigator && <Navigator />}
       {inspector && <Inspector />}
-      <Rail />
       <Bar />
-      <Readouts />
+      <Foot />
+      <Settings />
     </div>
   );
 }

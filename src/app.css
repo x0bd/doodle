@@ -89,94 +89,49 @@ html, body, #root { height: 100%; }
   pointer-events: none;
 }
 
-/* ─── The readouts ──────────────────────────────────────────────────────────
-   Mono reports: elapsed, iteration, node count, scale. Two corners, two
-   columns; never centred. */
-.readout {
+/* ─── The foot ──────────────────────────────────────────────────────────────
+   Left: settings, then the mono readouts in a row — elapsed, iteration,
+   nodes. Right: the view cluster, fit / reveal / lens and the zoom with its
+   figure between the keys. */
+.foot-l {
   position: absolute;
+  left: 18px;
   bottom: 18px;
-  display: grid;
-  gap: 3px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.readout {
+  display: flex;
+  gap: 14px;
   font-family: var(--font-mono);
   font-size: var(--t-micro);
   letter-spacing: var(--tr-micro);
   color: var(--fg-faint);
   pointer-events: none;
 }
-.readout.l { left: 20px; }
-.readout.r { right: 20px; text-align: right; }
-.readout .k { display: inline-block; min-width: 1.4em; color: var(--fg-faint); opacity: 0.7; }
-.readout.r .k { min-width: 0; margin-right: 6px; }
+.readout .k { margin-right: 5px; opacity: 0.6; }
 
-/* ─── The panes ─────────────────────────────────────────────────────────────
-   Two cards floating on the field, under the title line and clear of the
-   readouts: the navigator on the left (where you are, what is here), the
-   inspector on the right (what this is, and its every setting). */
-.pane {
-  position: absolute;
-  top: var(--head-h);
-  max-height: calc(100% - var(--head-h) - 68px);
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  z-index: 5;
-}
-.pane.left  { left: 18px;  width: 216px; }
-.pane.right { right: 18px; width: 264px; }
-.pane-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  min-height: 44px;
-  padding: 10px 10px 6px 16px;
-  flex-shrink: 0;
-}
-.pane-title { font-size: var(--t-body); font-weight: var(--w-declare); line-height: 1.3; }
-.pane-note  { font-size: var(--t-micro); color: var(--fg-faint); margin-top: 1px; }
-.pane-body {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 0 8px 8px;
-}
-.pane.right .pane-body { padding-bottom: 10px; }
-.pill-icon.sm { width: 26px; height: 26px; }
-
-/* the inspector's form: the group, at pane density */
-.pane .group-head { padding: 10px 8px 6px; }
-.pane .group-head:first-child { padding-top: 6px; }
-.pane .group-row { min-height: 36px; padding: 5px 6px 5px 12px; gap: 10px; }
-.pane .group-name { font-size: var(--t-label); }
-.pane .group { background: var(--surface-raised); }
-.group-ctl { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
-.group-ctl .px { font-size: var(--t-label); color: var(--fg-muted); padding-right: 6px; }
-.group-ctl .pill-sm { padding: 4px 8px 4px 10px; gap: 4px; }
-.seg-btn.key { padding: 3px 6px; }
-.seg-val {
-  display: grid;
-  place-items: center;
-  min-width: 34px;
-  font-size: var(--t-micro);
-  color: var(--fg);
-}
-
-/* ─── The tool rail ─────────────────────────────────────────────────────────
-   Down the right edge, centred on the field: zoom, fit, reveal, lens. */
-.rail {
+.cluster {
   position: absolute;
   right: 18px;
-  top: 50%;
-  transform: translateY(-50%);
+  bottom: 18px;
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 6px;
-  border-radius: var(--r-card);
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: var(--r-ctl);
 }
-.rail .gap { height: 6px; }
-/* the rail steps in when the inspector is showing */
-.has-right .rail { right: calc(18px + 264px + 12px); }
+.cluster .pill-icon { width: 30px; height: 30px; }
+.cluster .gap { width: 6px; }
+.cluster .fig {
+  min-width: 42px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  letter-spacing: var(--tr-micro);
+  color: var(--fg-muted);
+}
 
 /* ─── The prompt bar ────────────────────────────────────────────────────────
    A plate floating at the foot of the field. What the graph is asked, and
@@ -205,3 +160,128 @@ html, body, #root { height: 100%; }
 .bar-acts { display: flex; align-items: center; gap: 0; padding: 0 1px 1px; }
 .bar-acts .pill-icon { width: 30px; height: 30px; }
 .bar-acts .gap { width: 8px; }
+
+/* ─── The settings sheet ────────────────────────────────────────────────────
+   A console over a veil of the page, a rail of sections down its left. */
+.veil {
+  position: fixed;
+  inset: 0;
+  z-index: 680;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.veil-hit {
+  position: absolute;
+  inset: 0;
+  background: var(--bg);
+  opacity: 0.82;
+  cursor: default;
+}
+.veil-hit:focus-visible { background: var(--bg); box-shadow: none; }
+.sheet {
+  position: relative;
+  display: flex;
+  width: min(640px, 100%);
+  height: min(400px, 84dvh);
+}
+.srail {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 168px;
+  flex-shrink: 0;
+  padding: 14px 8px;
+  background: var(--surface);
+}
+.srail-name { padding: 4px 10px 2px; font-size: var(--t-body); font-weight: var(--w-declare); color: var(--fg); }
+.srail-row { min-height: 30px; padding-left: 6px; }
+.srail-row.hl { font-weight: var(--w-mid); }
+.srail-glyph {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--surface-raised);
+  box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade);
+  color: var(--fg-muted);
+  flex-shrink: 0;
+}
+.srail-row.hl .srail-glyph { color: var(--fg); }
+.spane { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.sbody { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 18px 22px; }
+.grp { margin-top: 18px; }
+.grp:first-child { margin-top: 0; }
+
+/* the three windows: a picture of each mode, drawn in its own tokens */
+.modes { display: flex; gap: 12px; }
+.mode {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 6px;
+  border-radius: 10px;
+  text-align: left;
+  transition: background var(--fast) var(--ease);
+}
+@media (hover: hover) and (pointer: fine) { .mode:hover { background: var(--tint); } }
+.mode:focus-visible { background: var(--tint); box-shadow: none; }
+.swatch {
+  display: flex;
+  gap: 4px;
+  width: 124px;
+  height: 82px;
+  padding: 8px;
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px var(--rim-edge);
+  transition: box-shadow var(--fast) var(--ease);
+}
+.mode.on .swatch { box-shadow: 0 0 0 2px var(--surface-raised), 0 0 0 4px var(--fg); }
+.swatch.light  { background: #e7e7e3; }
+.swatch.dark   { background: #171715; }
+/* the system swatch: the two drawings, the dark one clipped to the right half */
+.swatch.system { position: relative; padding: 0; box-shadow: none; }
+.swatch.system > .swatch { position: absolute; inset: 0; }
+.swatch.half { clip-path: inset(0 0 0 50%); }
+.mode.on .swatch.system { box-shadow: 0 0 0 2px var(--surface-raised), 0 0 0 4px var(--fg); }
+.mode.on .swatch.system > .swatch { box-shadow: none; }
+.sw-side { width: 26px; border-radius: 3px; }
+.swatch.light .sw-side { background: #f2f2f0; }
+.swatch.dark  .sw-side { background: #222220; }
+.sw-pane { flex: 1; display: flex; flex-direction: column; gap: 5px; padding: 8px; border-radius: 4px; }
+.swatch.light .sw-pane { background: #f8f8f6; box-shadow: inset 0 1px 0 rgba(255,255,255,0.9); }
+.swatch.dark .sw-pane { background: #2a2a27; box-shadow: inset 0 1px 0 rgba(255,255,255,0.07); }
+.sw-line { display: block; height: 4px; width: 70%; border-radius: 2px; }
+.sw-line.short { width: 40%; }
+.swatch.light .sw-line { background: rgba(14,14,13,0.22); }
+.swatch.dark .sw-line { background: rgba(242,242,240,0.28); }
+.mode-word {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding-left: 2px;
+  font-size: var(--t-label);
+  font-weight: var(--w-mid);
+  color: var(--fg-muted);
+}
+.mode.on .mode-word { color: var(--fg); }
+.mode-check { display: inline-grid; place-items: center; width: 12px; opacity: 0; }
+.mode.on .mode-check { opacity: 1; }
+
+/* about: the mark, the name, the note */
+.about { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 14px 4px 0; }
+.about-mark {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 8px;
+  border-radius: 14px;
+  background: var(--ink);
+  color: var(--bg);
+  font-size: 15px;
+  box-shadow: var(--lift);
+}
+.about-name { font-size: var(--t-lead); font-weight: var(--w-declare); color: var(--fg); }
+.about-v { font-size: var(--t-label); font-weight: var(--w-mid); color: var(--fg-faint); margin-left: 4px; }

@@ -33,4 +33,7 @@ export {
   TextIcon,
   Flowchart01Icon as GraphIcon,
   DiceIcon,
+  Settings02Icon as GeneralIcon,
+  PaintBoardIcon as AppearanceIcon,
+  InformationCircleIcon as AboutIcon,
 } from "@hugeicons/core-free-icons";
