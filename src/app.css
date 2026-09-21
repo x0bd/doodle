@@ -691,6 +691,7 @@ html, body, #root { height: 100%; }
 .sbody { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 18px 22px; }
 .grp { margin-top: 18px; }
 .grp:first-child { margin-top: 0; }
+.under { margin-top: 10px; padding-left: 4px; }
 
 /* the three windows: a picture of each mode, drawn in its own tokens */
 .modes { display: flex; gap: 12px; }

@@ -6,7 +6,7 @@
 import { createStore } from "./store";
 import { graph, type GraphNode } from "./graph";
 import { commit } from "./history";
-import { providerFor, pick } from "../providers/registry";
+import { pick } from "../providers/registry";
 import { doc } from "./doc";
 import { writeAsset } from "../platform/fs";
 import type { ImageRequest, Progress, TextRequest } from "../providers/types";
@@ -201,8 +201,9 @@ async function run(id: string) {
         });
       });
     } else {
-      const provider = providerFor("image.generate");
       const base = job.request as ImageRequest;
+      const { provider, fellBack } = await pick("image.generate", base.model);
+      patch(id, { provider: provider.descriptor.id, note: fellBack ? "mock instead" : undefined });
       const count = job.count ?? 1;
       const outputs: string[] = [];
       let lastSeed = base.seed;

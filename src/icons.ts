@@ -45,4 +45,5 @@ export {
   Settings02Icon as GeneralIcon,
   PaintBoardIcon as AppearanceIcon,
   InformationCircleIcon as AboutIcon,
+  PlugSocketIcon as ProvidersIcon,
 } from "@hugeicons/core-free-icons";

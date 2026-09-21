@@ -29,6 +29,10 @@ Assets: `import_asset(dir, path)` hashes and copies into `Name.doodle/assets/<sh
 
 Runs: a generator has a `Candidates` count (1–4); a job renders that many, each with the next seed along; outputs go to `assets/` through `write_asset` when the graph has a home (else data URLs stay in memory — and in the file, large — until it is saved). They bloom under the generator's rows; the ringed one is the take (`takeOutput`) and flows to what the image feeds. The bar's History key lists recent runs; picking one frames the node and makes that run's first output the take. The mock varies the fixture by seed (flip, tone) so candidates can be told apart. Entering by pointer animates the field (`nav.arrival`); keys never do. Writers and the ask go to Ollama when it is up with a writer-family model (`providers/registry.ts pick/pickAny`), else the mock, and the node says 'mock instead'.
 
+## ChatGPT through Codex
+
+The user's ChatGPT subscription answers through the Codex CLI the way T3 Code drives it: Doodle spawns the CLI, the CLI holds the login. `src-tauri/src/codex.rs` finds the binary (`DOODLE_CODEX`, Homebrew, `/Applications/ChatGPT.app/Contents/Resources/codex`, `~/.local/bin`), reads only `auth_mode` from `~/.codex/auth.json`, and runs `codex exec --ephemeral --skip-git-repo-check -s <sandbox> -C <scratch> -o <file> -` with the prompt on stdin: text in a read-only sandbox, images in a scratch folder under the app cache with the CLI's own `image_generation` tool (stable in 0.155), the newest PNG in the folder taken as the result. `providers/codex.ts` is the provider (`text.generate`, `image.generate`); the Model select's "ChatGPT (Codex)" and the Write select's "ChatGPT (Codex)" route to it; the writer's ask prefers it. Settings › Providers shows who is up. Every call carries Codex's preamble (~10–15k tokens) — scenes and pictures, not keystrokes. Claude would be API-key only (Anthropic's terms on claude.ai login); nothing of that exists yet. Streaming via `codex app-server` (JSON-RPC over stdio) is the next step there; `codex app-server generate-ts` emits the bindings.
+
 ## The code
 
 ```
@@ -71,5 +75,6 @@ Rules kept: no `border:` anywhere (`grep -rn "border[a-z-]*:" src/ | grep -v bor
 - The mock writer repeats the brief before its paragraph.
 - Outputs of an unsaved graph are data URLs; if that graph is then saved they land in graph.json rather than assets/ — move them on save.
 - No run history or candidates; no real adapter; no keychain; no assets folder use yet.
-- The Write kind runs through `text.generate`; the mock answers. Its Model select lists Ollama but the registry still hands out the mock — route by the node's choice next.
+- Ollama shows "Not running" both when it is down and when it is up without a writer model; say which.
+- Codex image runs cannot be cancelled mid-flight yet (the child is not killed); the job just ignores the result.
 - An unexplained early flip of the pane state to off/off happened twice during HMR + process swaps and never on a clean launch; the store key was bumped to `doodle.ui.v1`. If it recurs, log `togglePanes` callers.

@@ -1,3 +1,4 @@
+mod codex;
 mod commands;
 mod menu;
 
@@ -13,7 +14,10 @@ pub fn run() {
             commands::graph_exists,
             commands::import_asset,
             commands::read_asset,
-            commands::write_asset
+            commands::write_asset,
+            codex::codex_status,
+            codex::codex_text,
+            codex::codex_image
         ])
         .setup(|app| {
             // The boring things live on the platform's own menu bar. Every

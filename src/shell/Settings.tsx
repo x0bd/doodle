@@ -1,11 +1,16 @@
 import { useEffect, useState } from "react";
-import { Icon, CloseIcon, CheckIcon, GeneralIcon, AppearanceIcon, AboutIcon } from "../icons";
+import { Icon, CloseIcon, CheckIcon, GeneralIcon, AppearanceIcon, AboutIcon, ProvidersIcon } from "../icons";
 import { ui, closeSettings, setTheme, setMotion, type Theme } from "../state/ui";
+import { providers, statusOf } from "../providers/registry";
+import { codexStatus, type CodexStatus } from "../providers/codex";
+import type { ProviderStatus } from "../providers/types";
+import { inTauri } from "../platform/fs";
 
-type Section = "general" | "appearance" | "about";
+type Section = "general" | "appearance" | "providers" | "about";
 const SECTIONS: { id: Section; label: string; icon: Parameters<typeof Icon>[0]["icon"] }[] = [
   { id: "general", label: "General", icon: GeneralIcon },
   { id: "appearance", label: "Appearance", icon: AppearanceIcon },
+  { id: "providers", label: "Providers", icon: ProvidersIcon },
   { id: "about", label: "About", icon: AboutIcon },
 ];
 
@@ -61,6 +66,7 @@ export function Settings() {
           <div className="sbody">
             {section === "general" && <General />}
             {section === "appearance" && <Appearance />}
+            {section === "providers" && <Providers />}
             {section === "about" && <About />}
           </div>
         </div>
@@ -139,6 +145,45 @@ function Swatch({ mode, half }: { mode: "light" | "dark"; half?: boolean }) {
         <span className="sw-line short" />
       </span>
     </span>
+  );
+}
+
+const WORD: Record<ProviderStatus, string> = { available: "Ready", unavailable: "Not running", "needs-auth": "Not signed in", unknown: "…" };
+
+function Providers() {
+  const [status, setStatus] = useState<Record<string, ProviderStatus>>({});
+  const [cx, setCx] = useState<CodexStatus | null>(null);
+  useEffect(() => {
+    let live = true;
+    providers.forEach((p) => statusOf(p).then((s) => live && setStatus((x) => ({ ...x, [p.descriptor.id]: s }))));
+    if (inTauri) codexStatus().then((s) => live && setCx(s)).catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, []);
+  const notes: Record<string, string> = {
+    mock: "Always here. Renders the bear, writes a paragraph, takes its time.",
+    ollama: "Models on this Mac. Writes when a llama, gemma, qwen or mistral is installed — ollama pull llama3.2.",
+    codex: cx?.found
+      ? `${cx.version ?? "Codex"} at ${cx.path?.replace(/^\/Applications\//, "")} · ${cx.auth === "chatgpt" ? "your ChatGPT account" : cx.auth ? `signed in with ${cx.auth}` : "run codex login"}`
+      : "The ChatGPT app or the Codex CLI. Writes and draws on your subscription; every call carries Codex's own preamble.",
+  };
+  return (
+    <section className="grp">
+      <p className="group-head">Who answers</p>
+      <div className="group">
+        {providers.map((p) => (
+          <div key={p.descriptor.id} className="group-row">
+            <div className="group-what">
+              <p className="group-name">{p.descriptor.name}</p>
+              <p className="group-note">{notes[p.descriptor.id]}</p>
+            </div>
+            <span className={`chip${status[p.descriptor.id] === "available" ? " on" : ""}`}>{WORD[status[p.descriptor.id] ?? "unknown"]}</span>
+          </div>
+        ))}
+      </div>
+      <p className="group-note under">Pick who draws on the Model node and who writes on a Write node. The writer's ask goes to ChatGPT when it is here, else Ollama, else the mock.</p>
+    </section>
   );
 }
 

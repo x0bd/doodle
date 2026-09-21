@@ -6,9 +6,13 @@
  */
 import { mock } from "./mock";
 import { ollama } from "./ollama";
+import { codex } from "./codex";
 import type { Capability, Provider, ProviderStatus } from "./types";
 
-export const providers: Provider[] = [mock, ollama];
+export const providers: Provider[] = [mock, ollama, codex];
+
+/** what a select's words mean, by provider id */
+const NAMES: Record<string, string> = { chatgpt: "codex", codex: "codex", ollama: "ollama", mock: "mock" };
 
 const status = new Map<string, { at: number; value: ProviderStatus }>();
 const TTL = 30_000;
@@ -24,9 +28,9 @@ export async function statusOf(p: Provider): Promise<ProviderStatus> {
 /** The provider for a capability — the preferred one if it is available,
  *  else the mock — and whether that was a fallback. */
 export async function pick(cap: Capability, prefer?: string): Promise<{ provider: Provider; fellBack: boolean }> {
-  const want = prefer?.toLowerCase();
+  const want = prefer ? NAMES[prefer.toLowerCase().split(/[\s·(]/)[0]] : undefined;
   if (want && want !== "mock") {
-    const p = providers.find((x) => x.descriptor.id === want.split(/[\s·]/)[0] && x.descriptor.capabilities.includes(cap));
+    const p = providers.find((x) => x.descriptor.id === want && x.descriptor.capabilities.includes(cap));
     if (p && (await statusOf(p)) === "available") return { provider: p, fellBack: false };
     return { provider: mock, fellBack: !!p };
   }
@@ -36,7 +40,8 @@ export async function pick(cap: Capability, prefer?: string): Promise<{ provider
 /** For callers that do not name a preference: the first real provider that
  *  is up, else the mock. */
 export async function pickAny(cap: Capability): Promise<Provider> {
-  for (const p of providers) {
+  // ChatGPT first — it writes best — then whatever else is up
+  for (const p of [...providers].sort((a, b) => (a.descriptor.id === "codex" ? -1 : b.descriptor.id === "codex" ? 1 : 0))) {
     if (p.descriptor.id === "mock" || !p.descriptor.capabilities.includes(cap)) continue;
     if ((await statusOf(p)) === "available") return p;
   }
