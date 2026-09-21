@@ -1,0 +1,155 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   DOODLE — the app on top of The Soft Machine.
+   soft-machine.css is the system and is never edited here; this file sets
+   the one choice the system leaves open (the signal) and lays out the
+   window. Anything reusable belongs in the system, not here.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* the signal: charcoal. Doodle wants no colour — the field is the work. */
+  --signal: var(--ink);
+  --signal-ink: var(--bg);
+
+  /* the field's dot: fainter than the hatch, it is a grid to place by, not a
+     texture to look at */
+  --dot: rgba(14, 14, 13, 0.14);
+  --dot-gap: 24px;
+
+  /* the title line. Every row in the title bar centres on y 30 — where the
+     lights are (tauri.macos.conf.json y 32 minus the buttons' own inset). */
+  --head-h: 60px;
+}
+.dark {
+  --dot: rgba(242, 242, 240, 0.10);
+}
+
+html, body, #root { height: 100%; }
+
+/* ─── The window ────────────────────────────────────────────────────────────
+   The field is the ground and runs edge to edge; the chrome floats on it. */
+.win {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg);
+  background-image: radial-gradient(circle, var(--dot) 1px, transparent 1.4px);
+  background-size: var(--dot-gap) var(--dot-gap);
+  background-position: 12px 12px;
+}
+
+/* ─── The title line ────────────────────────────────────────────────────── */
+.head {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: var(--head-h);
+  display: flex;
+  align-items: center;
+  gap: var(--gap-near);
+  padding: 0 20px;
+  z-index: 10;
+}
+/* where the platform draws the lights: three 12px discs, 20px apart */
+.lights-room { width: 52px; height: 12px; flex-shrink: 0; }
+
+.menus { display: flex; gap: 2px; }
+.menus .pill { padding: 6px 12px; }
+
+.head .spacer { flex: 1; min-width: 8px; }
+
+/* the document: prev, the tab, next */
+.doc { display: flex; align-items: center; gap: 6px; }
+.doc-tab { padding-right: 8px; gap: 6px; }
+.doc-tab .x {
+  display: grid;
+  place-items: center;
+  width: 18px; height: 18px;
+  border-radius: var(--r-pill);
+  color: var(--fg-faint);
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  .doc-tab:hover .x { color: inherit; }
+  .doc-tab .x:hover { background: var(--tint-2); }
+}
+
+.tools { display: flex; align-items: center; gap: 6px; }
+.queue { padding-right: 10px; }
+.queue .n {
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  letter-spacing: var(--tr-micro);
+  opacity: 0.7;
+}
+
+/* the graph's name, on the field under the title line */
+.sub {
+  position: absolute;
+  top: calc(var(--head-h) + 10px);
+  left: 0; right: 0;
+  text-align: center;
+  font-size: var(--t-label);
+  color: var(--fg-faint);
+  pointer-events: none;
+}
+
+/* ─── The readouts ──────────────────────────────────────────────────────────
+   Mono reports: elapsed, iteration, node count, scale. Two corners, two
+   columns; never centred. */
+.readout {
+  position: absolute;
+  bottom: 18px;
+  display: grid;
+  gap: 3px;
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  letter-spacing: var(--tr-micro);
+  color: var(--fg-faint);
+  pointer-events: none;
+}
+.readout.l { left: 20px; }
+.readout.r { right: 20px; text-align: right; }
+.readout .k { display: inline-block; min-width: 1.4em; color: var(--fg-faint); opacity: 0.7; }
+.readout.r .k { min-width: 0; margin-right: 6px; }
+
+/* ─── The tool rail ─────────────────────────────────────────────────────────
+   Down the right edge, centred on the field: zoom, fit, reveal, lens. */
+.rail {
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  border-radius: var(--r-card);
+}
+.rail .gap { height: 6px; }
+
+/* ─── The prompt bar ────────────────────────────────────────────────────────
+   A plate floating at the foot of the field. What the graph is asked, and
+   the actions that take it there. */
+.bar {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  width: min(520px, calc(100% - 200px));
+  border-radius: var(--r-card);
+  padding: 5px;
+  display: grid;
+  gap: 4px;
+}
+.bar-ask {
+  padding: 8px 11px 7px;
+  border-radius: var(--r-plate);
+}
+.bar-ask .lbl { display: block; margin-bottom: 3px; font-size: 10px; }
+.bar-ask p {
+  font-size: var(--t-label);
+  line-height: 1.4;
+  color: var(--fg-muted);
+}
+.bar-acts { display: flex; align-items: center; gap: 0; padding: 0 1px 1px; }
+.bar-acts .pill-icon { width: 30px; height: 30px; }
+.bar-acts .gap { width: 8px; }
