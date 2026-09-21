@@ -5,9 +5,14 @@
  */
 import { listen } from "@tauri-apps/api/event";
 import { openSettings, toggleInspector, toggleNavigator, togglePanes, toggleTheme } from "../state/ui";
+import { fitAll, zoomActual, zoomIn, zoomOut } from "../canvas/view";
 
 const actions: Record<string, () => void> = {
   "app.settings": openSettings,
+  "view.zoom-in": zoomIn,
+  "view.zoom-out": zoomOut,
+  "view.zoom-fit": fitAll,
+  "view.zoom-100": zoomActual,
   "view.navigator": toggleNavigator,
   "view.inspector": toggleInspector,
   "view.panes": togglePanes,

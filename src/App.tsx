@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { Canvas } from "./canvas/Canvas";
 import { Head } from "./shell/Head";
 import { Navigator } from "./shell/Navigator";
 import { Inspector } from "./shell/Inspector";
@@ -25,6 +26,7 @@ export function App() {
   }, []);
   return (
     <div className="win">
+      <Canvas />
       <Head />
       <div className="sub" data-tauri-drag-region>
         image generation v3
