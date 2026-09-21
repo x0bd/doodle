@@ -27,6 +27,8 @@ Assets: `import_asset(dir, path)` hashes and copies into `Name.doodle/assets/<sh
 
 ⌥-drag a card onto another card to move it inside (it wears the tint while it would).
 
+Runs: a generator has a `Candidates` count (1–4); a job renders that many, each with the next seed along; outputs go to `assets/` through `write_asset` when the graph has a home (else data URLs stay in memory — and in the file, large — until it is saved). They bloom under the generator's rows; the ringed one is the take (`takeOutput`) and flows to what the image feeds. The bar's History key lists recent runs; picking one frames the node and makes that run's first output the take. The mock varies the fixture by seed (flip, tone) so candidates can be told apart. Entering by pointer animates the field (`nav.arrival`); keys never do. Writers and the ask go to Ollama when it is up with a writer-family model (`providers/registry.ts pick/pickAny`), else the mock, and the node says 'mock instead'.
+
 ## The code
 
 ```
@@ -66,7 +68,8 @@ Rules kept: no `border:` anywhere (`grep -rn "border[a-z-]*:" src/ | grep -v bor
 - Inert: bar's History / Model / Image keys, cluster's reveal and lens, `⋮`, the tab's `‹ ›`, `⋮` and the Queue chevron.
 - `Control mode: Random` reseeds; the mock always returns the bear.
 - Wires that cross levels (a child wired to something outside) still feed data but are never drawn.
-- No transition when entering; the mock writer repeats the brief before its paragraph.
+- The mock writer repeats the brief before its paragraph.
+- Outputs of an unsaved graph are data URLs; if that graph is then saved they land in graph.json rather than assets/ — move them on save.
 - No run history or candidates; no real adapter; no keychain; no assets folder use yet.
 - The Write kind runs through `text.generate`; the mock answers. Its Model select lists Ollama but the registry still hands out the mock — route by the node's choice next.
 - An unexplained early flip of the pane state to off/off happened twice during HMR + process swaps and never on a clean launch; the store key was bumped to `doodle.ui.v1`. If it recurs, log `togglePanes` callers.

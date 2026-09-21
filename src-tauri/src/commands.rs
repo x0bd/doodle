@@ -102,3 +102,34 @@ pub fn read_asset(dir: String, rel: String) -> Result<String, String> {
     };
     Ok(format!("data:{mime};base64,{}", base64::engine::general_purpose::STANDARD.encode(bytes)))
 }
+
+/// A generated image, handed over as a data URL, kept content-addressed
+/// beside the graph like anything else.
+#[tauri::command]
+pub fn write_asset(dir: String, data_url: String) -> Result<ImportedAsset, String> {
+    let (head, b64) = data_url.split_once(',').ok_or("Not a data URL")?;
+    let ext = if head.contains("image/png") {
+        "png"
+    } else if head.contains("image/jpeg") {
+        "jpg"
+    } else if head.contains("image/webp") {
+        "webp"
+    } else {
+        return Err("Not an image".into());
+    };
+    let bytes = base64::engine::general_purpose::STANDARD.decode(b64).map_err(|e| e.to_string())?;
+    if bytes.len() as u64 > MAX_ASSET {
+        return Err("Larger than 64 MB".into());
+    }
+    let hash = hex::encode(Sha256::digest(&bytes));
+    let rel = format!("assets/{hash}.{ext}");
+    let dir = PathBuf::from(dir);
+    let target = dir.join(&rel);
+    fs::create_dir_all(dir.join("assets")).map_err(|e| e.to_string())?;
+    if !target.exists() {
+        let tmp = dir.join(format!("assets/.{hash}.tmp"));
+        fs::write(&tmp, &bytes).map_err(|e| e.to_string())?;
+        fs::rename(&tmp, &target).map_err(|e| e.to_string())?;
+    }
+    Ok(ImportedAsset { rel, name: format!("{hash}.{ext}"), bytes: bytes.len() as u64 })
+}

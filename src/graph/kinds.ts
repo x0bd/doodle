@@ -73,7 +73,7 @@ export const KINDS: Record<NodeKind, KindDef> = {
     ],
     outputs: [{ id: "image", name: "image", type: "image" }],
     size: { w: 240, h: 298 },
-    data: { seed: 12345, control: "Fixed", steps: 30, strength: 8, sampler: "dpm++ 2M", width: 1024, height: 1024 },
+    data: { seed: 12345, control: "Fixed", steps: 30, strength: 8, sampler: "dpm++ 2M", width: 1024, height: 1024, count: 1 },
     groups: [
       {
         name: "Sampling",
@@ -88,6 +88,7 @@ export const KINDS: Record<NodeKind, KindDef> = {
       {
         name: "Output",
         fields: [
+          { key: "count", label: "Candidates", type: "number", min: 1, max: 4, step: 1 },
           { key: "width", label: "Width", type: "number", min: 256, max: 2048, step: 64 },
           { key: "height", label: "Height", type: "number", min: 256, max: 2048, step: 64 },
         ],

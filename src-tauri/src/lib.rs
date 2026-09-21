@@ -12,7 +12,8 @@ pub fn run() {
             commands::load_graph,
             commands::graph_exists,
             commands::import_asset,
-            commands::read_asset
+            commands::read_asset,
+            commands::write_asset
         ])
         .setup(|app| {
             // The boring things live on the platform's own menu bar. Every

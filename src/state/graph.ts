@@ -18,6 +18,8 @@ export interface GraphNode extends Rect {
   asset?: string;
   /** media attached to the node, by reference */
   attachments?: string[];
+  /** what a generator produced, newest last; `asset` is the take among them */
+  outputs?: string[];
   /** creation order, for lists that should not follow the stack */
   seq: number;
   /** the node this one lives inside; null at the root */
@@ -187,6 +189,20 @@ export function moveInto(ids: string[], parent: string) {
         if (nodes[id]) nodes[id] = { ...nodes[id], parent, x: 60 + (already + i) * 260, y: 60 };
       });
       return { ...x, nodes, selection: [] };
+    }),
+  );
+}
+
+/** Make one of a generator's outputs its take; it flows to what its image feeds. */
+export function takeOutput(id: string, ref: string) {
+  commit("Take", () =>
+    graph.set((g) => {
+      const n = g.nodes[id];
+      if (!n) return g;
+      const targets = Object.values(g.edges).filter((e) => e.from.node === id && e.from.port === "image").map((e) => e.to.node);
+      const nodes = { ...g.nodes, [id]: { ...n, asset: ref } };
+      for (const t of targets) if (nodes[t]) nodes[t] = { ...nodes[t], asset: ref };
+      return { ...g, nodes };
     }),
   );
 }

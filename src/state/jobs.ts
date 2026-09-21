@@ -7,6 +7,8 @@ import { createStore } from "./store";
 import { graph, type GraphNode } from "./graph";
 import { commit } from "./history";
 import { providerFor, pick } from "../providers/registry";
+import { doc } from "./doc";
+import { writeAsset } from "../platform/fs";
 import type { ImageRequest, Progress, TextRequest } from "../providers/types";
 
 export type JobState = "queued" | "running" | "completed" | "failed" | "cancelled";
@@ -25,6 +27,10 @@ export interface Job {
   kind: "image" | "text";
   /** who answered, once someone has */
   provider?: string;
+  /** what came out, by reference, once it has */
+  outputs?: string[];
+  /** how many were asked for */
+  count?: number;
 }
 
 export interface JobsState {
@@ -82,6 +88,18 @@ export function requestFor(gen: GraphNode): ImageRequest {
   };
 }
 
+/** An output goes into the graph's folder when it has one; a data URL
+ *  stays in memory (and in the file) until then. */
+async function keep(asset: string): Promise<string> {
+  const dir = doc.get().path;
+  if (!dir || !asset.startsWith("data:")) return asset;
+  try {
+    return (await writeAsset(dir, asset)).rel;
+  } catch {
+    return asset;
+  }
+}
+
 export function textRequestFor(w: GraphNode): TextRequest {
   const brief = fed(w, "brief");
   const system = [describe(fed(w, "character")), describe(fed(w, "style")), `Length: ${w.data.length}`].filter(Boolean).join("\n");
@@ -109,7 +127,7 @@ export function enqueue(nodeIds?: string[]) {
       next.jobs[id] =
         gen.kind === "write"
           ? { id, nodeId: gen.id, state: "queued", progress: 0, queuedAt: Date.now(), kind: "text", request: textRequestFor(gen) }
-          : { id, nodeId: gen.id, state: "queued", progress: 0, queuedAt: Date.now(), kind: "image", request: requestFor(gen) };
+          : { id, nodeId: gen.id, state: "queued", progress: 0, queuedAt: Date.now(), kind: "image", request: requestFor(gen), count: Math.max(1, Number(gen.data.count) || 1) };
       next.order.push(id);
     }
     return next;
@@ -184,9 +202,24 @@ async function run(id: string) {
       });
     } else {
       const provider = providerFor("image.generate");
-      const result = await provider.generateImage!(job.request as ImageRequest, onProgress, ctl.signal);
-      if (ctl.signal.aborted) throw new DOMException("Cancelled", "AbortError");
-      // the result lands on the generator and flows into whatever its image feeds
+      const base = job.request as ImageRequest;
+      const count = job.count ?? 1;
+      const outputs: string[] = [];
+      let lastSeed = base.seed;
+      for (let i = 0; i < count; i++) {
+        // every candidate after the first takes the next seed along
+        const req = { ...base, seed: i === 0 ? base.seed : base.seed + i };
+        const result = await provider.generateImage!(
+          req,
+          (p) => onProgress({ fraction: (i + p.fraction) / count, note: count > 1 ? `${i + 1}/${count} · ${p.note ?? ""}` : p.note }),
+          ctl.signal,
+        );
+        if (ctl.signal.aborted) throw new DOMException("Cancelled", "AbortError");
+        outputs.push(await keep(result.asset));
+        lastSeed = result.seed;
+      }
+      patch(id, { outputs });
+      // the outputs land on the generator; the first is the take and flows on
       commit("Generate", () => {
         const g = graph.get();
         const targets = Object.values(g.edges)
@@ -194,9 +227,11 @@ async function run(id: string) {
           .map((e) => e.to.node);
         graph.set((x) => {
           const me = x.nodes[gen.id];
-          const data = me.data.control === "Random" ? { ...me.data, seed: result.seed } : me.data;
-          const nodes = { ...x.nodes, [gen.id]: { ...me, data, asset: result.asset } };
-          for (const t of targets) if (nodes[t]) nodes[t] = { ...nodes[t], asset: result.asset };
+          const data = me.data.control === "Random" ? { ...me.data, seed: lastSeed } : me.data;
+          const all = [...(me.outputs ?? []), ...outputs].slice(-12);
+          const take = outputs[0];
+          const nodes = { ...x.nodes, [gen.id]: { ...me, data, asset: take, outputs: all } };
+          for (const t of targets) if (nodes[t]) nodes[t] = { ...nodes[t], asset: take };
           return { ...x, nodes };
         });
       });

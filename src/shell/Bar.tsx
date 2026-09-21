@@ -7,6 +7,7 @@ import { nav } from "../state/nav";
 import { WRITER_KINDS } from "../canvas/Writer";
 import { propose } from "../state/drafts";
 import { useState } from "react";
+import { History } from "./History";
 
 /** The prompt bar at the foot of the field: the positive prompt of the
  *  first generator, and the run. */
@@ -15,6 +16,7 @@ export function Bar() {
   const j = jobs.use();
   const focus = nav.use((n) => n.focus);
   const [ask, setAsk] = useState("");
+  const [hist, setHist] = useState(false);
   if (focus && WRITER_KINDS.has(g.nodes[focus]?.kind)) {
     const send = () => {
       if (!ask.trim()) return;
@@ -59,6 +61,7 @@ export function Bar() {
 
   return (
     <div className="bar card">
+      {hist && <History onClose={() => setHist(false)} />}
       <div className="bar-ask well">
         <span className="lbl">Prompt</span>
         {promptNode ? (
@@ -81,7 +84,7 @@ export function Bar() {
         )}
       </div>
       <div className="bar-acts">
-        <button className="pill-icon" aria-label="History" title="Runs">
+        <button className={`pill-icon${hist ? " on" : ""}`} aria-label="History" title="Runs" aria-pressed={hist} onClick={() => setHist((h) => !h)}>
           <Icon icon={HistoryIcon} size={15} strokeWidth={2} />
         </button>
         <button className="pill-icon" aria-label="Save" title="Save — ⌘S" onClick={() => void save()}>

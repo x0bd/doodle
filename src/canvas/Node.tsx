@@ -2,7 +2,7 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import { Icon, ChevronDownIcon } from "../icons";
 import { urlFor, assets } from "../state/assets";
 import { KINDS, NODE_ROWS } from "../graph/kinds";
-import { graph, inputs, outputs, updateData, childCount, type GraphNode, type PortRef } from "../state/graph";
+import { graph, inputs, outputs, updateData, childCount, takeOutput, type GraphNode, type PortRef } from "../state/graph";
 import { jobs, jobFor } from "../state/jobs";
 
 export interface NodeHandlers {
@@ -28,7 +28,11 @@ export function Node({ node, selected, into, handlers }: { node: GraphNode; sele
   return (
     <div
       className={`node card k-${node.kind}${selected ? " sel" : ""}${running ? " running" : ""}${into ? " into" : ""}`}
-      style={{ left: node.x, top: node.y, width: node.w, height: node.h }}
+      style={
+        node.kind === "generate" && node.outputs?.length
+          ? { left: node.x, top: node.y, width: node.w, minHeight: node.h }
+          : { left: node.x, top: node.y, width: node.w, height: node.h }
+      }
       data-node={node.id}
       onPointerDown={(e) => handlers.onPointerDown(e, node)}
       role="group"
@@ -118,7 +122,8 @@ function Body({ node }: { node: GraphNode }) {
           />
         </div>
       );
-    case "generate":
+    case "generate": {
+      const outs = node.outputs ?? [];
       return (
         <div className="node-body node-rows">
           {(NODE_ROWS.generate ?? []).map((r) => (
@@ -127,8 +132,30 @@ function Body({ node }: { node: GraphNode }) {
               <span className="node-row-v px">{fmt(node.data[r.key])}</span>
             </div>
           ))}
+          {outs.length > 0 && (
+            <div className="bloom" role="radiogroup" aria-label="Candidates">
+              {outs.slice(-4).map((ref) => {
+                const url = urlFor(ref);
+                const on = node.asset === ref;
+                return (
+                  <button
+                    key={ref}
+                    className={`bloom-take${on ? " on" : ""}`}
+                    role="radio"
+                    aria-checked={on}
+                    title={on ? "The take" : "Make this the take"}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={() => !on && takeOutput(node.id, ref)}
+                  >
+                    {url && <img src={url} alt="" draggable={false} />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       );
+    }
     case "preview":
       return (
         <div className="node-body well">

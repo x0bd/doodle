@@ -8,6 +8,26 @@ import type { ImageRequest, ImageResult, Progress, Provider, TextRequest } from 
 
 const STEP_MS = 70;
 
+/** The fixture, varied by the seed — a flip, a shift of tone — so
+ *  candidates can be told apart. Rendered once per seed into a PNG. */
+async function vary(seed: number): Promise<string> {
+  const img = new Image();
+  img.src = FIXTURES.blackBear;
+  await img.decode();
+  const size = 768;
+  const c = document.createElement("canvas");
+  c.width = c.height = size;
+  const ctx = c.getContext("2d")!;
+  const flip = seed % 2 === 1;
+  const hue = (seed % 7) * 12 - 36;
+  const bright = 1 + ((seed % 5) - 2) * 0.05;
+  ctx.filter = `hue-rotate(${hue}deg) brightness(${bright})`;
+  ctx.translate(flip ? size : 0, 0);
+  ctx.scale(flip ? -1 : 1, 1);
+  ctx.drawImage(img, 0, 0, size, size);
+  return c.toDataURL("image/png");
+}
+
 export const mock: Provider = {
   descriptor: { id: "mock", name: "Mock", capabilities: ["image.generate", "text.generate"] },
   async status() {
@@ -21,7 +41,8 @@ export const mock: Provider = {
       await new Promise((r) => setTimeout(r, STEP_MS));
       onProgress({ fraction: i / steps, note: `${i}/${steps}` });
     }
-    return { asset: FIXTURES.blackBear, seed: req.seed, elapsedMs: performance.now() - t0 };
+    const asset = req.seed === 12345 ? FIXTURES.blackBear : await vary(req.seed);
+    return { asset, seed: req.seed, elapsedMs: performance.now() - t0 };
   },
   async generateText(req: TextRequest, signal: AbortSignal): Promise<string> {
     await new Promise((r) => setTimeout(r, 1200));
