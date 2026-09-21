@@ -2,8 +2,11 @@ import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointer
 import { camera, panBy, toWorld, zoomAt, type Point, type Rect } from "./camera";
 import {
   graph, clearSelection, select, toggleSelect, moveNodes, raise, intersects, deleteSelected,
-  connectNow, canConnect, disconnectNow, edgeInto, moveInto, type PortRef,
+  connectNow, canConnect, disconnectNow, edgeInto, moveInto, portOf, addNode, makeNode, connect, type PortRef,
 } from "../state/graph";
+import { KINDS, type NodeKind } from "../graph/kinds";
+import { Icon, CloseIcon } from "../icons";
+import { GLYPH } from "./Doc";
 import { begin as journalBegin, end as journalEnd, commit, type Snapshot } from "../state/history";
 import { Node, type NodeHandlers } from "./Node";
 import { nav, enter, rise, clearArrival } from "../state/nav";
@@ -35,12 +38,19 @@ function nodeAt(x: number, y: number, not: string[]): string | null {
   return null;
 }
 
-/** The port under a screen point, if any. */
-function portAt(x: number, y: number): { ref: PortRef; dir: "in" | "out" } | null {
-  const el = (document.elementFromPoint(x, y) as HTMLElement | null)?.closest<HTMLElement>("[data-port]");
-  if (!el) return null;
-  const [node, port] = el.dataset.port!.split(":");
-  return { ref: { node, port }, dir: el.dataset.dir as "in" | "out" };
+/** The nearest input within reach that this output can feed, if any. */
+function nearestInput(x: number, y: number, from: PortRef, reach = 40): PortRef | null {
+  let best: { ref: PortRef; d: number } | null = null;
+  for (const el of document.querySelectorAll<HTMLElement>('[data-port][data-dir="in"]')) {
+    const [node, port] = el.dataset.port!.split(":");
+    const ref = { node, port };
+    if (!canConnect(from, ref)) continue;
+    const dot = el.querySelector<HTMLElement>(".port-dot") ?? el;
+    const r = dot.getBoundingClientRect();
+    const d = Math.hypot(r.left + r.width / 2 - x, r.top + r.height / 2 - y);
+    if (d <= reach && (!best || d < best.d)) best = { ref, d };
+  }
+  return best?.ref ?? null;
 }
 
 /** The field: the world layer under the chrome, and every way of moving on it. */
@@ -62,6 +72,9 @@ export function Canvas() {
   const drag = useRef<Drag | null>(null);
   const [marquee, setMarquee] = useState<Rect | null>(null);
   const [live, setLive] = useState<{ a: Point; b: Point } | null>(null);
+  /** a wire let go on the field: what could take it */
+  const [offer, setOffer] = useState<{ from: PortRef; at: Point; world: Point } | null>(null);
+  const liveType = live && drag.current?.mode === "wire" ? portOf(drag.current.from, "out")?.type : undefined;
   const [space, setSpace] = useState(false);
   const [dragging, setDragging] = useState(false);
   /** the node an ⌥-drag would drop into */
@@ -128,6 +141,18 @@ export function Canvas() {
           e.preventDefault();
           enter(sel[0], () => requestAnimationFrame(fitAll));
         }
+      } else if (e.key === "c" && !e.metaKey && !e.ctrlKey) {
+        // two selected: the first compatible output of one into the other, in selection order
+        const g = graph.get();
+        const [a, b] = g.selection.map((id) => g.nodes[id]);
+        if (!a || !b) return;
+        const pair = (from: typeof a, to: typeof b) => {
+          for (const o of KINDS[from.kind].outputs) for (const i of KINDS[to.kind].inputs) if (o.type === i.type && !edgeInto({ node: to.id, port: i.id })) return [{ node: from.id, port: o.id }, { node: to.id, port: i.id }] as const;
+          for (const o of KINDS[from.kind].outputs) for (const i of KINDS[to.kind].inputs) if (o.type === i.type) return [{ node: from.id, port: o.id }, { node: to.id, port: i.id }] as const;
+          return null;
+        };
+        const found = pair(a, b) ?? pair(b, a);
+        if (found) connect(found[0], found[1]);
       } else if (e.key === "Backspace" || e.key === "Delete") {
         e.preventDefault();
         deleteSelected();
@@ -229,8 +254,8 @@ export function Canvas() {
       const target = e.altKey ? nodeAt(p.x, p.y, d.ids) : null;
       if (target !== into) setInto(target);
     } else if (d.mode === "wire") {
-      const hit = portAt(p.x, p.y);
-      const snap = hit && hit.dir === "in" && canConnect(d.from, hit.ref) ? portPos(graph.get().nodes[hit.ref.node], hit.ref, "in") : null;
+      const near = nearestInput(p.x, p.y, d.from);
+      const snap = near ? portPos(graph.get().nodes[near.node], near, "in") : null;
       setLive({ a: d.a, b: snap ?? toWorld(camera.get(), p) });
     } else {
       const r = {
@@ -267,10 +292,18 @@ export function Canvas() {
     const d = drag.current;
     if (!d) return;
     if (d.mode === "wire") {
-      const hit = portAt(e.clientX, e.clientY);
-      if (hit && hit.dir === "in") connectNow(d.from, hit.ref);
+      const near = nearestInput(e.clientX, e.clientY, d.from);
+      if (near) {
+        connectNow(d.from, near);
+        journalEnd(d.before, "Wire");
+      } else if (!(document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null)?.closest("[data-node]")) {
+        // let go on the field: offer what could take this wire, right here
+        journalEnd(d.before, "Wire");
+        setOffer({ from: d.from, at: { x: e.clientX, y: e.clientY }, world: toWorld(camera.get(), { x: e.clientX, y: e.clientY }) });
+      } else {
+        journalEnd(d.before, "Wire");
+      }
       setLive(null);
-      journalEnd(d.before, "Wire");
     } else if (d.mode === "move") {
       const target = e.altKey ? nodeAt(e.clientX, e.clientY, d.ids) : null;
       if (target) {
@@ -304,7 +337,7 @@ export function Canvas() {
   return (
     <div
       ref={ref}
-      className={`stage${live ? " wiring" : ""}${map ? " lod-map" : ""}${lensOn ? " lens" : ""}${arriveClass}`}
+      className={`stage${live ? " wiring" : ""}${liveType ? ` wiring-${liveType}` : ""}${map ? " lod-map" : ""}${lensOn ? " lens" : ""}${arriveClass}`}
       style={{
         backgroundSize: `${gap}px ${gap}px`,
         backgroundPosition: `${cam.x + 12 * cam.zoom}px ${cam.y + 12 * cam.zoom}px`,
@@ -327,6 +360,65 @@ export function Canvas() {
       {marquee && (
         <div className="marquee" style={{ left: marquee.x, top: marquee.y, width: marquee.w, height: marquee.h }} />
       )}
+      {offer && (
+        <Offer
+          offer={offer}
+          onClose={() => setOffer(null)}
+          onPick={(kind, port) => {
+            const n = makeNode(kind, Math.round(offer.world.x + 24), Math.round(offer.world.y - 36), { parent: focus });
+            addNode(n);
+            connect(offer.from, { node: n.id, port });
+            setOffer(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+
+/** What could take this wire — every kind with an input of its type — as a
+ *  menu where the pointer let go. Pick one and it is made there, wired. */
+function Offer({ offer, onClose, onPick }: { offer: { from: PortRef; at: Point }; onClose: () => void; onPick: (kind: NodeKind, port: string) => void }) {
+  const type = portOf(offer.from, "out")?.type;
+  // one row per kind: its first input of this type
+  const options = (Object.values(KINDS) as (typeof KINDS)[NodeKind][])
+    .map((k) => {
+      const i = k.inputs.find((i) => i.type === type);
+      return i ? { kind: k.kind, port: i.id, label: k.title, name: i.name } : null;
+    })
+    .filter((o): o is NonNullable<typeof o> => !!o);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && (e.stopPropagation(), onClose());
+    const onDown = (e: PointerEvent) => !(e.target as HTMLElement).closest(".offer") && onClose();
+    window.addEventListener("keydown", onKey, true);
+    window.addEventListener("pointerdown", onDown, true);
+    return () => {
+      window.removeEventListener("keydown", onKey, true);
+      window.removeEventListener("pointerdown", onDown, true);
+    };
+  }, [onClose]);
+  const h = 44 + Math.max(1, options.length) * 30;
+  const left = Math.min(offer.at.x + 8, window.innerWidth - 240);
+  const top = offer.at.y + h > window.innerHeight - 120 ? offer.at.y - h - 8 : offer.at.y - 8;
+  return (
+    <div className="offer card" style={{ left, top }} role="menu" onPointerDown={(e) => e.stopPropagation()}>
+      <div className="list">
+        <div className="list-head">
+          Take this {type} into
+          <button className="con-btn offer-x" aria-label="Close" onClick={onClose}>
+            <Icon icon={CloseIcon} size={11} strokeWidth={2.2} />
+          </button>
+        </div>
+        {options.map((o) => (
+          <button key={`${o.kind}:${o.port}`} className="list-row" role="menuitem" onClick={() => onPick(o.kind, o.port)}>
+            <Icon icon={GLYPH[o.kind]} size={13} strokeWidth={1.8} />
+            <span className="list-word">{o.label}</span>
+            <span className="list-key">{o.name}</span>
+          </button>
+        ))}
+        {options.length === 0 && <p className="pane-empty">Nothing takes a {type} yet.</p>}
+      </div>
     </div>
   );
 }

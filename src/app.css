@@ -370,6 +370,8 @@ html, body, #root { height: 100%; }
 }
 .port.in  { left: -4px; }
 .port.out { right: -4px; }
+/* the hit area is bigger than the mark: a wire should be easy to catch */
+.port::before { content: ""; position: absolute; inset: -6px -10px; }
 .port-dot {
   width: 8px;
   height: 8px;
@@ -383,10 +385,19 @@ html, body, #root { height: 100%; }
 .port.on { color: var(--fg-muted); }
 @media (hover: hover) and (pointer: fine) {
   .port:hover { color: var(--fg); }
-  .port:hover .port-dot { box-shadow: 0 0 0 1.5px var(--fg); }
+  .port:hover .port-dot { box-shadow: 0 0 0 1.5px var(--fg), 0 0 0 5px var(--tint-2); transform: scale(1.25); }
 }
 .port:focus-visible { background: none; box-shadow: none; color: var(--fg); }
-.wiring .port.in:hover .port-dot { background: var(--fg); }
+/* while a wire is out: every input it can land on lights; the rest step back */
+.wiring .port { transition: opacity var(--fast) var(--ease); }
+.wiring .port.in { opacity: 0.35; }
+.wiring-model .port.in.t-model, .wiring-text .port.in.t-text, .wiring-image .port.in.t-image { opacity: 1; color: var(--fg); }
+.wiring-model .port.in.t-model .port-dot, .wiring-text .port.in.t-text .port-dot, .wiring-image .port.in.t-image .port-dot {
+  box-shadow: 0 0 0 1.5px var(--fg), 0 0 0 5px var(--tint-2);
+  transform: scale(1.25);
+}
+.wiring .port.out { opacity: 0.35; }
+.wire-hit { cursor: default; }
 
 /* the bodies, by kind */
 .node-select { width: 100%; justify-content: space-between; cursor: default; }
@@ -457,6 +468,19 @@ html, body, #root { height: 100%; }
 .node-page { padding: 12px 14px; overflow: auto; }
 .node-page-text { font-size: var(--t-label); line-height: 1.55; color: var(--fg); white-space: pre-wrap; }
 .node-page-empty { font-size: var(--t-label); color: var(--fg-faint); }
+
+/* the offer: a wire let go on the field */
+.offer {
+  position: absolute;
+  width: 224px;
+  padding: 6px;
+  border-radius: var(--r-card);
+  box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), 0 0 0 1px var(--rim-edge), var(--lift-2);
+  z-index: 20;
+  animation: in var(--fast) var(--ease) both;
+}
+.offer .list-head { display: flex; align-items: center; justify-content: space-between; }
+.offer-x { width: 20px; height: 20px; }
 
 /* the wires */
 .wires { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; pointer-events: none; }

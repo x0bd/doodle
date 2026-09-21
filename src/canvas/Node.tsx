@@ -62,7 +62,7 @@ export function Node({ node, selected, into, dim, handlers }: { node: GraphNode;
             return (
               <button
                 key={p.id}
-                className={`port in${connected(ref) ? " on" : ""}`}
+                className={`port in t-${p.type}${connected(ref) ? " on" : ""}`}
                 style={{ top: i * 18 }}
                 data-port={`${node.id}:${p.id}`}
                 data-dir="in"
@@ -79,7 +79,7 @@ export function Node({ node, selected, into, dim, handlers }: { node: GraphNode;
             return (
               <button
                 key={p.id}
-                className={`port out${connected(ref) ? " on" : ""}`}
+                className={`port out t-${p.type}${connected(ref) ? " on" : ""}`}
                 style={{ top: i * 18 }}
                 data-port={`${node.id}:${p.id}`}
                 data-dir="out"

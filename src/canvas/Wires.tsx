@@ -1,6 +1,6 @@
 import type { Point } from "./camera";
 import { portPos, wirePath } from "./layout";
-import { graph, selectEdge } from "../state/graph";
+import { graph, selectEdge, disconnect } from "../state/graph";
 import { nav } from "../state/nav";
 
 /** The wires, in world units: one SVG under the nodes, and the wire being
@@ -19,7 +19,7 @@ export function Wires({ live, lit }: { live: { a: Point; b: Point } | null; lit:
         const dim = !!lit && !(lit.has(e.from.node) && lit.has(e.to.node));
         return (
           <g key={e.id} className={`wire${sel ? " sel" : ""}${dim ? " dim" : ""}`}>
-            <path className="wire-hit" d={d} onPointerDown={(ev) => { ev.stopPropagation(); selectEdge(e.id); }} />
+            <path className="wire-hit" d={d} onPointerDown={(ev) => { ev.stopPropagation(); selectEdge(e.id); }} onDoubleClick={(ev) => { ev.stopPropagation(); disconnect(e.id); }} />
             <path className="wire-line" d={d} />
           </g>
         );
