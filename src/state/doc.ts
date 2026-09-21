@@ -14,17 +14,41 @@ import { templateById, type TemplateId } from "../graph/templates";
 
 export type SaveState = "idle" | "saving" | "saved" | "failed";
 
+export interface Bible {
+  tone: string;
+  rules: string;
+  avoid: string;
+}
+export const EMPTY_BIBLE: Bible = { tone: "", rules: "", avoid: "" };
+
 export interface DocState {
   path: string | null;
   name: string;
   dirty: boolean;
   save: SaveState;
   error?: string;
+  /** the project's own rules — theme, tone, what to avoid — carried into every request */
+  bible: Bible;
 }
 
 const LAST = "doodle.lastPath";
 
-export const doc = createStore<DocState>({ path: null, name: "Untitled", dirty: false, save: "idle" });
+export const doc = createStore<DocState>({ path: null, name: "Untitled", dirty: false, save: "idle", bible: EMPTY_BIBLE });
+
+let bibleTimer: number | undefined;
+export function setBible(patch: Partial<Bible>) {
+  doc.set((d) => ({ ...d, bible: { ...d.bible, ...patch }, dirty: true }));
+  const path = doc.get().path;
+  if (!path) return;
+  clearTimeout(bibleTimer);
+  bibleTimer = window.setTimeout(() => write(path), 800);
+}
+
+/** the bible as words for a request, or nothing */
+export function bibleText(): string {
+  const b = doc.get().bible;
+  return [b.tone && `Tone: ${b.tone}`, b.rules && `Rules: ${b.rules}`, b.avoid && `Avoid: ${b.avoid}`].filter(Boolean).join("\n");
+}
 
 interface FileGraph {
   format: "doodle-graph";
@@ -36,6 +60,7 @@ interface FileGraph {
   camera: Camera;
   /** each workspace's last view, by node id; "root" for the top */
   views?: Record<string, Camera>;
+  bible?: Bible;
 }
 
 function serialize(): string {
@@ -49,6 +74,7 @@ function serialize(): string {
     edges: g.edges,
     camera: camera.get(),
     views: { ...nav.get().views, [nav.get().focus ?? "root"]: camera.get() },
+    bible: doc.get().bible,
   };
   return JSON.stringify(file, null, 2);
 }
@@ -140,13 +166,13 @@ function load(file: FileGraph, path: string | null) {
   const nodes = { ...file.nodes };
   file.order.forEach((id, i) => {
     const n = nodes[id];
-    if (n && (n.seq == null || n.parent === undefined)) nodes[id] = { ...n, seq: n.seq ?? i + 1, parent: n.parent ?? null };
+    if (n && (n.seq == null || n.parent === undefined || !n.status)) nodes[id] = { ...n, seq: n.seq ?? i + 1, parent: n.parent ?? null, status: n.status ?? "canon" };
   });
   graph.set({ nodes, order: file.order, edges: file.edges, selection: [], edgeSelection: [] });
   resetNav(file.views ?? {});
   if (!file.views?.root && file.camera) camera.set(file.camera);
   resetHistory();
-  doc.set({ path, name: file.name ?? (path ? nameOf(path) : "Untitled"), dirty: false, save: path ? "saved" : "idle" });
+  doc.set({ path, name: file.name ?? (path ? nameOf(path) : "Untitled"), dirty: false, save: path ? "saved" : "idle", bible: { ...EMPTY_BIBLE, ...(file.bible ?? {}) } });
 }
 
 export async function openFrom(path: string): Promise<boolean> {
@@ -188,7 +214,7 @@ export function newGraph(template: TemplateId = "images") {
   resetHistory();
   resetNav();
   forgetJobs();
-  doc.set({ path: null, name: `Untitled ${t.name.toLowerCase()}`, dirty: false, save: "idle" });
+  doc.set({ path: null, name: `Untitled ${t.name.toLowerCase()}`, dirty: false, save: "idle", bible: EMPTY_BIBLE });
 }
 
 /** On launch: the last graph if it is still there, else the template. Tells

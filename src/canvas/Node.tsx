@@ -27,7 +27,7 @@ export function Node({ node, selected, into, handlers }: { node: GraphNode; sele
 
   return (
     <div
-      className={`node card k-${node.kind}${selected ? " sel" : ""}${running ? " running" : ""}${into ? " into" : ""}`}
+      className={`node card k-${node.kind} st-${node.status}${selected ? " sel" : ""}${running ? " running" : ""}${into ? " into" : ""}`}
       style={
         node.kind === "generate" && node.outputs?.length
           ? { left: node.x, top: node.y, width: node.w, minHeight: node.h }
@@ -41,6 +41,7 @@ export function Node({ node, selected, into, handlers }: { node: GraphNode; sele
       <div className="node-head">
         <span className="node-dot" />
         <span className="node-name">{node.title}</span>
+        {node.status !== "canon" && <span className="node-st">{node.status === "exploration" ? "explore" : node.status}</span>}
         {inside > 0 && <span className="node-inside badge" title={`${inside} inside — double-click to enter`}>{inside}</span>}
         {job && job.state !== "completed" && (
           <span className="node-state px">

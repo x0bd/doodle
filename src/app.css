@@ -320,6 +320,11 @@ html, body, #root { height: 100%; }
   text-overflow: ellipsis;
 }
 .node-state { margin-left: auto; font-size: var(--t-micro); color: var(--fg-faint); }
+/* state is a word, never a colour; rejected steps back */
+.node-st { margin-left: auto; font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--fg-faint); }
+.node-st + .node-inside, .node-st + .node-state { margin-left: 6px; }
+.node.st-rejected { opacity: 0.55; }
+.node.st-rejected.sel { opacity: 0.8; }
 .node-inside { margin-left: auto; min-width: 18px; height: 16px; font-size: 10px; }
 .node-inside + .node-state { margin-left: 6px; }
 .node.running { box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), var(--lift-2); }

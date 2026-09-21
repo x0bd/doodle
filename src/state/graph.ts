@@ -9,10 +9,15 @@ import type { Rect } from "../canvas/camera";
 import { KINDS, type NodeKind, type Port } from "../graph/kinds";
 import { commit } from "./history";
 
+export type Canon = "canon" | "draft" | "exploration" | "rejected";
+
 export interface GraphNode extends Rect {
   id: string;
   kind: NodeKind;
   title: string;
+  /** canon is settled; draft is proposed or unreviewed; exploration is a
+   *  branch; rejected stays but never counts as context */
+  status: Canon;
   data: Record<string, string | number>;
   /** an image the node holds, shown in its well */
   asset?: string;
@@ -52,7 +57,7 @@ export const nextSeq = () => ++seq;
 
 export function makeNode(kind: NodeKind, x: number, y: number, extra: Partial<GraphNode> = {}): GraphNode {
   const def = KINDS[kind];
-  return { id: newId(), kind, title: def.title, x, y, ...def.size, data: { ...def.data }, seq: nextSeq(), parent: null, ...extra };
+  return { id: newId(), kind, title: def.title, x, y, ...def.size, data: { ...def.data }, seq: nextSeq(), parent: null, status: "draft", ...extra };
 }
 
 export const graph = createStore<GraphState>({
@@ -132,6 +137,16 @@ export function updateData(id: string, patch: Record<string, string | number>) {
         return { ...g, nodes: { ...g.nodes, [id]: { ...n, data: { ...n.data, ...patch } } } };
       }),
     `data:${id}:${Object.keys(patch).join(",")}`,
+  );
+}
+
+export function setStatus(ids: string[], status: Canon) {
+  commit("Status", () =>
+    graph.set((g) => {
+      const nodes = { ...g.nodes };
+      for (const id of ids) if (nodes[id]) nodes[id] = { ...nodes[id], status };
+      return { ...g, nodes };
+    }),
   );
 }
 

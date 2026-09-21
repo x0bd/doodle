@@ -8,6 +8,7 @@ import { createStore } from "./store";
 import { graph, updateData, childrenOf } from "./graph";
 import { pick } from "../providers/registry";
 import { ui } from "./ui";
+import { bibleText } from "./doc";
 import { expandMentions } from "../canvas/mentions";
 
 export type Ask = "expand" | "continue" | "rewrite" | "ask";
@@ -42,10 +43,10 @@ export async function propose(nodeId: string, ask: Ask, instruction = "") {
   drafts.set((d) => ({ ...d, [id]: { id, nodeId, ask, instruction, text: "", state: "thinking" } }));
   const notes = childrenOf(g, nodeId)
     .map((c) => g.nodes[c])
-    .filter((n) => n.data.text)
+    .filter((n) => n.data.text && n.status !== "rejected")
     .map((n) => `${n.title}: ${n.data.text}`)
     .join("\n");
-  const system = [PROMPTS[ask], instruction, notes && `Context:\n${notes}`].filter(Boolean).join("\n\n");
+  const system = [PROMPTS[ask], instruction, bibleText(), notes && `Context:\n${notes}`].filter(Boolean).join("\n\n");
   try {
     const { provider } = await pick("text.generate", ui.get().writeWith);
     drafts.set((d) => (d[id] ? { ...d, [id]: { ...d[id], provider: provider.descriptor.name } } : d));

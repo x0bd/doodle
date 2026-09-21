@@ -40,7 +40,7 @@ export const TEMPLATES: Template[] = [
         wire(["n3", "text"], ["n4", "negative"]),
         wire(["n4", "image"], ["n5", "image"]),
       ];
-      return { nodes, edges };
+      return { nodes: nodes.map((n) => ({ ...n, status: "canon" as const })), edges };
     },
   },
   {
@@ -70,7 +70,7 @@ export const TEMPLATES: Template[] = [
         wire(["c1", "text"], ["g1", "character"]),
         wire(["g1", "image"], ["v1", "image"]),
       ];
-      return { nodes, edges };
+      return { nodes: nodes.map((n) => ({ ...n, status: "canon" as const })), edges };
     },
   },
   {
@@ -101,7 +101,7 @@ export const TEMPLATES: Template[] = [
         wire(["g1", "image"], ["v1", "image"]),
         wire(["g2", "image"], ["v2", "image"]),
       ];
-      return { nodes, edges };
+      return { nodes: nodes.map((n) => ({ ...n, status: "canon" as const })), edges };
     },
   },
   {
@@ -122,7 +122,7 @@ export const TEMPLATES: Template[] = [
         wire(["s1", "text"], ["w1", "style"]),
         wire(["w1", "text"], ["pg1", "text"]),
       ];
-      return { nodes, edges };
+      return { nodes: nodes.map((n) => ({ ...n, status: "canon" as const })), edges };
     },
   },
 ];

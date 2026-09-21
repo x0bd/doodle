@@ -7,7 +7,7 @@ import { createStore } from "./store";
 import { graph, type GraphNode } from "./graph";
 import { commit } from "./history";
 import { pick } from "../providers/registry";
-import { doc } from "./doc";
+import { doc, bibleText } from "./doc";
 import { writeAsset, saveRecord, loadRecord, inTauri } from "../platform/fs";
 import { ui } from "./ui";
 import { expandMentions } from "../canvas/mentions";
@@ -61,7 +61,7 @@ function fed(node: GraphNode, port: string): GraphNode | undefined {
 
 /** what a character or style contributes to a prompt, in words */
 function describe(n: GraphNode | undefined): string {
-  if (!n) return "";
+  if (!n || n.status === "rejected") return "";
   const d = n.data;
   if (n.kind === "character") return [d.name, d.description].filter(Boolean).join(": ");
   if (n.kind === "style") return [d.description, d.palette && `palette: ${d.palette}`, d.lighting && `lighting: ${d.lighting}`].filter(Boolean).join(", ");
@@ -77,7 +77,7 @@ export function requestFor(gen: GraphNode): ImageRequest {
   const neg = fed(gen, "negative");
   const d = gen.data;
   const seed = d.control === "Random" ? Math.floor(Math.random() * 1_000_000) : Number(d.seed);
-  const prompt = [describe(pos), describe(fed(gen, "character")), describe(fed(gen, "style"))].filter(Boolean).join(". ");
+  const prompt = [describe(pos), describe(fed(gen, "character")), describe(fed(gen, "style")), bibleText().replace(/\n/g, ". ")].filter(Boolean).join(". ");
   return {
     prompt,
     negative: String(neg?.data.text ?? ""),
@@ -105,7 +105,7 @@ async function keep(asset: string): Promise<string> {
 
 export function textRequestFor(w: GraphNode): TextRequest {
   const brief = fed(w, "brief");
-  const system = [describe(fed(w, "character")), describe(fed(w, "style")), `Length: ${w.data.length}`].filter(Boolean).join("\n");
+  const system = [bibleText(), describe(fed(w, "character")), describe(fed(w, "style")), `Length: ${w.data.length}`].filter(Boolean).join("\n");
   return { prompt: String(brief?.data.text ?? ""), system, model: String(w.data.model) };
 }
 

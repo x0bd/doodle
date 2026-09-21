@@ -9,6 +9,7 @@ import { graph, childrenOf, makeNode, type GraphNode } from "./graph";
 import { commit } from "./history";
 import { pick } from "../providers/registry";
 import { ui } from "./ui";
+import { bibleText } from "./doc";
 import { expandMentions } from "../canvas/mentions";
 
 export interface ShotIdea {
@@ -64,10 +65,10 @@ export function parseShots(text: string): ShotIdea[] {
 
 function context(scene: GraphNode): string {
   const g = graph.get();
-  const kids = childrenOf(g, scene.id).map((c) => g.nodes[c]);
+  const kids = childrenOf(g, scene.id).map((c) => g.nodes[c]).filter((k) => k.status !== "rejected");
   const beats = kids.filter((k) => k.kind === "note" && k.data.text).map((k) => `- ${k.title}: ${k.data.text}`);
-  const cast = Object.values(g.nodes).filter((n) => n.kind === "character").map((n) => `- ${n.data.name || n.title}: ${n.data.description}`);
-  const looks = Object.values(g.nodes).filter((n) => n.kind === "style").map((n) => `- ${n.title}: ${n.data.description}`);
+  const cast = Object.values(g.nodes).filter((n) => n.kind === "character" && n.status !== "rejected").map((n) => `- ${n.data.name || n.title}: ${n.data.description}`);
+  const looks = Object.values(g.nodes).filter((n) => n.kind === "style" && n.status !== "rejected").map((n) => `- ${n.title}: ${n.data.description}`);
   return [
     beats.length && `Beats:\n${beats.join("\n")}`,
     cast.length && `Characters:\n${cast.join("\n")}`,
@@ -85,7 +86,7 @@ export async function proposeShots(nodeId: string, count = 6, mood = "") {
   try {
     const { provider } = await pick("text.generate", ui.get().writeWith);
     shots.set((s) => (s[id] ? { ...s, [id]: { ...s[id], provider: provider.descriptor.name } } : s));
-    const system = [shotsContract(count, mood), context(scene)].filter(Boolean).join("\n\n");
+    const system = [shotsContract(count, mood), bibleText(), context(scene)].filter(Boolean).join("\n\n");
     const text = await provider.generateText!({ prompt: expandMentions(String(scene.data.text ?? "")), system }, new AbortController().signal);
     const items = parseShots(text);
     shots.set((s) => (s[id] ? { ...s, [id]: { ...s[id], items, state: "ready" } } : s));

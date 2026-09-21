@@ -55,6 +55,7 @@ export function Doc({ id }: { id: string }) {
             <input className="paper-title" value={node.title} onChange={(e) => rename(id, e.target.value)} spellCheck={false} aria-label="Title" />
             <p className="paper-meta">
               {def.title} · in {parent}
+              {node.status !== "canon" && ` · ${node.status}`}
               {kids.length > 0 && ` · ${kids.length} inside`}
               {images.length > 0 && ` · ${images.length} ${images.length === 1 ? "image" : "images"}`}
               {job && ` · ${job.state === "running" ? `running ${job.note ?? ""}` : job.state}`}
