@@ -10,6 +10,7 @@ import { nav, enter, rise } from "../state/nav";
 import { childrenOf } from "../state/graph";
 import { fitAll } from "./view";
 import { Wires } from "./Wires";
+import { Workspace } from "./Workspace";
 import { portPos } from "./layout";
 
 type Drag =
@@ -63,7 +64,11 @@ export function Canvas() {
   // the keys: space to pan, arrows to nudge, delete to remove, escape to let go
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
-      if (isTyping(e.target)) return;
+      if (isTyping(e.target)) {
+        // Escape leaves the field; the next one acts on the canvas
+        if (e.key === "Escape") (e.target as HTMLElement).blur();
+        return;
+      }
       if (e.key === " " && !e.repeat) {
         e.preventDefault();
         setSpace(true);
@@ -202,7 +207,10 @@ export function Canvas() {
     const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
     if (!el || el.closest("textarea, input, [data-port]")) return;
     const id = el.closest<HTMLElement>("[data-node]")?.dataset.node;
-    if (id) enter(id, () => requestAnimationFrame(fitAll));
+    if (id) {
+      enter(id, () => requestAnimationFrame(fitAll));
+      requestAnimationFrame(() => (document.activeElement as HTMLElement | null)?.blur());
+    }
   };
 
   const onUp = (e: ReactPointerEvent<HTMLDivElement>) => {
@@ -243,6 +251,7 @@ export function Canvas() {
       onPointerCancel={onUp}
     >
       <div className="world" style={{ transform: `translate(${cam.x}px, ${cam.y}px) scale(${cam.zoom})` }}>
+        {focus && <Workspace id={focus} />}
         <Wires live={live} />
         {here.map((id) => (
           <Node key={id} node={g.nodes[id]} selected={g.selection.includes(id)} handlers={handlers} />

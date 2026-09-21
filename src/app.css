@@ -198,6 +198,66 @@ html, body, #root { height: 100%; }
 .node-page-text { font-size: var(--t-label); line-height: 1.55; color: var(--fg); white-space: pre-wrap; }
 .node-page-empty { font-size: var(--t-label); color: var(--fg-faint); }
 
+/* ─── The workspace plate ───────────────────────────────────────────────────
+   The entered node, large, at the head of its own field. Part of the
+   world — it pans with everything — and edited in place. */
+.ws {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px 20px;
+  border-radius: 14px;
+  background: var(--plate);
+  cursor: default;
+}
+.ws-head { display: flex; flex-direction: column; gap: 3px; }
+.ws-title {
+  width: 100%;
+  font-family: var(--font-ui);
+  font-size: 20px;
+  font-weight: var(--w-declare);
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  color: var(--fg);
+  outline: none;
+  border-radius: var(--r-sm);
+  padding: 2px 4px;
+  margin: 0 -4px;
+  cursor: text;
+}
+.ws-title:focus { background: var(--tint); }
+.ws-note { font-size: var(--t-label); color: var(--fg-faint); }
+.ws-text {
+  width: 100%;
+  min-height: 130px;
+  padding: 12px 14px;
+  border-radius: var(--r-plate);
+  background: var(--surface);
+  box-shadow: inset 0 1px 2px var(--rim-in), inset 0 -1px 0 var(--rim-lit);
+  resize: none;
+  outline: none;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--fg);
+  cursor: text;
+}
+.ws-text::placeholder { color: var(--fg-faint); }
+.ws-read { font-size: 15px; line-height: 1.6; color: var(--fg); white-space: pre-wrap; max-width: 64ch; }
+.ws-empty { font-size: var(--t-body); color: var(--fg-faint); }
+.ws-char { display: flex; gap: 16px; }
+.ws-ref { width: 200px; height: 200px; flex-shrink: 0; border-radius: var(--r-plate); overflow: hidden; }
+.ws-fields { display: flex; flex-direction: column; gap: 10px; flex: 1; min-width: 0; }
+.ws-field { display: flex; flex-direction: column; gap: 5px; }
+.ws-field.grow { flex: 1; }
+.ws-field .inp { resize: none; }
+.ws-two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ws-image { height: 360px; border-radius: var(--r-plate); overflow: hidden; display: grid; place-items: center; }
+.node-img.contain { object-fit: contain; }
+.ws-rows { display: flex; flex-direction: column; gap: 1px; }
+.ws .node-row { height: 34px; }
+
 /* the wires */
 .wires { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; pointer-events: none; }
 .wire-hit { fill: none; stroke: transparent; stroke-width: 14; pointer-events: stroke; cursor: default; }

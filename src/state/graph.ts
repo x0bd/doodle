@@ -131,6 +131,15 @@ export function updateData(id: string, patch: Record<string, string | number>) {
   );
 }
 
+export function rename(id: string, title: string) {
+  commit(
+    "Rename",
+    () =>
+      graph.set((g) => (g.nodes[id] ? { ...g, nodes: { ...g.nodes, [id]: { ...g.nodes[id], title } } } : g)),
+    `title:${id}`,
+  );
+}
+
 export function addNode(node: GraphNode) {
   commit("Add node", () =>
     graph.set((g) => ({ ...g, nodes: { ...g.nodes, [node.id]: node }, order: [...g.order, node.id], selection: [node.id], edgeSelection: [] })),
@@ -228,7 +237,7 @@ export const edgeInto = (to: PortRef): Edge | undefined =>
   Object.values(graph.get().edges).find((e) => e.to.node === to.node && e.to.port === to.port);
 
 /* ── geometry ── */
-export function bounds(nodes: GraphNode[]): Rect | null {
+export function bounds(nodes: Rect[]): Rect | null {
   if (!nodes.length) return null;
   const x0 = Math.min(...nodes.map((n) => n.x));
   const y0 = Math.min(...nodes.map((n) => n.y));
