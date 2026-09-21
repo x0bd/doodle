@@ -86,6 +86,44 @@ pub fn load_record(dir: String, name: String) -> Result<Option<String>, String> 
     fs::read_to_string(&target).map(Some).map_err(|e| e.to_string())
 }
 
+/// A copy of the whole folder beside it — "Name copy.doodle", numbered if
+/// that exists too — with everything but the lock-like leftovers.
+#[tauri::command]
+pub fn duplicate_graph(dir: String) -> Result<String, String> {
+    let src = PathBuf::from(&dir);
+    let parent = src.parent().ok_or("No parent")?;
+    let stem = src.file_stem().and_then(|s| s.to_str()).unwrap_or("Untitled");
+    let mut n = 0;
+    let target = loop {
+        let name = if n == 0 { format!("{stem} copy.doodle") } else { format!("{stem} copy {}.doodle", n + 1) };
+        let p = parent.join(name);
+        if !p.exists() {
+            break p;
+        }
+        n += 1;
+    };
+    copy_dir(&src, &target)?;
+    Ok(target.display().to_string())
+}
+
+fn copy_dir(from: &Path, to: &Path) -> Result<(), String> {
+    fs::create_dir_all(to).map_err(|e| e.to_string())?;
+    for entry in fs::read_dir(from).map_err(|e| e.to_string())? {
+        let entry = entry.map_err(|e| e.to_string())?;
+        let name = entry.file_name();
+        if name.to_string_lossy().ends_with(".tmp") {
+            continue;
+        }
+        let p = entry.path();
+        if p.is_dir() {
+            copy_dir(&p, &to.join(&name))?;
+        } else {
+            fs::copy(&p, to.join(&name)).map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
+}
+
 #[tauri::command]
 pub fn graph_exists(dir: String) -> bool {
     graph_path(&PathBuf::from(dir)).is_file()

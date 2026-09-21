@@ -10,6 +10,11 @@ export const inTauri = "__TAURI_INTERNALS__" in window;
 export const saveGraph = (dir: string, json: string) => invoke<void>("save_graph", { dir, json });
 export const loadGraph = (dir: string) => invoke<string>("load_graph", { dir });
 export const graphExists = (dir: string) => invoke<boolean>("graph_exists", { dir });
+export const duplicateGraph = (dir: string) => invoke<string>("duplicate_graph", { dir });
+export async function revealPath(path: string) {
+  const { revealItemInDir } = await import("@tauri-apps/plugin-opener");
+  await revealItemInDir(path);
+}
 
 export const saveRecord = (dir: string, name: "jobs", json: string) => invoke<void>("save_record", { dir, name, json });
 export const loadRecord = (dir: string, name: "jobs") => invoke<string | null>("load_record", { dir, name });

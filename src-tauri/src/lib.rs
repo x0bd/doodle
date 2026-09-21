@@ -8,12 +8,14 @@ use tauri::Emitter;
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             commands::save_graph,
             commands::load_graph,
             commands::graph_exists,
             commands::save_record,
             commands::load_record,
+            commands::duplicate_graph,
             commands::import_asset,
             commands::read_asset,
             commands::write_asset,

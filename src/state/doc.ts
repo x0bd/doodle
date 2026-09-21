@@ -9,7 +9,7 @@ import { camera, type Camera } from "../canvas/camera";
 import { history, reset as resetHistory } from "./history";
 import { nav, resetNav } from "./nav";
 import { restoreJobs, forgetJobs } from "./jobs";
-import { inTauri, loadGraph, pickOpenDir, pickSaveDir, saveGraph, graphExists, writeAsset } from "../platform/fs";
+import { inTauri, loadGraph, pickOpenDir, pickSaveDir, saveGraph, graphExists, writeAsset, duplicateGraph, revealPath } from "../platform/fs";
 import { templateById, type TemplateId } from "../graph/templates";
 
 export type SaveState = "idle" | "saving" | "saved" | "failed";
@@ -230,4 +230,18 @@ export async function restoreLast(): Promise<boolean> {
   if (!last) return false;
   if (!(await graphExists(last))) return false;
   return openFrom(last);
+}
+
+/** A copy of the folder beside this one, then opened. */
+export async function duplicate() {
+  const path = doc.get().path;
+  if (!path || !inTauri) return;
+  if (doc.get().dirty) await write(path);
+  const copy = await duplicateGraph(path);
+  await openFrom(copy);
+}
+
+export async function reveal() {
+  const path = doc.get().path;
+  if (path && inTauri) await revealPath(path);
 }

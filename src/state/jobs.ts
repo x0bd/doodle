@@ -138,6 +138,12 @@ export function enqueue(nodeIds?: string[]) {
   void pump();
 }
 
+/** Run the same node again. */
+export const retry = (jobId: string) => {
+  const j = jobs.get().jobs[jobId];
+  if (j) enqueue([j.nodeId]);
+};
+
 export const pending = (s: JobsState) => s.order.filter((id) => s.jobs[id].state === "queued" || s.jobs[id].state === "running");
 export const current = (s: JobsState) => s.order.map((id) => s.jobs[id]).find((j) => j.state === "running");
 export const latest = (s: JobsState) => (s.order.length ? s.jobs[s.order[s.order.length - 1]] : undefined);

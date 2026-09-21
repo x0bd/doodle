@@ -43,6 +43,7 @@ export {
   StickyNote01Icon as NoteIcon,
   ArrowUp01Icon as UpIcon,
   Camera01Icon as ShotIcon,
+  Search01Icon as SearchIcon,
   Settings02Icon as GeneralIcon,
   PaintBoardIcon as AppearanceIcon,
   InformationCircleIcon as AboutIcon,

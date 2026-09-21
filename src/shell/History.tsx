@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { jobs, type Job } from "../state/jobs";
+import { jobs, retry, type Job } from "../state/jobs";
 import { graph, select, takeOutput } from "../state/graph";
 import { urlFor, assets } from "../state/assets";
 import { fitRect } from "../canvas/camera";
@@ -19,7 +19,7 @@ export function History({ onClose }: { onClose: () => void }) {
     return () => window.removeEventListener("keydown", onKey, true);
   }, [onClose]);
 
-  const runs = [...j.order].reverse().map((id) => j.jobs[id]).filter((x) => x.state === "completed" || x.state === "failed");
+  const runs = [...j.order].reverse().map((id) => j.jobs[id]).filter((x) => x.state === "completed" || x.state === "failed" || x.state === "cancelled");
 
   const open = (run: Job) => {
     const node = g.nodes[run.nodeId];
@@ -42,12 +42,12 @@ export function History({ onClose }: { onClose: () => void }) {
           const secs = run.startedAt && run.endedAt ? ((run.endedAt - run.startedAt) / 1000).toFixed(1) : "–";
           const req = run.request as ImageRequest;
           return (
-            <button key={run.id} className="list-row hist-row" role="menuitem" onClick={() => open(run)}>
+            <button key={run.id} className={`list-row hist-row${run.state === "failed" ? " failed" : ""}`} role="menuitem" onClick={() => (run.state === "failed" ? (retry(run.id), onClose()) : open(run))} title={run.state === "failed" ? `${run.error ?? "Failed"} — click to retry` : undefined}>
               <span className="hist-thumb well">{thumb && <img src={thumb} alt="" draggable={false} />}</span>
               <span className="hist-what">
                 <span className="list-word">{node?.title ?? "A node that is gone"}</span>
                 <span className="hist-note px">
-                  {run.state === "failed" ? "failed" : run.kind === "image" ? `seed ${req.seed}${(run.count ?? 1) > 1 ? ` · ${run.count} candidates` : ""}` : run.provider ?? "text"}
+                  {run.state === "failed" ? "failed · retry" : run.state === "cancelled" ? "stopped" : run.kind === "image" ? `seed ${req.seed}${(run.count ?? 1) > 1 ? ` · ${run.count} candidates` : ""}` : run.provider ?? "text"}
                   {" · "}
                   {secs}s
                 </span>

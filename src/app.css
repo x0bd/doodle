@@ -822,6 +822,25 @@ html, body, #root { height: 100%; }
 .tpl-name { font-size: var(--t-body); font-weight: var(--w-declare); color: var(--fg); }
 .tpl-note { font-size: var(--t-label); line-height: 1.45; color: var(--fg-muted); }
 
+/* ⌘K: a console at the top, the input as its head, the hits as a list */
+.pal-veil { align-items: start; padding-top: 12vh; }
+.pal { width: min(640px, 100%); max-height: min(520px, 76vh); display: flex; flex-direction: column; }
+.pal-in { display: flex; align-items: center; gap: 12px; padding: 14px 18px 12px; color: var(--fg-faint); }
+.pal-input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-ui);
+  font-size: 17px;
+  color: var(--fg);
+  outline: none;
+  cursor: text;
+}
+.pal-input::placeholder { color: var(--fg-faint); }
+.pal-hint { font-size: var(--t-micro); color: var(--fg-faint); white-space: nowrap; }
+.pal-list { flex: 1; min-height: 0; overflow-y: auto; padding: 0 8px 8px; }
+.pal-list .list-row { min-height: 34px; }
+.hist-row.failed .list-word { color: var(--fg-muted); }
+
 /* about: the mark, the name, the note */
 .about { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 14px 4px 0; }
 .about-mark {

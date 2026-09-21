@@ -35,7 +35,8 @@ pub fn build(app: &App) -> tauri::Result<Menu<Wry>> {
         .item(&item("file.save", "Save", Some("CmdOrCtrl+S"))?)
         .item(&item("file.save-as", "Save As…", Some("CmdOrCtrl+Shift+S"))?)
         .separator()
-        .item(&item("file.export", "Export Image…", Some("CmdOrCtrl+E"))?)
+        .item(&item("file.duplicate", "Duplicate Graph", None)?)
+        .item(&item("file.reveal", "Reveal in Finder", None)?)
         .separator()
         .item(&PredefinedMenuItem::close_window(app, Some("Close Graph"))?)
         .build()?;
@@ -59,6 +60,8 @@ pub fn build(app: &App) -> tauri::Result<Menu<Wry>> {
         .build()?;
 
     let view = SubmenuBuilder::new(app, "View")
+        .item(&item("view.search", "Search…", Some("CmdOrCtrl+K"))?)
+        .separator()
         .item(&item("view.zoom-in", "Zoom In", Some("CmdOrCtrl+Equal"))?)
         .item(&item("view.zoom-out", "Zoom Out", Some("CmdOrCtrl+Minus"))?)
         .item(&item("view.zoom-fit", "Fit to View", Some("CmdOrCtrl+0"))?)
