@@ -41,16 +41,16 @@ pub fn build(app: &App) -> tauri::Result<Menu<Wry>> {
         .build()?;
 
     let edit = SubmenuBuilder::new(app, "Edit")
-        .undo()
-        .redo()
+        .item(&item("edit.undo", "Undo", Some("CmdOrCtrl+Z"))?)
+        .item(&item("edit.redo", "Redo", Some("Shift+CmdOrCtrl+Z"))?)
         .separator()
         .cut()
         .copy()
         .paste()
         .item(&item("edit.duplicate", "Duplicate", Some("CmdOrCtrl+D"))?)
-        .item(&item("edit.delete", "Delete", Some("Backspace"))?)
+        .item(&item("edit.delete", "Delete", None)?)
         .separator()
-        .select_all()
+        .item(&item("edit.select-all", "Select All", Some("CmdOrCtrl+A"))?)
         .build()?;
 
     let view = SubmenuBuilder::new(app, "View")

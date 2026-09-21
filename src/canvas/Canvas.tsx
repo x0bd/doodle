@@ -2,18 +2,18 @@ import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } f
 import { camera, panBy, toWorld, zoomAt, type Point, type Rect } from "./camera";
 import {
   graph, clearSelection, select, toggleSelect, moveNodes, raise, intersects, deleteSelected,
-  connect, canConnect, disconnect, edgeInto, type PortRef,
+  connectNow, canConnect, disconnectNow, edgeInto, type PortRef,
 } from "../state/graph";
+import { begin as journalBegin, end as journalEnd, commit, type Snapshot } from "../state/history";
 import { Node, type NodeHandlers } from "./Node";
 import { Wires } from "./Wires";
 import { portPos } from "./layout";
-import { fitAll } from "./view";
 
 type Drag =
   | { mode: "pan"; last: Point }
   | { mode: "marquee"; start: Point; additive: string[] }
-  | { mode: "move"; last: Point; ids: string[] }
-  | { mode: "wire"; from: PortRef; a: Point };
+  | { mode: "move"; last: Point; ids: string[]; before: Snapshot }
+  | { mode: "wire"; from: PortRef; a: Point; before: Snapshot };
 
 const isTyping = (t: EventTarget | null) => {
   const el = t as HTMLElement | null;
@@ -38,12 +38,6 @@ export function Canvas() {
   const [live, setLive] = useState<{ a: Point; b: Point } | null>(null);
   const [space, setSpace] = useState(false);
   const [dragging, setDragging] = useState(false);
-
-  // open framed on the whole graph
-  useEffect(() => {
-    const id = requestAnimationFrame(fitAll);
-    return () => cancelAnimationFrame(id);
-  }, []);
 
   // the wheel: a trackpad pans, a pinch (ctrlKey) or ⌘-wheel zooms about the pointer
   useEffect(() => {
@@ -80,7 +74,7 @@ export function Canvas() {
         const step = e.shiftKey ? 10 : 1;
         const dx = e.key === "ArrowLeft" ? -step : e.key === "ArrowRight" ? step : 0;
         const dy = e.key === "ArrowUp" ? -step : e.key === "ArrowDown" ? step : 0;
-        moveNodes(sel, dx, dy);
+        commit("Nudge", () => moveNodes(sel, dx, dy), `nudge:${sel.join(",")}`);
       }
     };
     const up = (e: KeyboardEvent) => {
@@ -129,25 +123,27 @@ export function Canvas() {
         select([node.id]);
         sel = [node.id];
       }
+      const before = journalBegin();
       raise(sel);
-      begin(e, { mode: "move", last: { x: e.clientX, y: e.clientY }, ids: sel });
+      begin(e, { mode: "move", last: { x: e.clientX, y: e.clientY }, ids: sel, before });
     },
     onPortDown(e, portRef, dir) {
       if (space || e.button !== 0) return;
       e.stopPropagation();
       e.preventDefault();
       const nodes = graph.get().nodes;
+      const before = journalBegin();
       if (dir === "out") {
         const a = portPos(nodes[portRef.node], portRef, "out");
-        begin(e, { mode: "wire", from: portRef, a });
+        begin(e, { mode: "wire", from: portRef, a, before });
         setLive({ a, b: toWorld(camera.get(), { x: e.clientX, y: e.clientY }) });
       } else {
         // pick the wire up off the input and carry it
         const existing = edgeInto(portRef);
         if (!existing) return;
-        disconnect(existing.id);
+        disconnectNow(existing.id);
         const a = portPos(nodes[existing.from.node], existing.from, "out");
-        begin(e, { mode: "wire", from: existing.from, a });
+        begin(e, { mode: "wire", from: existing.from, a, before });
         setLive({ a, b: toWorld(camera.get(), { x: e.clientX, y: e.clientY }) });
       }
     },
@@ -190,8 +186,11 @@ export function Canvas() {
     if (!d) return;
     if (d.mode === "wire") {
       const hit = portAt(e.clientX, e.clientY);
-      if (hit && hit.dir === "in") connect(d.from, hit.ref);
+      if (hit && hit.dir === "in") connectNow(d.from, hit.ref);
       setLive(null);
+      journalEnd(d.before, "Wire");
+    } else if (d.mode === "move") {
+      journalEnd(d.before, "Move");
     }
     ref.current!.releasePointerCapture(e.pointerId);
     drag.current = null;

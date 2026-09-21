@@ -3,6 +3,7 @@ import { graph, select, makeNode, addNode } from "../state/graph";
 import { fitRect, camera } from "../canvas/camera";
 import { screenRect } from "../canvas/view";
 import type { NodeKind } from "../graph/kinds";
+import { doc } from "../state/doc";
 
 const GLYPH: Record<NodeKind, IconSvgElement> = {
   model: ModelIcon,
@@ -14,6 +15,7 @@ const GLYPH: Record<NodeKind, IconSvgElement> = {
 /** The left pane: where you are, and what is here. */
 export function Navigator() {
   const g = graph.use();
+  const name = doc.use((d) => d.name);
   const add = () => {
     // a new prompt in the middle of the view, for now
     const c = camera.get();
@@ -29,7 +31,7 @@ export function Navigator() {
   return (
     <aside className="pane left card" aria-label="Navigator">
       <div className="pane-head">
-        <span className="pane-title">Black bear</span>
+        <span className="pane-title">{name}</span>
         <button className="pill-icon sm" aria-label="Add node" title="Add a prompt" onClick={add}>
           <Icon icon={PlusIcon} size={14} strokeWidth={2} />
         </button>
@@ -37,9 +39,7 @@ export function Navigator() {
       <div className="pane-body">
         <div className="list">
           <div className="list-head">Graphs</div>
-          <Row icon={GraphIcon} on>Black bear</Row>
-          <Row icon={GraphIcon}>Fox study</Row>
-          <Row icon={GraphIcon}>Untitled</Row>
+          <Row icon={GraphIcon} on>{name}</Row>
           <div className="list-gap" />
           <div className="list-head">Nodes</div>
           {[...g.order].sort().map((id) => {

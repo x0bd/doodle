@@ -10,11 +10,14 @@ import {
   MenuIcon,
 } from "../icons";
 import { ui, togglePanes } from "../state/ui";
+import { doc } from "../state/doc";
 
 /** The title line. Everything centres on y 30, where the lights are. The
  *  boring menus are on the platform's bar; only the work is here. */
 export function Head() {
   const panes = ui.use((s) => s.navigator || s.inspector);
+  const d = doc.use();
+  const status = d.save === "saving" ? "Saving…" : d.save === "failed" ? "Save failed" : d.path ? (d.dirty ? "Edited" : "Saved") : d.dirty ? "Unsaved" : "";
   return (
     <header className="head" data-tauri-drag-region>
       <div className="lights-room" data-tauri-drag-region />
@@ -25,8 +28,9 @@ export function Head() {
         <button className="pill-icon" aria-label="Previous document">
           <Icon icon={ChevronLeftIcon} size={14} strokeWidth={2} />
         </button>
-        <button className="pill doc-tab">
-          Black bear
+        <button className="pill doc-tab" title={d.path ?? "Not saved yet"}>
+          {d.name}
+          {status && <span className={`doc-status${d.save === "failed" ? " bad" : ""}`}>{status}</span>}
           <span className="x" role="button" aria-label="Close document">
             <Icon icon={CloseIcon} size={11} strokeWidth={2.2} />
           </span>

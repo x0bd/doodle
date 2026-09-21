@@ -7,7 +7,7 @@
 import { createStore } from "./store";
 import type { Rect } from "../canvas/camera";
 import { KINDS, type NodeKind, type Port } from "../graph/kinds";
-import { FIXTURES } from "../providers/fixtures";
+import { commit } from "./history";
 
 export interface GraphNode extends Rect {
   id: string;
@@ -45,27 +45,10 @@ export function makeNode(kind: NodeKind, x: number, y: number, extra: Partial<Gr
   return { id: newId(), kind, title: def.title, x, y, ...def.size, data: { ...def.data }, ...extra };
 }
 
-const seedNodes: GraphNode[] = [
-  makeNode("model", 80, 140, { id: "n1" }),
-  makeNode("prompt", 400, 40, {
-    id: "n2",
-    data: { text: "A black bear with a pink snout, minimalist style, soft gradients, clear blue sky" },
-  }),
-  makeNode("prompt", 400, 250, { id: "n3", title: "Negative", data: { text: "No text, unnecessary details, background objects, other animals or people." } }),
-  makeNode("generate", 720, 120, { id: "n4" }),
-  makeNode("preview", 1060, 100, { id: "n5", asset: FIXTURES.blackBear }),
-];
-const seedEdges: Edge[] = [
-  { id: "e1", from: { node: "n1", port: "model" }, to: { node: "n4", port: "model" } },
-  { id: "e2", from: { node: "n2", port: "text" }, to: { node: "n4", port: "positive" } },
-  { id: "e3", from: { node: "n3", port: "text" }, to: { node: "n4", port: "negative" } },
-  { id: "e4", from: { node: "n4", port: "image" }, to: { node: "n5", port: "image" } },
-];
-
 export const graph = createStore<GraphState>({
-  nodes: Object.fromEntries(seedNodes.map((n) => [n.id, n])),
-  order: seedNodes.map((n) => n.id),
-  edges: Object.fromEntries(seedEdges.map((e) => [e.id, e])),
+  nodes: {},
+  order: [],
+  edges: {},
   selection: [],
   edgeSelection: [],
 });
@@ -112,20 +95,59 @@ export function raise(ids: string[]) {
   graph.set((g) => ({ ...g, order: [...g.order.filter((id) => !ids.includes(id)), ...ids] }));
 }
 
+/** A field edit — a run of typing into one field is one journal entry. */
 export function updateData(id: string, patch: Record<string, string | number>) {
-  graph.set((g) => {
-    const n = g.nodes[id];
-    if (!n) return g;
-    return { ...g, nodes: { ...g.nodes, [id]: { ...n, data: { ...n.data, ...patch } } } };
-  });
+  commit(
+    "Edit",
+    () =>
+      graph.set((g) => {
+        const n = g.nodes[id];
+        if (!n) return g;
+        return { ...g, nodes: { ...g.nodes, [id]: { ...n, data: { ...n.data, ...patch } } } };
+      }),
+    `data:${id}:${Object.keys(patch).join(",")}`,
+  );
 }
 
 export function addNode(node: GraphNode) {
-  graph.set((g) => ({ ...g, nodes: { ...g.nodes, [node.id]: node }, order: [...g.order, node.id], selection: [node.id], edgeSelection: [] }));
+  commit("Add node", () =>
+    graph.set((g) => ({ ...g, nodes: { ...g.nodes, [node.id]: node }, order: [...g.order, node.id], selection: [node.id], edgeSelection: [] })),
+  );
 }
+
+/** Copies of the selected nodes, a step down and right, wired among themselves. */
+export function duplicateSelected() {
+  const g = graph.get();
+  if (!g.selection.length) return;
+  const map = new Map<string, string>();
+  const copies = g.selection.map((id) => {
+    const n = g.nodes[id];
+    const c = { ...n, id: newId(), x: n.x + 24, y: n.y + 24, data: { ...n.data } };
+    map.set(id, c.id);
+    return c;
+  });
+  const edges = Object.values(g.edges)
+    .filter((e) => map.has(e.from.node) && map.has(e.to.node))
+    .map((e) => ({ id: newId("e"), from: { node: map.get(e.from.node)!, port: e.from.port }, to: { node: map.get(e.to.node)!, port: e.to.port } }));
+  commit("Duplicate", () =>
+    graph.set((x) => ({
+      ...x,
+      nodes: { ...x.nodes, ...Object.fromEntries(copies.map((c) => [c.id, c])) },
+      order: [...x.order, ...copies.map((c) => c.id)],
+      edges: { ...x.edges, ...Object.fromEntries(edges.map((e) => [e.id, e])) },
+      selection: copies.map((c) => c.id),
+      edgeSelection: [],
+    })),
+  );
+}
+
+export const selectAll = () => graph.set((g) => ({ ...g, selection: [...g.order], edgeSelection: [] }));
 
 /** Remove whatever is selected — nodes take their wires with them. */
 export function deleteSelected() {
+  commit("Delete", () => deleteSelectedNow());
+}
+function deleteSelectedNow() {
   graph.set((g) => {
     if (!g.selection.length && !g.edgeSelection.length) return g;
     const gone = new Set(g.selection);
@@ -151,6 +173,10 @@ export function canConnect(from: PortRef, to: PortRef) {
 
 /** Connect; an input holds one wire, so whatever fed it before lets go. */
 export function connect(from: PortRef, to: PortRef) {
+  commit("Connect", () => connectNow(from, to));
+}
+/** the unjournaled form, for a drag that begins and ends elsewhere */
+export function connectNow(from: PortRef, to: PortRef) {
   if (!canConnect(from, to)) return;
   graph.set((g) => {
     const edges: Record<string, Edge> = {};
@@ -165,6 +191,9 @@ export function connect(from: PortRef, to: PortRef) {
 }
 
 export function disconnect(id: string) {
+  commit("Disconnect", () => disconnectNow(id));
+}
+export function disconnectNow(id: string) {
   graph.set((g) => {
     if (!g.edges[id]) return g;
     const edges = { ...g.edges };

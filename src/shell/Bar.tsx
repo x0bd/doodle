@@ -7,6 +7,7 @@ import {
   GenerateIcon,
   SettingsIcon,
 } from "../icons";
+import { save } from "../state/doc";
 
 /** The prompt bar at the foot of the field. */
 export function Bar() {
@@ -23,7 +24,7 @@ export function Bar() {
         <button className="pill-icon on" aria-label="History">
           <Icon icon={HistoryIcon} size={15} strokeWidth={2} />
         </button>
-        <button className="pill-icon" aria-label="Save">
+        <button className="pill-icon" aria-label="Save" title="Save — ⌘S" onClick={() => void save()}>
           <Icon icon={SaveIcon} size={15} strokeWidth={2} />
         </button>
         <button className="pill-icon" aria-label="Model">

@@ -1,3 +1,4 @@
+mod commands;
 mod menu;
 
 use tauri::Emitter;
@@ -5,6 +6,12 @@ use tauri::Emitter;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
+        .invoke_handler(tauri::generate_handler![
+            commands::save_graph,
+            commands::load_graph,
+            commands::graph_exists
+        ])
         .setup(|app| {
             // The boring things live on the platform's own menu bar. Every
             // item that is Doodle's (not the platform's) reports to the

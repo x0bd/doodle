@@ -8,10 +8,26 @@ import { Settings } from "./shell/Settings";
 import { Bar } from "./shell/Bar";
 import { ui, togglePanes } from "./state/ui";
 import { listenToMenu } from "./platform/menu";
+import { newGraph, restoreLast } from "./state/doc";
+import { fitAll } from "./canvas/view";
 
 export function App() {
   const { navigator, inspector } = ui.use();
   useEffect(listenToMenu, []);
+  // the last graph if it is still there — with its view — else the template, framed
+  useEffect(() => {
+    let live = true;
+    restoreLast().then((restored) => {
+      if (!live) return;
+      if (!restored) {
+        newGraph();
+        requestAnimationFrame(fitAll);
+      }
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
   // Tab hides and shows the panes — unless something is being typed into.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -28,9 +44,6 @@ export function App() {
     <div className="win">
       <Canvas />
       <Head />
-      <div className="sub" data-tauri-drag-region>
-        image generation v3
-      </div>
       {navigator && <Navigator />}
       {inspector && <Inspector />}
       <Bar />
