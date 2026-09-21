@@ -39,7 +39,7 @@ export const KINDS: Record<NodeKind, KindDef> = {
     note: "Which model draws",
     inputs: [],
     outputs: [{ id: "model", name: "model", type: "model" }],
-    size: { w: 220, h: 104 },
+    size: { w: 240, h: 80 },
     data: { model: "Default" },
     groups: [
       {
@@ -56,7 +56,7 @@ export const KINDS: Record<NodeKind, KindDef> = {
     note: "What you want, or what you do not",
     inputs: [],
     outputs: [{ id: "text", name: "text", type: "text" }],
-    size: { w: 220, h: 168 },
+    size: { w: 240, h: 176 },
     data: { text: "" },
     groups: [{ name: "Text", fields: [{ key: "text", label: "Prompt", type: "text", rows: 5 }] }],
   },
@@ -72,7 +72,7 @@ export const KINDS: Record<NodeKind, KindDef> = {
       { id: "character", name: "character", type: "text" },
     ],
     outputs: [{ id: "image", name: "image", type: "image" }],
-    size: { w: 240, h: 298 },
+    size: { w: 260, h: 338 },
     data: { seed: 12345, control: "Fixed", steps: 30, strength: 8, sampler: "dpm++ 2M", width: 1024, height: 1024, count: 1 },
     groups: [
       {
@@ -101,7 +101,7 @@ export const KINDS: Record<NodeKind, KindDef> = {
     note: "What came out",
     inputs: [{ id: "image", name: "image", type: "image" }],
     outputs: [],
-    size: { w: 260, h: 300 },
+    size: { w: 260, h: 320 },
     data: {},
     groups: [],
   },
@@ -111,7 +111,7 @@ export const KINDS: Record<NodeKind, KindDef> = {
     note: "Someone in the world — reused, never retyped",
     inputs: [],
     outputs: [{ id: "text", name: "description", type: "text" }],
-    size: { w: 220, h: 210 },
+    size: { w: 240, h: 206 },
     data: { name: "", description: "" },
     groups: [
       {
@@ -129,7 +129,7 @@ export const KINDS: Record<NodeKind, KindDef> = {
     note: "How everything looks",
     inputs: [],
     outputs: [{ id: "text", name: "description", type: "text" }],
-    size: { w: 220, h: 150 },
+    size: { w: 240, h: 166 },
     data: { description: "", palette: "", lighting: "" },
     groups: [
       {
@@ -152,7 +152,7 @@ export const KINDS: Record<NodeKind, KindDef> = {
       { id: "style", name: "style", type: "text" },
     ],
     outputs: [{ id: "text", name: "text", type: "text" }],
-    size: { w: 240, h: 178 },
+    size: { w: 240, h: 192 },
     data: { model: "Default", length: "Scene" },
     groups: [
       {
@@ -170,7 +170,7 @@ export const KINDS: Record<NodeKind, KindDef> = {
     note: "One frame of the scene, with its camera",
     inputs: [],
     outputs: [{ id: "text", name: "brief", type: "text" }],
-    size: { w: 240, h: 150 },
+    size: { w: 240, h: 156 },
     data: { description: "", shotSize: "MS", lensMm: 35, movement: "static", durationMs: 3000 },
     groups: [
       {
@@ -191,7 +191,7 @@ export const KINDS: Record<NodeKind, KindDef> = {
     note: "A thought, kept where it belongs",
     inputs: [],
     outputs: [],
-    size: { w: 220, h: 140 },
+    size: { w: 240, h: 150 },
     data: { text: "" },
     groups: [{ name: "Note", fields: [{ key: "text", label: "Text", type: "text", rows: 6 }] }],
   },
@@ -201,7 +201,7 @@ export const KINDS: Record<NodeKind, KindDef> = {
     note: "What was written",
     inputs: [{ id: "text", name: "text", type: "text" }],
     outputs: [],
-    size: { w: 300, h: 340 },
+    size: { w: 300, h: 352 },
     data: { text: "" },
     groups: [],
   },

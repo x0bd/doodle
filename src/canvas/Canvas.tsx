@@ -16,7 +16,7 @@ import { childrenOf } from "../state/graph";
 import { fitAll } from "./view";
 import { Wires } from "./Wires";
 import { Doc } from "./Doc";
-import { portPos } from "./layout";
+import { portPos, setMapMode } from "./layout";
 
 type Drag =
   | { mode: "pan"; last: Point }
@@ -89,6 +89,9 @@ export function Canvas() {
     if (!map && cam.zoom < 0.4) setMap(true);
     else if (map && cam.zoom > 0.5) setMap(false);
   }, [cam.zoom, map]);
+  useEffect(() => {
+    setMapMode(map);
+  }, [map]);
   // the lens: hold L, or the cluster's key, and only what the selection touches stays lit
   const lens = ui.use((u) => u.lens);
   const [lHeld, setLHeld] = useState(false);

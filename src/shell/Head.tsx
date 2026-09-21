@@ -75,12 +75,12 @@ export function Head() {
           <Icon icon={MoreIcon} size={15} strokeWidth={2} />
         </button>
         <span className="queue-group">
-          <button className="pill pill-ink queue" onClick={() => enqueue()} title={`Run the graph with ${drawer} — ⌘↩`}>
+          <button className="pill queue" onClick={() => enqueue()} title={`Run the graph with ${drawer} — ⌘↩`}>
             <Icon icon={RunIcon} size={13} strokeWidth={2.2} />
             Queue
             <span className="n">{running ? `${Math.round(running.progress * 100)}%` : waiting || drawer}</span>
           </button>
-          <button className={`pill pill-ink queue-more${menu ? " on" : ""}`} aria-label="Run with…" aria-haspopup="menu" aria-expanded={menu} onClick={() => setMenu((m) => !m)}>
+          <button className={`pill queue-more${menu ? " on" : ""}`} aria-label="Run with…" aria-haspopup="menu" aria-expanded={menu} onClick={() => setMenu((m) => !m)}>
             <Icon icon={ChevronDownIcon} size={12} strokeWidth={2.2} />
           </button>
           {menu && <QueueMenu onClose={() => setMenu(false)} />}

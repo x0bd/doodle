@@ -15,7 +15,6 @@ export interface NodeHandlers {
 export function Node({ node, selected, into, dim, handlers }: { node: GraphNode; selected: boolean; into?: boolean; dim?: boolean; handlers: NodeHandlers }) {
   const ins = inputs(node);
   const outs = outputs(node);
-  const rows = Math.max(ins.length, outs.length);
   const edges = graph.use((g) => g.edges);
   const job = jobs.use((s) => (node.kind === "generate" || node.kind === "write" ? jobFor(s, node.id) : undefined));
   const running = job?.state === "running";
@@ -25,6 +24,13 @@ export function Node({ node, selected, into, dim, handlers }: { node: GraphNode;
     Object.values(edges).some(
       (e) => (e.from.node === ref.node && e.from.port === ref.port) || (e.to.node === ref.node && e.to.port === ref.port),
     );
+
+  const g = graph.get();
+  /** what feeds an input, by title */
+  const source = (ref: PortRef) => {
+    const e = Object.values(edges).find((e) => e.to.node === ref.node && e.to.port === ref.port);
+    return e ? g.nodes[e.from.node]?.title : undefined;
+  };
 
   return (
     <div
@@ -44,14 +50,30 @@ export function Node({ node, selected, into, dim, handlers }: { node: GraphNode;
         <span className="node-name">{node.title}</span>
         {node.status !== "canon" && <span className="node-st">{node.status === "exploration" ? "explore" : node.status}</span>}
         {inside > 0 && <span className="node-inside badge" title={`${inside} inside — double-click to enter`}>{inside}</span>}
-        <button className="node-open pill-icon sm" aria-label="Open" title="Open — double-click or ⏎" onPointerDown={(e) => e.stopPropagation()} onClick={() => handlers.onOpen(node)}>
-          <Icon icon={ChevronRightIcon} size={12} strokeWidth={2.2} />
-        </button>
         {job && job.state !== "completed" && (
           <span className="node-state px">
             {job.state === "running" ? job.note : job.state === "queued" ? "queued" : job.state === "failed" ? "failed" : "stopped"}
           </span>
         )}
+        <button className="node-open pill-icon sm" aria-label="Open" title="Open — double-click or ⏎" onPointerDown={(e) => e.stopPropagation()} onClick={() => handlers.onOpen(node)}>
+          <Icon icon={ChevronRightIcon} size={12} strokeWidth={2.2} />
+        </button>
+        {outs[0] && (() => {
+          const p = outs[0];
+          const ref = { node: node.id, port: p.id };
+          return (
+            <button
+              className={`port out top t-${p.type}${connected(ref) ? " on" : ""}`}
+              data-port={`${node.id}:${p.id}`}
+              data-dir="out"
+              aria-label={`${p.name} output`}
+              title={`${p.name} — drag to wire`}
+              onPointerDown={(e) => handlers.onPortDown(e, ref, "out")}
+            >
+              <span className="port-dot" />
+            </button>
+          );
+        })()}
         {running && (
           <div className="node-progress" aria-hidden>
             <div className="node-progress-bar" style={{ width: `${job.progress * 100}%` }} />
@@ -59,40 +81,26 @@ export function Node({ node, selected, into, dim, handlers }: { node: GraphNode;
         )}
       </div>
 
-      {rows > 0 && (
-        <div className="ports" style={{ height: rows * 18 }}>
-          {ins.map((p, i) => {
+      {ins.length > 0 && (
+        <div className="ins">
+          {ins.map((p) => {
             const ref = { node: node.id, port: p.id };
+            const from = source(ref);
             return (
-              <button
-                key={p.id}
-                className={`port in t-${p.type}${connected(ref) ? " on" : ""}`}
-                style={{ top: i * 18 }}
-                data-port={`${node.id}:${p.id}`}
-                data-dir="in"
-                aria-label={`${p.name} input`}
-                onPointerDown={(e) => handlers.onPortDown(e, ref, "in")}
-              >
-                <span className="port-dot" />
-                <span className="port-name">{p.name}</span>
-              </button>
-            );
-          })}
-          {outs.map((p, i) => {
-            const ref = { node: node.id, port: p.id };
-            return (
-              <button
-                key={p.id}
-                className={`port out t-${p.type}${connected(ref) ? " on" : ""}`}
-                style={{ top: i * 18 }}
-                data-port={`${node.id}:${p.id}`}
-                data-dir="out"
-                aria-label={`${p.name} output`}
-                onPointerDown={(e) => handlers.onPortDown(e, ref, "out")}
-              >
-                <span className="port-name">{p.name}</span>
-                <span className="port-dot" />
-              </button>
+              <div key={p.id} className={`in-row${from ? " on" : ""}`}>
+                <button
+                  className={`port in t-${p.type}${from ? " on" : ""}`}
+                  data-port={`${node.id}:${p.id}`}
+                  data-dir="in"
+                  aria-label={`${p.name} input`}
+                  title={from ? `${p.name} ← ${from} — drag to move the wire` : `${p.name} — drop a wire here`}
+                  onPointerDown={(e) => handlers.onPortDown(e, ref, "in")}
+                >
+                  <span className="port-dot" />
+                </button>
+                <span className="in-name">{p.name}</span>
+                {from && <span className="in-from">{from}</span>}
+              </div>
             );
           })}
         </div>

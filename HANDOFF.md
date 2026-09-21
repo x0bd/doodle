@@ -13,7 +13,7 @@ A recursively zoomable creative document. The first surface is the **image workf
 - The graph is JSON on disk now (`Name.doodle/graph.json` beside `assets/`); SQLite when objects, relationships and search arrive.
 - The work is in-window pills; the boring things are on the native menu bar (`src-tauri/src/menu.rs` → ids → `src/platform/menu.ts`).
 - Mock providers first. `src/providers/types.ts` is the port; `mock.ts` is real infrastructure (latency, per-step progress, cancel); `ollama.ts` is shaped for text and pings `localhost:11434`; the registry hands out the mock. A real image adapter behind an API key in the keychain is next in that area.
-- Signal is charcoal (`--signal: var(--ink)`). Dark is the default; light must always hold. Icon is **DD** in Silkscreen on a charcoal tile at Adobe proportion (`design/app-icon.png`).
+- Signal is **electric yellow** (`--signal: #f4ec1a`, ink on it 15.5:1) and it appears on one thing: the play. Dark is the default; light must always hold. Icon is **DD** in Silkscreen on a charcoal tile at Adobe proportion (`design/app-icon.png`).
 - **Roles (Doodle's amendment to doctrine 8, 2026-09-21):** not one signal but a set — one muted hue per kind, the way a cutting room colours its roles: model slate, scene blue, note sand, shot orange, character rose, style violet, generator teal, writer indigo, preview/page green. Declared as `--role-*: h s l` in `app.css` (dark variants lighter), worn by `.k-<kind>` as `--role` and by `.t-<type>` as `--flow` (model slate, text blue, image green). Always a ground — a wash on a card's head (`--wash`), a full dot, a wire, a glyph tile — never type, never state (state stays a word). Port to v00v as an optional roles extension when it has settled.
 
 ## The window
@@ -68,7 +68,7 @@ src/
            Doc.tsx      the document a node becomes when entered
            Node.tsx     the card by kind; ports on the edges (data-port for hit-testing); progress in the head
            Wires.tsx    one SVG; wire-hit under wire-line; the live wire
-           layout.ts    PORTS_TOP 36, PORT_ROW 18 — the CSS and the wires agree here
+           layout.ts    the first output sits on the head band's right edge (HEAD_H 30); inputs are 24px rows from ROWS_TOP 36 down the left edge; on the map every port is on the band (setMapMode)
   graph/   kinds.ts     the registry: model prompt generate preview character style write page
            templates.ts images film manga book
   state/   store.ts     createStore — value, set, subscribe, use (useSyncExternalStore)

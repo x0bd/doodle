@@ -6,9 +6,11 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  /* the signal: charcoal. Doodle wants no colour — the field is the work. */
-  --signal: var(--ink);
-  --signal-ink: var(--bg);
+  /* the signal: electric yellow — the one thing that says GO. It is a
+     ground (doctrine 8) and keeps its value in both modes; ink on it is
+     always dark. 15.5:1 against #0e0e0d. */
+  --signal: #f4ec1a;
+  --signal-ink: #0e0e0d;
 
   /* the field's dot: fainter than the hatch, it is a grid to place by, not a
      texture to look at */
@@ -332,12 +334,12 @@ html, body, #root { height: 100%; }
 /* ─── Far out: the map ──────────────────────────────────────────────────────
    Below 0.4 a card is its title. Bodies and port words go; the title
    grows so it reads at that size; wires thicken to stay visible. */
-.lod-map .node-body, .lod-map .port-name, .lod-map .node-progress { display: none; }
+.lod-map .node-body, .lod-map .ins, .lod-map .node-progress { display: none; }
 .lod-map .node { min-height: 0 !important; height: auto !important; gap: 4px; }
 .lod-map .node-head { height: 34px; }
 .lod-map .node-name { font-size: 22px; }
 .lod-map .node-inside { display: none; }
-.lod-map .port-dot { width: 12px; height: 12px; }  /* rows keep their 18px so wires still land */
+.lod-map .port.out.top .port-dot { width: 14px; height: 14px; }
 .lod-map .wire-line { stroke-width: 3; }
 
 /* ─── The lens ──────────────────────────────────────────────────────────────
@@ -419,52 +421,70 @@ html, body, #root { height: 100%; }
 .node-body { flex: 1; min-height: 0; border-radius: var(--r-plate); overflow: hidden; }
 .node-img { display: block; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
 
-/* the ports: on the card's edges, each a dot and its word. The rows sit
-   at fixed heights (canvas/layout.ts) so the wires know where they are. */
-.ports { position: relative; margin: -2px -8px 0; flex-shrink: 0; }
+/* the ports. The output is one dot on the head's right edge. Inputs are
+   rows in the body — a dot on the left edge, the word, and what feeds it —
+   at fixed heights (canvas/layout.ts) so the wires know where they land. */
 .port {
   position: absolute;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  height: 18px;
-  padding: 0 6px;
-  font-size: var(--t-micro);
-  color: var(--fg-faint);
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
   cursor: crosshair;
-  white-space: nowrap;
 }
-.port.in  { left: -4px; }
-.port.out { right: -4px; }
-/* the hit area is bigger than the mark: a wire should be easy to catch */
-.port::before { content: ""; position: absolute; inset: -6px -10px; }
+.port::before { content: ""; position: absolute; inset: -6px; }
+.port.out.top { right: -10px; top: 5px; }
+.port.in { left: -10px; top: 2px; }
 .port-dot {
   width: 9px;
   height: 9px;
   border-radius: var(--r-pill);
   background: var(--surface-raised);
   box-shadow: 0 0 0 1.5px hsl(var(--flow) / 0.6);
-  flex-shrink: 0;
   transition: background var(--fast) var(--ease), box-shadow var(--fast) var(--ease), transform var(--fast) var(--ease);
 }
 /* connected: the dot fills with what flows through it, like its wire */
 .port.on .port-dot { background: hsl(var(--flow)); box-shadow: 0 0 0 1.5px hsl(var(--flow)); }
-.port.on { color: var(--fg-muted); }
 @media (hover: hover) and (pointer: fine) {
-  .port:hover { color: var(--fg); }
   .port:hover .port-dot { box-shadow: 0 0 0 1.5px hsl(var(--flow)), 0 0 0 5px hsl(var(--flow) / 0.2); transform: scale(1.3); }
 }
-.port:focus-visible { background: none; box-shadow: none; color: var(--fg); }
+.port:focus-visible { background: none; box-shadow: none; }
 /* while a wire is out: every input it can land on lights; the rest step back */
-.wiring .port { transition: opacity var(--fast) var(--ease); }
-.wiring .port.in { opacity: 0.35; }
-.wiring-model .port.in.t-model, .wiring-text .port.in.t-text, .wiring-image .port.in.t-image { opacity: 1; color: var(--fg); }
+.wiring .port, .wiring .in-row { transition: opacity var(--fast) var(--ease); }
+.wiring .in-row { opacity: 0.35; }
+.wiring-model .in-row:has(.t-model), .wiring-text .in-row:has(.t-text), .wiring-image .in-row:has(.t-image) { opacity: 1; }
 .wiring-model .port.in.t-model .port-dot, .wiring-text .port.in.t-text .port-dot, .wiring-image .port.in.t-image .port-dot {
   box-shadow: 0 0 0 1.5px hsl(var(--flow)), 0 0 0 5px hsl(var(--flow) / 0.22);
   transform: scale(1.3);
 }
 .wiring .port.out { opacity: 0.35; }
 .wire-hit { cursor: default; }
+
+/* the input rows */
+.ins { display: flex; flex-direction: column; margin: 0 -8px; padding: 0 8px 0 0; flex-shrink: 0; }
+.in-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 24px;
+  padding-left: 16px;
+  font-size: var(--t-micro);
+  color: var(--fg-faint);
+}
+.in-row.on { color: var(--fg-muted); }
+.in-name { flex-shrink: 0; }
+.in-from {
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--fg);
+  font-weight: var(--w-mid);
+}
+.ins + .node-body { margin-top: 2px; }
 
 /* the bodies, by kind */
 .node-select { width: 100%; justify-content: space-between; cursor: default; }
@@ -633,10 +653,33 @@ html, body, #root { height: 100%; }
 .doc-tab.crumb:active { box-shadow: inset 0 2px 3px var(--rim-in); }
 
 .tools { display: flex; align-items: center; gap: 6px; }
-.queue-group { position: relative; display: inline-flex; align-items: center; gap: 1px; }
-.queue { padding-right: 10px; border-radius: var(--r-ctl) 0 0 var(--r-ctl); }
-.queue-more { padding: 7px 8px 7px 6px; border-radius: 0 var(--r-ctl) var(--r-ctl) 0; }
-.queue-more.on { opacity: 0.82; }
+/* the play: one capsule in the signal, the run on the left and the
+   chooser on the right, a hairline of the signal's own shade between */
+.queue-group {
+  position: relative;
+  display: inline-flex;
+  align-items: stretch;
+  border-radius: var(--r-ctl);
+  background: var(--signal);
+  color: var(--signal-ink);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 -1px 0 rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.14), var(--lift);
+  transition: box-shadow var(--press) var(--ease), transform var(--press) var(--ease), filter var(--fast) var(--ease);
+}
+@media (hover: hover) and (pointer: fine) { .queue-group:hover { filter: brightness(1.04); } }
+.queue-group:active { transform: translateY(1px); box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.14); }
+.queue, .queue-more {
+  background: transparent;
+  color: inherit;
+  box-shadow: none;
+  transform: none;
+}
+.queue { padding: 7px 10px 7px 13px; border-radius: var(--r-ctl) 0 0 var(--r-ctl); gap: 8px; }
+.queue .n { color: inherit; opacity: 0.7; }
+.queue-more { padding: 0 9px 0 7px; border-radius: 0 var(--r-ctl) var(--r-ctl) 0; box-shadow: inset 1px 0 0 rgba(0, 0, 0, 0.14); }
+.queue:hover, .queue-more:hover, .queue:active, .queue-more:active, .queue:focus-visible, .queue-more:focus-visible { background: rgba(0, 0, 0, 0.08); color: inherit; box-shadow: none; transform: none; }
+.queue-more:hover, .queue-more:active, .queue-more.on { box-shadow: inset 1px 0 0 rgba(0, 0, 0, 0.14); }
+.queue-more.on { background: rgba(0, 0, 0, 0.12); }
+.queue[disabled] { opacity: 1; }
 .qmenu {
   position: absolute;
   top: calc(100% + 8px);
