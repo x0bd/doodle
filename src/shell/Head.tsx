@@ -9,18 +9,15 @@ import {
   CopyIcon,
   MenuIcon,
 } from "../icons";
+import { ui, togglePanes } from "../state/ui";
 
-/** The title line. Everything centres on y 30, where the lights are. */
+/** The title line. Everything centres on y 30, where the lights are. The
+ *  boring menus are on the platform's bar; only the work is here. */
 export function Head() {
+  const panes = ui.use((s) => s.navigator || s.inspector);
   return (
     <header className="head" data-tauri-drag-region>
       <div className="lights-room" data-tauri-drag-region />
-
-      <nav className="menus" aria-label="Menus">
-        <button className="pill pill-quiet">Workflow</button>
-        <button className="pill pill-quiet">Edit</button>
-        <button className="pill pill-quiet">Help</button>
-      </nav>
 
       <div className="spacer" data-tauri-drag-region />
 
@@ -57,7 +54,12 @@ export function Head() {
         <button className="pill-icon" aria-label="Duplicate">
           <Icon icon={CopyIcon} size={14} strokeWidth={2} />
         </button>
-        <button className="pill-icon" aria-label="Panels">
+        <button
+          className={`pill-icon${panes ? " on" : ""}`}
+          aria-label="Panes"
+          aria-pressed={panes}
+          onClick={togglePanes}
+        >
           <Icon icon={MenuIcon} size={15} strokeWidth={2} />
         </button>
       </div>

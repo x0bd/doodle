@@ -1,0 +1,86 @@
+//! The menu bar. File, Edit, View, Window, Help — the platform's shape,
+//! with Doodle's own items reporting by id ("file.new", "view.zoom-in"…).
+
+use tauri::menu::{Menu, MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};
+use tauri::{App, Wry};
+
+pub fn build(app: &App) -> tauri::Result<Menu<Wry>> {
+    let item = |id: &str, label: &str, key: Option<&str>| {
+        let b = MenuItemBuilder::with_id(id, label);
+        let b = match key {
+            Some(k) => b.accelerator(k),
+            None => b,
+        };
+        b.build(app)
+    };
+
+    let doodle = SubmenuBuilder::new(app, "Doodle")
+        .about(None)
+        .separator()
+        .item(&item("app.settings", "Settings…", Some("CmdOrCtrl+,"))?)
+        .separator()
+        .services()
+        .separator()
+        .hide()
+        .hide_others()
+        .show_all()
+        .separator()
+        .quit()
+        .build()?;
+
+    let file = SubmenuBuilder::new(app, "File")
+        .item(&item("file.new", "New Graph", Some("CmdOrCtrl+N"))?)
+        .item(&item("file.open", "Open…", Some("CmdOrCtrl+O"))?)
+        .separator()
+        .item(&item("file.save", "Save", Some("CmdOrCtrl+S"))?)
+        .item(&item("file.save-as", "Save As…", Some("CmdOrCtrl+Shift+S"))?)
+        .separator()
+        .item(&item("file.export", "Export Image…", Some("CmdOrCtrl+E"))?)
+        .separator()
+        .item(&PredefinedMenuItem::close_window(app, Some("Close Graph"))?)
+        .build()?;
+
+    let edit = SubmenuBuilder::new(app, "Edit")
+        .undo()
+        .redo()
+        .separator()
+        .cut()
+        .copy()
+        .paste()
+        .item(&item("edit.duplicate", "Duplicate", Some("CmdOrCtrl+D"))?)
+        .item(&item("edit.delete", "Delete", Some("Backspace"))?)
+        .separator()
+        .select_all()
+        .build()?;
+
+    let view = SubmenuBuilder::new(app, "View")
+        .item(&item("view.zoom-in", "Zoom In", Some("CmdOrCtrl+="))?)
+        .item(&item("view.zoom-out", "Zoom Out", Some("CmdOrCtrl+-"))?)
+        .item(&item("view.zoom-fit", "Fit to View", Some("CmdOrCtrl+0"))?)
+        .item(&item("view.zoom-100", "Actual Size", Some("CmdOrCtrl+1"))?)
+        .separator()
+        .item(&item("view.navigator", "Navigator", Some("Alt+CmdOrCtrl+1"))?)
+        .item(&item("view.inspector", "Inspector", Some("Alt+CmdOrCtrl+2"))?)
+        .item(&item("view.panes", "Hide Panes", None)?)
+        .separator()
+        .item(&item("view.theme", "Light Appearance", None)?)
+        .separator()
+        .fullscreen()
+        .build()?;
+
+    let window = SubmenuBuilder::new(app, "Window")
+        .minimize()
+        .maximize()
+        .separator()
+        .close_window()
+        .build()?;
+
+    let help = SubmenuBuilder::new(app, "Help")
+        .item(&item("help.shortcuts", "Keyboard Shortcuts", Some("CmdOrCtrl+/"))?)
+        .item(&item("help.site", "Doodle on GitHub", None)?)
+        .build()?;
+
+    MenuBuilder::new(app)
+        .items(&[&doodle, &file, &edit, &view, &window, &help])
+        .build()
+}

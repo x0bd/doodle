@@ -29,4 +29,8 @@ export {
   Image01Icon as ImageIcon,
   SparklesIcon as GenerateIcon,
   Settings01Icon as SettingsIcon,
+  Tick02Icon as CheckIcon,
+  TextIcon,
+  Flowchart01Icon as GraphIcon,
+  DiceIcon,
 } from "@hugeicons/core-free-icons";
