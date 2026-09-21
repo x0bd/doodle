@@ -10,6 +10,7 @@ import { pick } from "../providers/registry";
 import { doc } from "./doc";
 import { writeAsset, saveRecord, loadRecord, inTauri } from "../platform/fs";
 import { ui } from "./ui";
+import { expandMentions } from "../canvas/mentions";
 import type { ImageRequest, Progress, TextRequest } from "../providers/types";
 
 export type JobState = "queued" | "running" | "completed" | "failed" | "cancelled";
@@ -64,8 +65,8 @@ function describe(n: GraphNode | undefined): string {
   const d = n.data;
   if (n.kind === "character") return [d.name, d.description].filter(Boolean).join(": ");
   if (n.kind === "style") return [d.description, d.palette && `palette: ${d.palette}`, d.lighting && `lighting: ${d.lighting}`].filter(Boolean).join(", ");
-  if (n.kind === "shot") return [d.description, `${d.shotSize} shot`, `${d.lensMm}mm`, `${d.movement}`].filter(Boolean).join(", ");
-  return String(d.text ?? "");
+  if (n.kind === "shot") return [expandMentions(String(d.description ?? "")), `${d.shotSize} shot`, `${d.lensMm}mm`, `${d.movement}`].filter(Boolean).join(", ");
+  return expandMentions(String(d.text ?? ""));
 }
 
 /** The prompt compiler, in its smallest form: the scene, then who is in

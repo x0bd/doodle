@@ -130,6 +130,20 @@ html, body, #root { height: 100%; }
   overflow: hidden;
 }
 .prose::placeholder { color: var(--fg-faint); }
+.prose-wrap { position: relative; }
+.prose-act { position: absolute; right: 0; bottom: -4px; animation: in var(--fast) var(--ease) both; }
+/* the mentions menu: the graph's names, under the field */
+.mentions {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  margin-top: 6px;
+  width: 260px;
+  padding: 6px;
+  border-radius: var(--r-card);
+  box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), 0 0 0 1px var(--rim-edge), var(--lift-2);
+  z-index: 6;
+}
 .prose-read { font-size: 17px; line-height: 1.65; color: var(--fg); white-space: pre-wrap; }
 
 /* sections: a name, a note, an action; then the thing */

@@ -9,6 +9,7 @@ import { graph, childrenOf, makeNode, type GraphNode } from "./graph";
 import { commit } from "./history";
 import { pick } from "../providers/registry";
 import { ui } from "./ui";
+import { expandMentions } from "../canvas/mentions";
 
 export interface ShotIdea {
   title: string;
@@ -85,7 +86,7 @@ export async function proposeShots(nodeId: string, count = 6, mood = "") {
     const { provider } = await pick("text.generate", ui.get().writeWith);
     shots.set((s) => (s[id] ? { ...s, [id]: { ...s[id], provider: provider.descriptor.name } } : s));
     const system = [shotsContract(count, mood), context(scene)].filter(Boolean).join("\n\n");
-    const text = await provider.generateText!({ prompt: String(scene.data.text ?? ""), system }, new AbortController().signal);
+    const text = await provider.generateText!({ prompt: expandMentions(String(scene.data.text ?? "")), system }, new AbortController().signal);
     const items = parseShots(text);
     shots.set((s) => (s[id] ? { ...s, [id]: { ...s[id], items, state: "ready" } } : s));
   } catch (e) {

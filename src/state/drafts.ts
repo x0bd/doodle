@@ -8,6 +8,7 @@ import { createStore } from "./store";
 import { graph, updateData, childrenOf } from "./graph";
 import { pick } from "../providers/registry";
 import { ui } from "./ui";
+import { expandMentions } from "../canvas/mentions";
 
 export type Ask = "expand" | "continue" | "rewrite" | "ask";
 
@@ -48,7 +49,7 @@ export async function propose(nodeId: string, ask: Ask, instruction = "") {
   try {
     const { provider } = await pick("text.generate", ui.get().writeWith);
     drafts.set((d) => (d[id] ? { ...d, [id]: { ...d[id], provider: provider.descriptor.name } } : d));
-    const text = await provider.generateText!({ prompt: String(node.data[proseKey(node.kind)] ?? ""), system }, new AbortController().signal);
+    const text = await provider.generateText!({ prompt: expandMentions(String(node.data[proseKey(node.kind)] ?? "")), system }, new AbortController().signal);
     drafts.set((d) => (d[id] ? { ...d, [id]: { ...d[id], text, state: "ready" } } : d));
   } catch (e) {
     drafts.set((d) => (d[id] ? { ...d, [id]: { ...d[id], state: "failed", error: String(e) } } : d));

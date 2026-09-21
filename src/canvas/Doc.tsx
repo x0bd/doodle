@@ -12,6 +12,8 @@ import { enter } from "../state/nav";
 import { doc } from "../state/doc";
 import { jobs, enqueue, jobFor, RUNNABLE } from "../state/jobs";
 import { FieldRow } from "../shell/Fields";
+import { useMentions } from "./mentions";
+import { useState } from "react";
 
 export const GLYPH: Record<NodeKind, IconSvgElement> = {
   model: ModelIcon, prompt: TextIcon, generate: GenerateIcon, preview: ImageIcon,
@@ -400,20 +402,49 @@ function Body({ node }: { node: GraphNode }) {
 
 function Prose({ node, field = "text" }: { node: GraphNode; field?: string }) {
   const ref = useRef<HTMLTextAreaElement>(null);
+  const value = String(node.data[field] ?? "");
+  const set = (v: string) => updateData(node.id, { [field]: v });
+  const m = useMentions(ref, value, set, GLYPH);
+  const [sel, setSel] = useState<string>("");
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     el.style.height = "0";
     el.style.height = `${Math.max(120, el.scrollHeight)}px`;
-  }, [node.data[field]]);
+  }, [value]);
+  const read = () => {
+    const el = ref.current;
+    if (!el) return;
+    setSel(el.selectionStart !== el.selectionEnd ? value.slice(el.selectionStart, el.selectionEnd).trim() : "");
+    m.onSelect();
+  };
+  const beatFromSelection = () => {
+    const g = graph.get();
+    const n = childrenOf(g, node.id).length;
+    const title = sel.split(/[.!?\n]/)[0].slice(0, 40).trim() || `Beat ${n + 1}`;
+    addNode(makeNode("note", 60 + n * 260, 60, { parent: node.id, title, data: { text: sel } }));
+    setSel("");
+  };
   return (
-    <textarea
-      ref={ref}
-      className="prose selectable"
-      value={String(node.data[field] ?? "")}
-      placeholder={node.kind === "page" ? "Nothing written yet. Wire a writer in and run, or write here." : "Write it the way you would say it. Expand it from the bar when it is enough."}
-      onChange={(e) => updateData(node.id, { [field]: e.target.value })}
-      spellCheck
-    />
+    <div className="prose-wrap">
+      <textarea
+        ref={ref}
+        className="prose selectable"
+        value={value}
+        placeholder={node.kind === "page" ? "Nothing written yet. Wire a writer in and run, or write here." : "Write it the way you would say it. @ names a character, a style, a shot. Expand it from the bar when it is enough."}
+        onChange={(e) => (set(e.target.value), requestAnimationFrame(m.afterChange))}
+        onKeyDown={m.onKeyDown}
+        onSelect={read}
+        onBlur={() => setTimeout(() => (m.close(), setSel("")), 150)}
+        spellCheck
+      />
+      {m.menu}
+      {sel && node.kind === "prompt" && (
+        <button className="pill pill-sm prose-act" onMouseDown={(e) => e.preventDefault()} onClick={beatFromSelection} title="A beat from the selected words">
+          <Icon icon={PlusIcon} size={11} strokeWidth={2.4} />
+          Beat from selection
+        </button>
+      )}
+    </div>
   );
 }
