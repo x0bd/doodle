@@ -46,11 +46,43 @@ export function shotsContract(count: number, mood: string) {
   ].join("\n");
 }
 
-/** the first JSON array in a reply, however it is wrapped */
+/** the same, as a schema a provider can be held to */
+export const SHOTS_SCHEMA = {
+  type: "object",
+  properties: {
+    shots: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          description: { type: "string" },
+          shotSize: { type: "string", enum: SIZES },
+          lensMm: { type: "number" },
+          movement: { type: "string", enum: MOVES },
+          durationMs: { type: "number" },
+          rationale: { type: "string" },
+        },
+        required: ["title", "description", "shotSize", "lensMm", "movement", "durationMs", "rationale"],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ["shots"],
+  additionalProperties: false,
+};
+
+/** the shot list in a reply — an object with `shots`, or the first array, however it is wrapped */
 export function parseShots(text: string): ShotIdea[] {
-  const m = text.match(/\[[\s\S]*\]/);
-  if (!m) throw new Error("No shot list in the answer");
-  const raw = JSON.parse(m[0]) as Partial<ShotIdea>[];
+  let raw: Partial<ShotIdea>[] | undefined;
+  try {
+    const o = JSON.parse(text);
+    raw = Array.isArray(o) ? o : o?.shots;
+  } catch {
+    const m = text.match(/\[[\s\S]*\]/);
+    if (!m) throw new Error("No shot list in the answer");
+    raw = JSON.parse(m[0]);
+  }
   if (!Array.isArray(raw) || !raw.length) throw new Error("An empty shot list");
   return raw.map((r, i) => ({
     title: String(r.title ?? `Shot ${i + 1}`).slice(0, 80),
@@ -87,7 +119,7 @@ export async function proposeShots(nodeId: string, count = 6, mood = "") {
     const { provider } = await pick("text.generate", ui.get().writeWith);
     shots.set((s) => (s[id] ? { ...s, [id]: { ...s[id], provider: provider.descriptor.name } } : s));
     const system = [shotsContract(count, mood), bibleText(), context(scene)].filter(Boolean).join("\n\n");
-    const text = await provider.generateText!({ prompt: expandMentions(String(scene.data.text ?? "")), system }, new AbortController().signal);
+    const text = await provider.generateText!({ prompt: expandMentions(String(scene.data.text ?? "")), system, schema: SHOTS_SCHEMA }, new AbortController().signal);
     const items = parseShots(text);
     shots.set((s) => (s[id] ? { ...s, [id]: { ...s[id], items, state: "ready" } } : s));
   } catch (e) {

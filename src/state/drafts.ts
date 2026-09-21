@@ -26,6 +26,7 @@ export interface Draft {
 
 export const drafts = createStore<Record<string, Draft>>({});
 let seq = 0;
+const controllers = new Map<string, AbortController>();
 
 const PROMPTS: Record<Ask, string> = {
   expand: "Expand this into a fuller passage. Keep every fact; add texture, motion and detail.",
@@ -47,14 +48,28 @@ export async function propose(nodeId: string, ask: Ask, instruction = "") {
     .map((n) => `${n.title}: ${n.data.text}`)
     .join("\n");
   const system = [PROMPTS[ask], instruction, bibleText(), notes && `Context:\n${notes}`].filter(Boolean).join("\n\n");
+  const ctl = new AbortController();
+  controllers.set(id, ctl);
   try {
     const { provider } = await pick("text.generate", ui.get().writeWith);
     drafts.set((d) => (d[id] ? { ...d, [id]: { ...d[id], provider: provider.descriptor.name } } : d));
-    const text = await provider.generateText!({ prompt: expandMentions(String(node.data[proseKey(node.kind)] ?? "")), system }, new AbortController().signal);
+    const req = { prompt: expandMentions(String(node.data[proseKey(node.kind)] ?? "")), system };
+    // words as they come, when the provider can give them
+    const onDelta = (partial: string) => drafts.set((d) => (d[id] ? { ...d, [id]: { ...d[id], text: partial } } : d));
+    const text = provider.streamText ? await provider.streamText(req, onDelta, ctl.signal) : await provider.generateText!(req, ctl.signal);
     drafts.set((d) => (d[id] ? { ...d, [id]: { ...d[id], text, state: "ready" } } : d));
   } catch (e) {
-    drafts.set((d) => (d[id] ? { ...d, [id]: { ...d[id], state: "failed", error: String(e) } } : d));
+    const cancelled = e instanceof DOMException && e.name === "AbortError";
+    if (cancelled) reject(id);
+    else drafts.set((d) => (d[id] ? { ...d, [id]: { ...d[id], state: "failed", error: String(e) } } : d));
+  } finally {
+    controllers.delete(id);
   }
+}
+
+/** Stop a draft that is still being written. */
+export function cancel(id: string) {
+  controllers.get(id)?.abort();
 }
 
 /** where a kind keeps its words */

@@ -6,7 +6,7 @@ import {
 import { shots, proposalsFor, keepShot, keepAll, dropShot, dismiss } from "../state/shots";
 import { KINDS, type NodeKind } from "../graph/kinds";
 import { graph, updateData, rename, childrenOf, makeNode, addNode, takeOutput, type GraphNode } from "../state/graph";
-import { drafts, draftsFor, accept, reject } from "../state/drafts";
+import { drafts, draftsFor, accept, reject, cancel } from "../state/drafts";
 import { urlFor, assets } from "../state/assets";
 import { enter } from "../state/nav";
 import { doc } from "../state/doc";
@@ -92,8 +92,14 @@ export function Doc({ id }: { id: string }) {
                     <Icon icon={CloseIcon} size={12} strokeWidth={2.2} />
                   </button>
                 )}
+                {d.state === "thinking" && (
+                  <button className="pill-icon sm" aria-label="Stop" title="Stop" onClick={() => cancel(d.id)}>
+                    <Icon icon={CloseIcon} size={12} strokeWidth={2.2} />
+                  </button>
+                )}
               </div>
               {d.state === "ready" && <p className="draft-text selectable">{d.text}</p>}
+              {d.state === "thinking" && d.text && <p className="draft-text writing">{d.text}</p>}
               {d.state === "failed" && <p className="draft-text">{d.error}</p>}
             </section>
         ))}

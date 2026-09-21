@@ -44,11 +44,9 @@ export function Inspector() {
         <div className="pane-body">
           <div className="group-head">State</div>
           <div className="group">
-            <div className="group-row">
-              <div className="group-what">
-                <div className="group-name">{ids.length > 1 ? `${ids.length} nodes` : "This one is"}</div>
-              </div>
-              <div className="seg" role="radiogroup" aria-label="State">
+            <div className="group-row col">
+              <div className="group-name">{ids.length > 1 ? `${ids.length} nodes are` : "This one is"}</div>
+              <div className="seg seg-full" role="radiogroup" aria-label="State">
                 {(["canon", "draft", "exploration", "rejected"] as Canon[]).map((c) => {
                   const on = node ? node.status === c : ids.every((i) => g.nodes[i]?.status === c);
                   return (

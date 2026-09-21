@@ -37,7 +37,7 @@ export const ollama: Provider = {
     const r = await fetch(`${BASE}/api/generate`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ model: resolve(req.model), prompt: req.prompt, system: req.system, stream: false }),
+      body: JSON.stringify({ model: resolve(req.model), prompt: req.prompt, system: req.system, stream: false, ...(req.schema ? { format: req.schema } : {}) }),
       signal,
     });
     if (!r.ok) throw new Error(`Ollama: ${r.status}`);

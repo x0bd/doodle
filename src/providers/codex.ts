@@ -5,6 +5,7 @@
  * so this is for scenes and pictures, not for every keystroke.
  */
 import { invoke } from "@tauri-apps/api/core";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { inTauri } from "../platform/fs";
 import type { ImageRequest, ImageResult, Progress, Provider, TextRequest } from "./types";
 
@@ -16,6 +17,48 @@ export interface CodexStatus {
 }
 
 export const codexStatus = () => invoke<CodexStatus>("codex_status");
+
+type CodexEvent =
+  | { kind: "delta"; turnId: string; delta: string }
+  | { kind: "done"; turnId: string; text: string; status: string; error?: string }
+  | { kind: "failed"; turnId: string; error: string };
+
+/** A turn on the app server: words as they come, the whole at the end.
+ *  Cancel interrupts the turn. */
+async function turn(req: TextRequest, onDelta: ((t: string) => void) | undefined, signal: AbortSignal): Promise<string> {
+  const handle = await invoke<{ thread_id: string; turn_id: string }>("codex_turn", { prompt: req.prompt, system: req.system ?? null, schema: req.schema ?? null });
+  return new Promise<string>((resolve, reject) => {
+    let off: UnlistenFn | undefined;
+    let acc = "";
+    const finish = (fn: () => void) => {
+      off?.();
+      signal.removeEventListener("abort", onAbort);
+      fn();
+    };
+    const onAbort = () => {
+      void invoke("codex_interrupt", { threadId: handle.thread_id, turnId: handle.turn_id }).catch(() => undefined);
+      finish(() => reject(new DOMException("Cancelled", "AbortError")));
+    };
+    signal.addEventListener("abort", onAbort);
+    listen<CodexEvent>("codex", (e) => {
+      const ev = e.payload;
+      if (ev.turnId !== handle.turn_id) return;
+      if (ev.kind === "delta") {
+        acc += ev.delta;
+        onDelta?.(acc);
+      } else if (ev.kind === "done") {
+        if (ev.status === "failed") finish(() => reject(new Error(ev.error ?? "Codex failed")));
+        else if (ev.status === "interrupted") finish(() => reject(new DOMException("Cancelled", "AbortError")));
+        else finish(() => resolve(ev.text || acc));
+      } else if (ev.kind === "failed") {
+        finish(() => reject(new Error(ev.error)));
+      }
+    }).then((f) => {
+      off = f;
+      if (signal.aborted) onAbort();
+    });
+  });
+}
 
 export const codex: Provider = {
   descriptor: { id: "codex", name: "ChatGPT", capabilities: ["text.generate", "image.generate"] },
@@ -29,8 +72,11 @@ export const codex: Provider = {
       return "unavailable";
     }
   },
-  async generateText(req: TextRequest): Promise<string> {
-    return invoke<string>("codex_text", { prompt: req.prompt, system: req.system ?? null });
+  async generateText(req: TextRequest, signal: AbortSignal): Promise<string> {
+    return turn(req, undefined, signal);
+  },
+  async streamText(req: TextRequest, onDelta: (t: string) => void, signal: AbortSignal): Promise<string> {
+    return turn(req, onDelta, signal);
   },
   async generateImage(req: ImageRequest, onProgress: (p: Progress) => void): Promise<ImageResult> {
     const t0 = performance.now();

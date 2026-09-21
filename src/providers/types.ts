@@ -35,6 +35,8 @@ export interface TextRequest {
   prompt: string;
   system?: string;
   model?: string;
+  /** a JSON Schema the answer must match, for providers that can promise it */
+  schema?: unknown;
 }
 
 export interface Progress {
@@ -49,4 +51,6 @@ export interface Provider {
   status(): Promise<ProviderStatus>;
   generateImage?(req: ImageRequest, onProgress: (p: Progress) => void, signal: AbortSignal): Promise<ImageResult>;
   generateText?(req: TextRequest, signal: AbortSignal): Promise<string>;
+  /** the same, with the words as they arrive */
+  streamText?(req: TextRequest, onDelta: (text: string) => void, signal: AbortSignal): Promise<string>;
 }

@@ -325,6 +325,8 @@ html, body, #root { height: 100%; }
 .draft-acts .pill-sm { --rim-gap: var(--surface); }
 .draft-text { margin-top: 8px; font-size: 16px; line-height: 1.6; color: var(--fg-muted); white-space: pre-wrap; }
 .draft.thinking .lbl { animation: pulse 1.2s var(--ease-in-out) infinite alternate; }
+/* words arriving: a caret of the ground blinks at the end */
+.draft-text.writing::after { content: ""; display: inline-block; width: 2px; height: 1em; margin-left: 2px; vertical-align: -0.15em; background: var(--fg-muted); animation: pulse 0.9s steps(2) infinite; }
 @keyframes pulse { from { opacity: 0.5; } to { opacity: 1; } }
 .reduce-motion .draft.thinking .lbl { animation: none; }
 
@@ -760,6 +762,9 @@ html, body, #root { height: 100%; }
 .group-ctl .px { font-size: var(--t-label); color: var(--fg-muted); padding-right: 6px; }
 .group-ctl .pill-sm { padding: 4px 8px 4px 10px; gap: 4px; }
 .seg-btn.key { padding: 3px 6px; }
+/* a segment that takes the row: its keys share the width */
+.seg-full { display: flex; width: 100%; }
+.seg-full .seg-btn { flex: 1; text-align: center; padding: 4px 4px; font-size: var(--t-micro); }
 .pane .group-row.col { flex-direction: column; align-items: stretch; gap: 6px; padding-right: 12px; }
 .pane .group-row.col .inp { font-size: var(--t-label); line-height: 1.45; resize: none; background: var(--surface-raised); }
 .pane-empty { padding: 4px 8px 8px; font-size: var(--t-label); color: var(--fg-faint); line-height: 1.5; }

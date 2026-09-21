@@ -54,8 +54,19 @@ export const mock: Provider = {
     const asset = req.seed === 12345 ? FIXTURES.blackBear : await vary(req.seed);
     return { asset, seed: req.seed, elapsedMs: performance.now() - t0 };
   },
+  async streamText(req: TextRequest, onDelta: (t: string) => void, signal: AbortSignal): Promise<string> {
+    const whole = await this.generateText!(req, signal);
+    let out = "";
+    for (const word of whole.split(/(?<=\s)/)) {
+      if (signal.aborted) throw new DOMException("Cancelled", "AbortError");
+      await new Promise((r) => setTimeout(r, 18));
+      out += word;
+      onDelta(out);
+    }
+    return whole;
+  },
   async generateText(req: TextRequest, signal: AbortSignal): Promise<string> {
-    await new Promise((r) => setTimeout(r, 1200));
+    await new Promise((r) => setTimeout(r, 400));
     if (signal.aborted) throw new DOMException("Cancelled", "AbortError");
     if (req.system?.includes("JSON array only")) {
       const n = Number(req.system.match(/Propose (\d+) shots/)?.[1] ?? 6);

@@ -21,8 +21,11 @@ pub fn run() {
             commands::write_asset,
             codex::codex_status,
             codex::codex_text,
-            codex::codex_image
+            codex::codex_image,
+            codex::codex_turn,
+            codex::codex_interrupt
         ])
+        .manage(codex::CodexState::default())
         .setup(|app| {
             // The boring things live on the platform's own menu bar. Every
             // item that is Doodle's (not the platform's) reports to the
