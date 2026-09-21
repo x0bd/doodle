@@ -15,7 +15,7 @@ const writers = () => installed.filter((m) => WRITERS.test(m));
 /** the model asked for if it is installed, else the first writer that is */
 function resolve(want?: string): string {
   const name = want?.replace(/^ollama\s*·\s*/i, "").trim();
-  if (name && installed.some((m) => m === name || m.startsWith(`${name}:`))) return name;
+  if (name && name !== "Default" && installed.some((m) => m === name || m.startsWith(`${name}:`))) return name;
   return writers()[0] ?? name ?? "llama3.2";
 }
 

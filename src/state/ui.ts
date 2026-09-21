@@ -12,10 +12,13 @@ export interface UiState {
   settings: boolean;
   /** the new-graph chooser — never remembered */
   chooser: boolean;
+  /** who draws and who writes when Queue is pressed */
+  drawWith: string;
+  writeWith: string;
 }
 
 const KEY = "doodle.ui.v1";
-const base: UiState = { navigator: true, inspector: true, theme: "dark", motion: "full", settings: false, chooser: false };
+const base: UiState = { navigator: true, inspector: true, theme: "dark", motion: "full", settings: false, chooser: false, drawWith: "mock", writeWith: "mock" };
 
 function load(): UiState {
   try {
@@ -64,3 +67,5 @@ export const openSettings = () => ui.set((s) => ({ ...s, settings: true }));
 export const closeSettings = () => ui.set((s) => ({ ...s, settings: false }));
 export const openChooser = () => ui.set((s) => ({ ...s, chooser: true }));
 export const closeChooser = () => ui.set((s) => ({ ...s, chooser: false }));
+export const setDrawWith = (id: string) => ui.set((s) => ({ ...s, drawWith: id }));
+export const setWriteWith = (id: string) => ui.set((s) => ({ ...s, writeWith: id }));

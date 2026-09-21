@@ -9,6 +9,7 @@ import { commit } from "./history";
 import { pick } from "../providers/registry";
 import { doc } from "./doc";
 import { writeAsset } from "../platform/fs";
+import { ui } from "./ui";
 import type { ImageRequest, Progress, TextRequest } from "../providers/types";
 
 export type JobState = "queued" | "running" | "completed" | "failed" | "cancelled";
@@ -184,7 +185,7 @@ async function run(id: string) {
     const onProgress = (p: Progress) => patch(id, { progress: p.fraction, note: p.note });
     if (job.kind === "text") {
       const req = job.request as TextRequest;
-      const { provider, fellBack } = await pick("text.generate", req.model);
+      const { provider, fellBack } = await pick("text.generate", ui.get().writeWith);
       patch(id, { note: fellBack ? "mock instead" : provider.descriptor.name.toLowerCase(), provider: provider.descriptor.id });
       const text = await provider.generateText!(req, ctl.signal);
       if (ctl.signal.aborted) throw new DOMException("Cancelled", "AbortError");
@@ -202,7 +203,7 @@ async function run(id: string) {
       });
     } else {
       const base = job.request as ImageRequest;
-      const { provider, fellBack } = await pick("image.generate", base.model);
+      const { provider, fellBack } = await pick("image.generate", ui.get().drawWith);
       patch(id, { provider: provider.descriptor.id, note: fellBack ? "mock instead" : undefined });
       const count = job.count ?? 1;
       const outputs: string[] = [];

@@ -465,7 +465,21 @@ html, body, #root { height: 100%; }
 .doc-tab.crumb:active { box-shadow: inset 0 2px 3px var(--rim-in); }
 
 .tools { display: flex; align-items: center; gap: 6px; }
-.queue { padding-right: 10px; }
+.queue-group { position: relative; display: inline-flex; align-items: center; gap: 1px; }
+.queue { padding-right: 10px; border-radius: var(--r-ctl) 0 0 var(--r-ctl); }
+.queue-more { padding: 7px 8px 7px 6px; border-radius: 0 var(--r-ctl) var(--r-ctl) 0; }
+.queue-more.on { opacity: 0.82; }
+.qmenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 220px;
+  padding: 6px;
+  border-radius: var(--r-card);
+  box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), 0 0 0 1px var(--rim-edge), var(--lift-2);
+  z-index: 20;
+  animation: in var(--fast) var(--ease) both;
+}
 .queue .n {
   font-family: var(--font-mono);
   font-size: var(--t-micro);

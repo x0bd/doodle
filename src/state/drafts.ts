@@ -6,7 +6,8 @@
  */
 import { createStore } from "./store";
 import { graph, updateData, childrenOf } from "./graph";
-import { pickAny } from "../providers/registry";
+import { pick } from "../providers/registry";
+import { ui } from "./ui";
 
 export type Ask = "expand" | "continue" | "rewrite" | "ask";
 
@@ -45,7 +46,7 @@ export async function propose(nodeId: string, ask: Ask, instruction = "") {
     .join("\n");
   const system = [PROMPTS[ask], instruction, notes && `Context:\n${notes}`].filter(Boolean).join("\n\n");
   try {
-    const provider = await pickAny("text.generate");
+    const { provider } = await pick("text.generate", ui.get().writeWith);
     drafts.set((d) => (d[id] ? { ...d, [id]: { ...d[id], provider: provider.descriptor.name } } : d));
     const text = await provider.generateText!({ prompt: String(node.data[proseKey(node.kind)] ?? ""), system }, new AbortController().signal);
     drafts.set((d) => (d[id] ? { ...d, [id]: { ...d[id], text, state: "ready" } } : d));

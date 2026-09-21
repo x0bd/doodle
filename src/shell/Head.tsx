@@ -15,6 +15,9 @@ import { jobs, enqueue, clearQueue, pending, current } from "../state/jobs";
 import { nav, trail, riseTo } from "../state/nav";
 import { graph } from "../state/graph";
 import { fitAll } from "../canvas/view";
+import { QueueMenu } from "./QueueMenu";
+import { useState } from "react";
+import { providers } from "../providers/registry";
 
 /** The title line. Everything centres on y 30, where the lights are. The
  *  boring menus are on the platform's bar; only the work is here. */
@@ -27,6 +30,9 @@ export function Head() {
   nav.use((n) => n.focus);
   const nodes = graph.use((g) => g.nodes);
   const path = trail();
+  const [menu, setMenu] = useState(false);
+  const { drawWith } = ui.use();
+  const drawer = providers.find((p) => p.descriptor.id === drawWith)?.descriptor.name ?? "Mock";
   const go = (id: string | null) =>
     riseTo(id, () => requestAnimationFrame(fitAll), { x: window.innerWidth / 2, y: window.innerHeight / 2 });
   const status = d.save === "saving" ? "Saving…" : d.save === "failed" ? "Save failed" : d.path ? (d.dirty ? "Edited" : "Saved") : d.dirty ? "Unsaved" : "";
@@ -68,12 +74,17 @@ export function Head() {
         <button className="pill-icon" aria-label="More">
           <Icon icon={MoreIcon} size={15} strokeWidth={2} />
         </button>
-        <button className="pill pill-ink queue" onClick={() => enqueue()} title="Run the graph — ⌘↩">
-          <Icon icon={RunIcon} size={13} strokeWidth={2.2} />
-          Queue
-          <span className="n">{running ? `${Math.round(running.progress * 100)}%` : waiting || ""}</span>
-          <Icon icon={ChevronDownIcon} size={12} strokeWidth={2.2} />
-        </button>
+        <span className="queue-group">
+          <button className="pill pill-ink queue" onClick={() => enqueue()} title={`Run the graph with ${drawer} — ⌘↩`}>
+            <Icon icon={RunIcon} size={13} strokeWidth={2.2} />
+            Queue
+            <span className="n">{running ? `${Math.round(running.progress * 100)}%` : waiting || drawer}</span>
+          </button>
+          <button className={`pill pill-ink queue-more${menu ? " on" : ""}`} aria-label="Run with…" aria-haspopup="menu" aria-expanded={menu} onClick={() => setMenu((m) => !m)}>
+            <Icon icon={ChevronDownIcon} size={12} strokeWidth={2.2} />
+          </button>
+          {menu && <QueueMenu onClose={() => setMenu(false)} />}
+        </span>
         <button className="pill-icon" aria-label="Clear queue" title="Stop and clear the queue" onClick={clearQueue} disabled={!waiting}>
           <Icon icon={CloseIcon} size={14} strokeWidth={2} />
         </button>

@@ -40,12 +40,12 @@ export const KINDS: Record<NodeKind, KindDef> = {
     inputs: [],
     outputs: [{ id: "model", name: "model", type: "model" }],
     size: { w: 220, h: 104 },
-    data: { model: "Mock" },
+    data: { model: "Default" },
     groups: [
       {
         name: "Model",
         fields: [
-          { key: "model", label: "Checkpoint", type: "select", options: ["Mock", "ChatGPT (Codex)", "DreamShaper 6 (SD1.5)", "SDXL 1.0", "Flux.1 schnell"] },
+          { key: "model", label: "Checkpoint", type: "select", options: ["Default", "DreamShaper 6 (SD1.5)", "SDXL 1.0", "Flux.1 schnell"] },
         ],
       },
     ],
@@ -153,12 +153,12 @@ export const KINDS: Record<NodeKind, KindDef> = {
     ],
     outputs: [{ id: "text", name: "text", type: "text" }],
     size: { w: 240, h: 178 },
-    data: { model: "Mock", length: "Scene" },
+    data: { model: "Default", length: "Scene" },
     groups: [
       {
         name: "Writing",
         fields: [
-          { key: "model", label: "Model", type: "select", options: ["Mock", "ChatGPT (Codex)", "Ollama · llama3.2"] },
+          { key: "model", label: "Model", type: "select", options: ["Default", "llama3.2", "gemma3", "qwen3", "mistral"] },
           { key: "length", label: "Length", type: "select", options: ["Beat", "Scene", "Chapter"] },
         ],
       },
