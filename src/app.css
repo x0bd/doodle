@@ -99,6 +99,83 @@ html, body, #root { height: 100%; }
 .node-body { flex: 1; min-height: 0; border-radius: var(--r-plate); overflow: hidden; }
 .node-img { display: block; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
 
+/* the ports: on the card's edges, each a dot and its word. The rows sit
+   at fixed heights (canvas/layout.ts) so the wires know where they are. */
+.ports { position: relative; margin: -2px -8px 0; flex-shrink: 0; }
+.port {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 18px;
+  padding: 0 6px;
+  font-size: var(--t-micro);
+  color: var(--fg-faint);
+  cursor: crosshair;
+  white-space: nowrap;
+}
+.port.in  { left: -4px; }
+.port.out { right: -4px; }
+.port-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-pill);
+  background: var(--surface-raised);
+  box-shadow: 0 0 0 1.5px var(--rim-edge);
+  flex-shrink: 0;
+  transition: background var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+}
+.port.on .port-dot { background: var(--fg); box-shadow: 0 0 0 1.5px var(--fg); }
+.port.on { color: var(--fg-muted); }
+@media (hover: hover) and (pointer: fine) {
+  .port:hover { color: var(--fg); }
+  .port:hover .port-dot { box-shadow: 0 0 0 1.5px var(--fg); }
+}
+.port:focus-visible { background: none; box-shadow: none; color: var(--fg); }
+.wiring .port.in:hover .port-dot { background: var(--fg); }
+
+/* the bodies, by kind */
+.node-select { width: 100%; justify-content: space-between; cursor: default; }
+.node-select .list-word { text-align: left; }
+.node-text {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 8px 10px;
+  background: none;
+  resize: none;
+  outline: none;
+  font-family: var(--font-ui);
+  font-size: var(--t-label);
+  line-height: 1.45;
+  color: var(--fg-muted);
+  cursor: text;
+}
+.node-text:focus { color: var(--fg); }
+.node-text::placeholder { color: var(--fg-faint); }
+.node-rows { display: flex; flex-direction: column; gap: 1px; padding: 2px 0 0; }
+.node-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  height: 30px;
+  padding: 0 6px 0 8px;
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  box-shadow: inset 0 1px 1px var(--rim-in), inset 0 -1px 0 var(--rim-lit);
+}
+.node-row-k { font-size: var(--t-micro); color: var(--fg-muted); }
+.node-row-v { font-size: var(--t-micro); color: var(--fg); }
+
+/* the wires */
+.wires { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; pointer-events: none; }
+.wire-hit { fill: none; stroke: transparent; stroke-width: 14; pointer-events: stroke; cursor: default; }
+.wire-line { fill: none; stroke: var(--fg-faint); stroke-width: 1.5; pointer-events: none; transition: stroke var(--fast) var(--ease); }
+.wire:hover .wire-line, .wire.sel .wire-line { stroke: var(--fg); }
+.wire.sel .wire-line { stroke-width: 2; }
+.wire-line.live { stroke: var(--fg); stroke-dasharray: 4 4; }
+
 /* ─── The title line ────────────────────────────────────────────────────── */
 .head {
   position: absolute;
@@ -197,6 +274,12 @@ html, body, #root { height: 100%; }
 .group-ctl .px { font-size: var(--t-label); color: var(--fg-muted); padding-right: 6px; }
 .group-ctl .pill-sm { padding: 4px 8px 4px 10px; gap: 4px; }
 .seg-btn.key { padding: 3px 6px; }
+.pane .group-row.col { flex-direction: column; align-items: stretch; gap: 6px; padding-right: 12px; }
+.pane .group-row.col .inp { font-size: var(--t-label); line-height: 1.45; resize: none; background: var(--surface-raised); }
+.pane-empty { padding: 4px 8px 8px; font-size: var(--t-label); color: var(--fg-faint); line-height: 1.5; }
+/* a select wearing a pill: the native control sits invisible on top */
+.pill.select { position: relative; cursor: pointer; }
+.pill.select select { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
 .seg-val {
   display: grid;
   place-items: center;

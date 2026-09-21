@@ -1,12 +1,36 @@
-import { Icon, CheckIcon, PlusIcon, ModelIcon, TextIcon, GenerateIcon, ImageIcon, GraphIcon } from "../icons";
+import { Icon, CheckIcon, PlusIcon, ModelIcon, TextIcon, GenerateIcon, ImageIcon, GraphIcon, type IconSvgElement } from "../icons";
+import { graph, select, makeNode, addNode } from "../state/graph";
+import { fitRect, camera } from "../canvas/camera";
+import { screenRect } from "../canvas/view";
+import type { NodeKind } from "../graph/kinds";
+
+const GLYPH: Record<NodeKind, IconSvgElement> = {
+  model: ModelIcon,
+  prompt: TextIcon,
+  generate: GenerateIcon,
+  preview: ImageIcon,
+};
 
 /** The left pane: where you are, and what is here. */
 export function Navigator() {
+  const g = graph.use();
+  const add = () => {
+    // a new prompt in the middle of the view, for now
+    const c = camera.get();
+    const x = (window.innerWidth / 2 - c.x) / c.zoom - 110;
+    const y = (window.innerHeight / 2 - c.y) / c.zoom - 80;
+    addNode(makeNode("prompt", Math.round(x), Math.round(y)));
+  };
+  const go = (id: string) => {
+    select([id]);
+    const n = g.nodes[id];
+    if (n) fitRect(n, screenRect(), 200);
+  };
   return (
     <aside className="pane left card" aria-label="Navigator">
       <div className="pane-head">
         <span className="pane-title">Black bear</span>
-        <button className="pill-icon sm" aria-label="Add node">
+        <button className="pill-icon sm" aria-label="Add node" title="Add a prompt" onClick={add}>
           <Icon icon={PlusIcon} size={14} strokeWidth={2} />
         </button>
       </div>
@@ -18,11 +42,14 @@ export function Navigator() {
           <Row icon={GraphIcon}>Untitled</Row>
           <div className="list-gap" />
           <div className="list-head">Nodes</div>
-          <Row icon={ModelIcon}>Model</Row>
-          <Row icon={TextIcon}>Prompt</Row>
-          <Row icon={TextIcon}>Negative</Row>
-          <Row icon={GenerateIcon} hl>Image Generator</Row>
-          <Row icon={ImageIcon}>Preview</Row>
+          {[...g.order].sort().map((id) => {
+            const n = g.nodes[id];
+            return (
+              <Row key={id} icon={GLYPH[n.kind]} hl={g.selection.includes(id)} onClick={() => go(id)} onDoubleClick={() => go(id)}>
+                {n.title}
+              </Row>
+            );
+          })}
         </div>
       </div>
     </aside>
@@ -30,18 +57,17 @@ export function Navigator() {
 }
 
 function Row({
-  icon,
-  on,
-  hl,
-  children,
+  icon, on, hl, children, onClick, onDoubleClick,
 }: {
-  icon: Parameters<typeof Icon>[0]["icon"];
+  icon: IconSvgElement;
   on?: boolean;
   hl?: boolean;
   children: string;
+  onClick?: () => void;
+  onDoubleClick?: () => void;
 }) {
   return (
-    <button className={`list-row${on ? " on" : ""}${hl ? " hl" : ""}`}>
+    <button className={`list-row${on ? " on" : ""}${hl ? " hl" : ""}`} onClick={onClick} onDoubleClick={onDoubleClick}>
       <Icon icon={icon} size={14} strokeWidth={1.8} />
       <span className="list-word">{children}</span>
       {on && (

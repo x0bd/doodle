@@ -1,18 +1,32 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { camera, panBy, toWorld, zoomAt, type Point, type Rect } from "./camera";
-import { graph, clearSelection, select, toggleSelect, moveNodes, raise, intersects, type GraphNode } from "../state/graph";
-import { Node } from "./Node";
+import {
+  graph, clearSelection, select, toggleSelect, moveNodes, raise, intersects, deleteSelected,
+  connect, canConnect, disconnect, edgeInto, type PortRef,
+} from "../state/graph";
+import { Node, type NodeHandlers } from "./Node";
+import { Wires } from "./Wires";
+import { portPos } from "./layout";
 import { fitAll } from "./view";
 
 type Drag =
   | { mode: "pan"; last: Point }
   | { mode: "marquee"; start: Point; additive: string[] }
-  | { mode: "move"; last: Point; ids: string[] };
+  | { mode: "move"; last: Point; ids: string[] }
+  | { mode: "wire"; from: PortRef; a: Point };
 
 const isTyping = (t: EventTarget | null) => {
   const el = t as HTMLElement | null;
   return !!el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
 };
+
+/** The port under a screen point, if any. */
+function portAt(x: number, y: number): { ref: PortRef; dir: "in" | "out" } | null {
+  const el = (document.elementFromPoint(x, y) as HTMLElement | null)?.closest<HTMLElement>("[data-port]");
+  if (!el) return null;
+  const [node, port] = el.dataset.port!.split(":");
+  return { ref: { node, port }, dir: el.dataset.dir as "in" | "out" };
+}
 
 /** The field: the world layer under the chrome, and every way of moving on it. */
 export function Canvas() {
@@ -21,6 +35,7 @@ export function Canvas() {
   const ref = useRef<HTMLDivElement>(null);
   const drag = useRef<Drag | null>(null);
   const [marquee, setMarquee] = useState<Rect | null>(null);
+  const [live, setLive] = useState<{ a: Point; b: Point } | null>(null);
   const [space, setSpace] = useState(false);
   const [dragging, setDragging] = useState(false);
 
@@ -46,7 +61,7 @@ export function Canvas() {
     return () => el.removeEventListener("wheel", onWheel);
   }, []);
 
-  // the keys: space to pan, arrows to nudge, escape to let go
+  // the keys: space to pan, arrows to nudge, delete to remove, escape to let go
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (isTyping(e.target)) return;
@@ -55,6 +70,9 @@ export function Canvas() {
         setSpace(true);
       } else if (e.key === "Escape") {
         clearSelection();
+      } else if (e.key === "Backspace" || e.key === "Delete") {
+        e.preventDefault();
+        deleteSelected();
       } else if (e.key.startsWith("Arrow")) {
         const sel = graph.get().selection;
         if (!sel.length) return;
@@ -97,21 +115,42 @@ export function Canvas() {
     begin(e, { mode: "marquee", start: { x: e.clientX, y: e.clientY }, additive });
   };
 
-  const onNodeDown = (e: ReactPointerEvent, node: GraphNode) => {
-    if (space || e.button === 1) return; // the field pans
-    if (e.button !== 0) return;
-    e.stopPropagation();
-    let sel = graph.get().selection;
-    if (e.shiftKey) {
-      toggleSelect(node.id);
-      sel = graph.get().selection;
-      if (!sel.includes(node.id)) return;
-    } else if (!sel.includes(node.id)) {
-      select([node.id]);
-      sel = [node.id];
-    }
-    raise(sel);
-    begin(e, { mode: "move", last: { x: e.clientX, y: e.clientY }, ids: sel });
+  const handlers: NodeHandlers = {
+    onPointerDown(e, node) {
+      if (space || e.button === 1) return; // the field pans
+      if (e.button !== 0) return;
+      e.stopPropagation();
+      let sel = graph.get().selection;
+      if (e.shiftKey) {
+        toggleSelect(node.id);
+        sel = graph.get().selection;
+        if (!sel.includes(node.id)) return;
+      } else if (!sel.includes(node.id)) {
+        select([node.id]);
+        sel = [node.id];
+      }
+      raise(sel);
+      begin(e, { mode: "move", last: { x: e.clientX, y: e.clientY }, ids: sel });
+    },
+    onPortDown(e, portRef, dir) {
+      if (space || e.button !== 0) return;
+      e.stopPropagation();
+      e.preventDefault();
+      const nodes = graph.get().nodes;
+      if (dir === "out") {
+        const a = portPos(nodes[portRef.node], portRef, "out");
+        begin(e, { mode: "wire", from: portRef, a });
+        setLive({ a, b: toWorld(camera.get(), { x: e.clientX, y: e.clientY }) });
+      } else {
+        // pick the wire up off the input and carry it
+        const existing = edgeInto(portRef);
+        if (!existing) return;
+        disconnect(existing.id);
+        const a = portPos(nodes[existing.from.node], existing.from, "out");
+        begin(e, { mode: "wire", from: existing.from, a });
+        setLive({ a, b: toWorld(camera.get(), { x: e.clientX, y: e.clientY }) });
+      }
+    },
   };
 
   const onMove = (e: ReactPointerEvent<HTMLDivElement>) => {
@@ -125,6 +164,10 @@ export function Canvas() {
       const z = camera.get().zoom;
       moveNodes(d.ids, (p.x - d.last.x) / z, (p.y - d.last.y) / z);
       d.last = p;
+    } else if (d.mode === "wire") {
+      const hit = portAt(p.x, p.y);
+      const snap = hit && hit.dir === "in" && canConnect(d.from, hit.ref) ? portPos(graph.get().nodes[hit.ref.node], hit.ref, "in") : null;
+      setLive({ a: d.a, b: snap ?? toWorld(camera.get(), p) });
     } else {
       const r = {
         x: Math.min(d.start.x, p.x),
@@ -143,7 +186,13 @@ export function Canvas() {
   };
 
   const onUp = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (!drag.current) return;
+    const d = drag.current;
+    if (!d) return;
+    if (d.mode === "wire") {
+      const hit = portAt(e.clientX, e.clientY);
+      if (hit && hit.dir === "in") connect(d.from, hit.ref);
+      setLive(null);
+    }
     ref.current!.releasePointerCapture(e.pointerId);
     drag.current = null;
     setMarquee(null);
@@ -158,7 +207,7 @@ export function Canvas() {
   return (
     <div
       ref={ref}
-      className="field"
+      className={`field${live ? " wiring" : ""}`}
       style={{
         backgroundSize: `${gap}px ${gap}px`,
         backgroundPosition: `${cam.x + 12 * cam.zoom}px ${cam.y + 12 * cam.zoom}px`,
@@ -170,8 +219,9 @@ export function Canvas() {
       onPointerCancel={onUp}
     >
       <div className="world" style={{ transform: `translate(${cam.x}px, ${cam.y}px) scale(${cam.zoom})` }}>
+        <Wires live={live} />
         {g.order.map((id) => (
-          <Node key={id} node={g.nodes[id]} selected={g.selection.includes(id)} onPointerDown={onNodeDown} />
+          <Node key={id} node={g.nodes[id]} selected={g.selection.includes(id)} handlers={handlers} />
         ))}
       </div>
       {marquee && (
