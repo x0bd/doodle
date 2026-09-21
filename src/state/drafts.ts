@@ -6,7 +6,7 @@
  */
 import { createStore } from "./store";
 import { graph, updateData, childrenOf } from "./graph";
-import { providerFor } from "../providers/registry";
+import { pickAny } from "../providers/registry";
 
 export type Ask = "expand" | "continue" | "rewrite" | "ask";
 
@@ -18,6 +18,7 @@ export interface Draft {
   text: string;
   state: "thinking" | "ready" | "failed";
   error?: string;
+  provider?: string;
 }
 
 export const drafts = createStore<Record<string, Draft>>({});
@@ -44,7 +45,8 @@ export async function propose(nodeId: string, ask: Ask, instruction = "") {
     .join("\n");
   const system = [PROMPTS[ask], instruction, notes && `Context:\n${notes}`].filter(Boolean).join("\n\n");
   try {
-    const provider = providerFor("text.generate");
+    const provider = await pickAny("text.generate");
+    drafts.set((d) => (d[id] ? { ...d, [id]: { ...d[id], provider: provider.descriptor.name } } : d));
     const text = await provider.generateText!({ prompt: String(node.data.text ?? ""), system }, new AbortController().signal);
     drafts.set((d) => (d[id] ? { ...d, [id]: { ...d[id], text, state: "ready" } } : d));
   } catch (e) {

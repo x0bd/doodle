@@ -27,7 +27,8 @@ export function Head() {
   nav.use((n) => n.focus);
   const nodes = graph.use((g) => g.nodes);
   const path = trail();
-  const go = (id: string | null) => riseTo(id, () => requestAnimationFrame(fitAll));
+  const go = (id: string | null) =>
+    riseTo(id, () => requestAnimationFrame(fitAll), { x: window.innerWidth / 2, y: window.innerHeight / 2 });
   const status = d.save === "saving" ? "Saving…" : d.save === "failed" ? "Save failed" : d.path ? (d.dirty ? "Edited" : "Saved") : d.dirty ? "Unsaved" : "";
   return (
     <header className="head" data-tauri-drag-region>

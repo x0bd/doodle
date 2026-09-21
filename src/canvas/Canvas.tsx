@@ -6,7 +6,8 @@ import {
 } from "../state/graph";
 import { begin as journalBegin, end as journalEnd, commit, type Snapshot } from "../state/history";
 import { Node, type NodeHandlers } from "./Node";
-import { nav, enter, rise } from "../state/nav";
+import { nav, enter, rise, clearArrival } from "../state/nav";
+import { ui } from "../state/ui";
 import { childrenOf } from "../state/graph";
 import { fitAll } from "./view";
 import { Wires } from "./Wires";
@@ -48,7 +49,15 @@ export function Canvas() {
   const cam = camera.use();
   const g = graph.use();
   const focus = nav.use((n) => n.focus);
+  const arrival = nav.use((n) => n.arrival);
+  const motion = ui.use((u) => u.motion);
   const here = childrenOf(g, focus);
+  // the move the pointer made, played once: in grows from the card, out settles from the field
+  const arriveStyle =
+    arrival && motion === "full"
+      ? ({ "--ox": `${arrival.x}px`, "--oy": `${arrival.y}px` } as React.CSSProperties)
+      : undefined;
+  const arriveClass = arriveStyle ? ` arrive-${arrival!.dir}` : "";
   const writing = !!focus && WRITER_KINDS.has(g.nodes[focus]?.kind);
   const ref = useRef<HTMLDivElement>(null);
   const drag = useRef<Drag | null>(null);
@@ -225,7 +234,8 @@ export function Canvas() {
     if (!el || el.closest("textarea, input, [data-port]")) return;
     const id = el.closest<HTMLElement>("[data-node]")?.dataset.node;
     if (id) {
-      enter(id, () => requestAnimationFrame(fitAll));
+      const r = el.closest<HTMLElement>("[data-node]")!.getBoundingClientRect();
+      enter(id, () => requestAnimationFrame(fitAll), { x: r.left + r.width / 2, y: r.top + r.height / 2 });
       requestAnimationFrame(() => (document.activeElement as HTMLElement | null)?.blur());
     }
   };
@@ -262,7 +272,7 @@ export function Canvas() {
 
   if (writing) {
     return (
-      <div ref={ref} className="field doc">
+      <div ref={ref} className={`field doc${arriveClass}`} style={arriveStyle} onAnimationEnd={(e) => e.target === e.currentTarget && clearArrival()}>
         <Writer id={focus!} />
       </div>
     );
@@ -271,12 +281,14 @@ export function Canvas() {
   return (
     <div
       ref={ref}
-      className={`field${live ? " wiring" : ""}`}
+      className={`field${live ? " wiring" : ""}${arriveClass}`}
       style={{
         backgroundSize: `${gap}px ${gap}px`,
         backgroundPosition: `${cam.x + 12 * cam.zoom}px ${cam.y + 12 * cam.zoom}px`,
         cursor,
+        ...arriveStyle,
       }}
+      onAnimationEnd={(e) => e.target === e.currentTarget && clearArrival()}
       onPointerDown={onFieldDown}
       onDoubleClick={onDoubleClick}
       onPointerMove={onMove}

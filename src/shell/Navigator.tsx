@@ -38,7 +38,8 @@ export function Navigator() {
     const n = g.nodes[id];
     if (n) fitRect(n, screenRect(), 200);
   };
-  const into = (id: string) => enter(id, () => requestAnimationFrame(fitAll));
+  const into = (id: string) =>
+    enter(id, () => requestAnimationFrame(fitAll), { x: window.innerWidth / 2, y: window.innerHeight / 2 });
   return (
     <aside className="pane left card" aria-label="Navigator">
       <div className="pane-head">
@@ -51,7 +52,7 @@ export function Navigator() {
         <div className="list">
           {path.length ? (
             <>
-              <Row icon={UpIcon} onClick={() => rise(() => requestAnimationFrame(fitAll))}>
+              <Row icon={UpIcon} onClick={() => rise(() => requestAnimationFrame(fitAll), { x: window.innerWidth / 2, y: window.innerHeight / 2 })}>
                 {path.length > 1 ? g.nodes[path[path.length - 2]].title : name}
               </Row>
               <div className="list-gap" />

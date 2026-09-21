@@ -63,7 +63,9 @@ export function Writer({ id }: { id: string }) {
         {mine.map((d) => (
           <section key={d.id} className={`draft ${d.state}`} aria-live="polite">
             <div className="draft-head">
-              <span className="lbl">{d.state === "thinking" ? "Thinking…" : d.state === "failed" ? "Could not" : `${ASK_LABEL[d.ask]} — a draft`}</span>
+              <span className="lbl">
+                {d.state === "thinking" ? `${d.provider ?? "Thinking"}…` : d.state === "failed" ? "Could not" : `${ASK_LABEL[d.ask]} — a draft${d.provider ? ` · ${d.provider}` : ""}`}
+              </span>
               {d.state === "ready" && (
                 <span className="draft-acts">
                   <button className="pill pill-sm" onClick={() => accept(d.id)}>
@@ -97,7 +99,15 @@ export function Writer({ id }: { id: string }) {
           </div>
           <div className="ctx-grid">
             {notes.map((n) => (
-              <button key={n.id} className="ctx-card" onDoubleClick={() => enter(n.id)} title="Double-click to open">
+              <button
+                key={n.id}
+                className="ctx-card"
+                onDoubleClick={(e) => {
+                  const r = e.currentTarget.getBoundingClientRect();
+                  enter(n.id, undefined, { x: r.left + r.width / 2, y: r.top + r.height / 2 });
+                }}
+                title="Double-click to open"
+              >
                 <span className="ctx-card-head">
                   <Icon icon={NoteIcon} size={12} strokeWidth={1.8} />
                   <span className="ctx-card-title">{n.title}</span>

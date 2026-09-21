@@ -50,7 +50,7 @@ export function Bar() {
   const running = current(j);
   const last = latest(j);
   const note = running
-    ? (running.kind === "text" ? "Writing…" : `Rendering ${running.note ?? ""}`)
+    ? (running.kind === "text" ? `Writing · ${running.note ?? ""}` : `Rendering ${running.note ?? ""}`)
     : last?.state === "completed" && last.startedAt && last.endedAt
       ? `Done in ${((last.endedAt - last.startedAt) / 1000).toFixed(1)}s`
       : last?.state === "failed"

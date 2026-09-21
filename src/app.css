@@ -44,6 +44,15 @@ html, body, #root { height: 100%; }
   touch-action: none;
   z-index: 1;
 }
+/* the move the pointer made: entering grows out of the card it came from,
+   rising settles back from a touch too close. Once, 220 ms, and never for a
+   key (the store only records the pointer's moves). */
+.field.arrive-in  { animation: arrive-in var(--base) var(--ease-out) both; transform-origin: var(--ox, 50%) var(--oy, 50%); }
+.field.arrive-out { animation: arrive-out var(--base) var(--ease-out) both; transform-origin: var(--ox, 50%) var(--oy, 50%); }
+@keyframes arrive-in  { from { opacity: 0; transform: scale(0.82); } to { opacity: 1; transform: none; } }
+@keyframes arrive-out { from { opacity: 0; transform: scale(1.08); } to { opacity: 1; transform: none; } }
+.reduce-motion .field.arrive-in, .reduce-motion .field.arrive-out { animation: none; }
+
 .world {
   position: absolute;
   left: 0;

@@ -6,7 +6,7 @@
 import { createStore } from "./store";
 import { graph, type GraphNode } from "./graph";
 import { commit } from "./history";
-import { providerFor } from "../providers/registry";
+import { providerFor, pick } from "../providers/registry";
 import type { ImageRequest, Progress, TextRequest } from "../providers/types";
 
 export type JobState = "queued" | "running" | "completed" | "failed" | "cancelled";
@@ -23,6 +23,8 @@ export interface Job {
   error?: string;
   request: ImageRequest | TextRequest;
   kind: "image" | "text";
+  /** who answered, once someone has */
+  provider?: string;
 }
 
 export interface JobsState {
@@ -163,9 +165,10 @@ async function run(id: string) {
   try {
     const onProgress = (p: Progress) => patch(id, { progress: p.fraction, note: p.note });
     if (job.kind === "text") {
-      const provider = providerFor("text.generate");
-      patch(id, { note: "writing" });
-      const text = await provider.generateText!(job.request as TextRequest, ctl.signal);
+      const req = job.request as TextRequest;
+      const { provider, fellBack } = await pick("text.generate", req.model);
+      patch(id, { note: fellBack ? "mock instead" : provider.descriptor.name.toLowerCase(), provider: provider.descriptor.id });
+      const text = await provider.generateText!(req, ctl.signal);
       if (ctl.signal.aborted) throw new DOMException("Cancelled", "AbortError");
       // the words land on the writer and flow into whatever its text feeds
       commit("Write", () => {
