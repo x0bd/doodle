@@ -8,6 +8,7 @@ import { createStore } from "./store";
 import type { Rect } from "../canvas/camera";
 import { KINDS, type NodeKind, type Port } from "../graph/kinds";
 import { commit } from "./history";
+import type { Anchor } from "./anchors";
 
 export type Canon = "canon" | "draft" | "exploration" | "rejected";
 
@@ -29,6 +30,8 @@ export interface GraphNode extends Rect {
   seq: number;
   /** the node this one lives inside; null at the root */
   parent: string | null;
+  /** the passage of its parent's words this one came from, if it did */
+  anchor?: Anchor;
 }
 
 export interface PortRef {

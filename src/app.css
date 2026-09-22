@@ -199,7 +199,38 @@ html, body, #root { height: 100%; }
   overflow: hidden;
 }
 .prose::placeholder { color: var(--fg-faint); font-style: italic; }
+/* the marks sit under the words in the same metrics: the passages that
+   beats are tied to, lit when the pointer is on their beat */
 .prose-wrap { position: relative; }
+.prose-wrap .prose { position: relative; background: none; z-index: 1; }
+.prose-marks {
+  position: absolute;
+  inset: 0;
+  font-family: var(--font-ui);
+  font-size: 16.5px;
+  line-height: 1.75;
+  letter-spacing: -0.004em;
+  color: transparent;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  pointer-events: none;
+  z-index: 0;
+}
+.tie {
+  background: none;
+  color: transparent;
+  box-shadow: inset 0 -1px 0 hsl(var(--role-sand) / 0.55);
+  transition: background var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+}
+.tie.loose { box-shadow: inset 0 -1px 0 hsl(var(--role-sand) / 0.3); }
+.tie.lit { background: hsl(var(--role-sand) / 0.22); box-shadow: inset 0 -1px 0 hsl(var(--role-sand)); border-radius: 2px; }
+/* what a beat says about where it came from */
+.beat-tie { display: flex; align-items: center; gap: 8px; margin-top: 4px; color: var(--fg-faint); }
+.beat-tie-word { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.beat-tie-act { padding: 1px 5px; border-radius: 4px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; color: var(--fg-faint); flex-shrink: 0; }
+@media (hover: hover) and (pointer: fine) { .beat-tie-act:hover { background: var(--tint); color: var(--fg); } }
+.beat.adrift .beat-tie { color: hsl(var(--role-orange)); }
+.beat.adrift .beat-n { color: hsl(var(--role-orange)); }
 .prose-act { position: absolute; right: 0; bottom: -4px; animation: in var(--fast) var(--ease) both; }
 /* the mentions menu: the graph's names, under the field */
 .mentions {
