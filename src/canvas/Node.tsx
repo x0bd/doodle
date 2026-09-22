@@ -3,7 +3,7 @@ import { Icon, ChevronDownIcon, ChevronRightIcon } from "../icons";
 import { urlFor, assets } from "../state/assets";
 import { KINDS, NODE_ROWS } from "../graph/kinds";
 import { graph, inputs, outputs, updateData, childCount, childrenOf, takeOutput, type GraphNode, type PortRef } from "../state/graph";
-import { jobs, jobFor } from "../state/jobs";
+import { jobs, jobFor, partialFor } from "../state/jobs";
 
 export interface NodeHandlers {
   onPointerDown: (e: ReactPointerEvent, node: GraphNode) => void;
@@ -272,19 +272,23 @@ const fmtCount = (n: number) => n.toLocaleString("en-US");
 /** A page on the field is a sheet: the words themselves, written on in
  *  place, and how many there are. Nothing else — the sheet is the invitation. */
 function PageBody({ node }: { node: GraphNode }) {
-  const text = String(node.data.text ?? "");
+  const j = jobs.use();
+  // a writer at work shows its words here as they come; they are not the page yet
+  const partial = partialFor(j, node.id);
+  const text = partial ?? String(node.data.text ?? "");
   const words = countWords(text);
   return (
     <div className="node-body node-sheet">
       <textarea
-        className="sheet-text selectable"
+        className={`sheet-text selectable${partial !== undefined ? " arriving" : ""}`}
         value={text}
         placeholder="Start writing…"
+        readOnly={partial !== undefined}
         onChange={(e) => updateData(node.id, { text: e.target.value })}
         onPointerDown={(e) => e.stopPropagation()}
         spellCheck
       />
-      <div className="sheet-foot px">{words ? `${fmtCount(words)} words` : ""}</div>
+      <div className="sheet-foot px">{partial !== undefined ? "writing…" : words ? `${fmtCount(words)} words` : ""}</div>
     </div>
   );
 }

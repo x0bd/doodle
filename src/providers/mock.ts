@@ -38,6 +38,22 @@ async function vary(seed: number): Promise<string> {
   return c.toDataURL("image/png");
 }
 
+/** twelve paragraphs of a morning, so a chapter run has pages to turn */
+const MOCK_CHAPTER = [
+  "The wind comes in off the water before the light does. She is on the gallery with the glass still in her hand when she sees it — a hull where no hull should be, riding low, no lamp lit, no one at the rail. She counts to ten. Nothing on it moves.",
+  "Her father is asleep. He sleeps in the afternoons now and wakes in the dark and calls the hours up the stairs as if the light still needed him to say them. She does not wake him. She writes the bearing on the slate by the door, the way he taught her, and the time, and under it, because the slate is hers as much as his, she writes: no crew.",
+  "The path down to the landing is wet with the night's rain. The gorse has grown over the second turn again and she goes through it with her arms up, the way you go into cold water. Below her the ship has come round a little with the tide. She can read the name now. She has read it before, on a manifest, in a hand she did not like.",
+  "There is a dinghy on the landing that is not hers and not her father's. It is tied with a knot she knows from the mainland boats, a knot that is meant to be undone in a hurry. She stands over it for a while. Then she unties it, because leaving it tied would be a kind of decision too.",
+  "The ship's ladder is down. That is the thing she keeps coming back to, later, when she tries to tell it in order. Not the emptiness of the deck, or the galley fire still warm, or the cup on the chart table with the coffee gone cold and a skin on it. The ladder. Somebody put it down for somebody.",
+  "She goes up. The deck is clean. Too clean — swabbed within the hour, the boards still dark with it, and the water in the scuppers has not yet found its way out. She calls once, not loud. The gulls answer. Nothing else does.",
+  "In the cabin the log is open to the day before. The entries are ordinary. Wind, sea, a sail sighted to the south and lost again. The last line is the noon position, and it is wrong; it puts them forty miles east of where the rock is, in open water, with nothing to run from and nowhere to be going.",
+  "She takes the log. She tells herself it is so that her father can read it, and that is true, and it is not the reason. The reason is that a wrong position in a careful hand is the first thing she has ever found that is exactly her size.",
+  "The manifest is in the drawer under the chart table, where they always are. Twelve crates, lamp oil. Four crates, the word after them scored out and written again: instruments. A passenger, no name, berth six. She reads it twice and puts it inside her coat, against her chest, and goes to find berth six.",
+  "Berth six is made up. The blanket is folded back the way you fold it if you mean to come back to it. On the shelf above it there is a book with the island's name on the spine, in a language she does not have, and a pressed flower in it marking a page with a drawing of the light.",
+  "She hears the dinghy before she sees it. Someone is rowing badly, the oars catching, from the far side of the ship where the landing is not. She goes up on deck and stands where she can be seen, because being seen first is the only advantage she has ever had.",
+  "The morning is full now. Her father is awake; she can tell by the smoke. From here the light looks very small, and very white, and the door of it is open, and she understands that whoever put the ladder down is on the island, and has been, since before the light went out.",
+];
+
 export const mock: Provider = {
   descriptor: { id: "mock", name: "Mock", capabilities: ["image.generate", "text.generate"] },
   async status() {
@@ -73,6 +89,11 @@ export const mock: Provider = {
       return JSON.stringify(SHOTS.slice(0, Math.max(1, Math.min(SHOTS.length, n))));
     }
     const brief = req.prompt.trim().replace(/\.$/, "");
-    return `${brief}.\n\nThe wind comes in off the water before the light does. She is on the gallery with the glass still in her hand when she sees it — a hull where no hull should be, riding low, no lamp lit, no one at the rail. She counts to ten. Nothing on it moves.\n\n(Mock. Wire a real writer in Settings when there is one.)`;
+    const scene = `The wind comes in off the water before the light does. She is on the gallery with the glass still in her hand when she sees it — a hull where no hull should be, riding low, no lamp lit, no one at the rail. She counts to ten. Nothing on it moves.`;
+    // a chapter is long enough to turn a page or two; a beat is one breath
+    const length = req.system?.match(/Length: (\w+)/)?.[1];
+    if (length === "Chapter") return `${brief}.\n\n${MOCK_CHAPTER.join("\n\n")}`;
+    if (length === "Beat") return scene.split(". ")[0] + ".";
+    return `${brief}.\n\n${scene}\n\n(Mock. Wire a real writer in Settings when there is one.)`;
   },
 };

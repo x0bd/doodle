@@ -654,6 +654,8 @@ html, body, #root { height: 100%; }
   overflow: auto;
 }
 .sheet-text::placeholder { color: var(--fg-faint); font-style: italic; }
+/* words arriving from a writer: shown, not yet kept */
+.sheet-text.arriving, .prose.arriving { color: var(--fg-muted); }
 /* the folio: the count where a page keeps its number */
 .sheet-foot {
   height: 18px;

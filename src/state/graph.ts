@@ -222,6 +222,100 @@ export function takeOutput(id: string, ref: string) {
   );
 }
 
+/** what a page holds before it turns, in words — about a printed page */
+export const PAGE_WORDS = 350;
+const countWords = (t: string) => (t.trim() ? t.trim().split(/\s+/).length : 0);
+
+/** Cut a text into pages: whole paragraphs while they fit, a long paragraph
+ *  at a sentence's end, never mid-sentence unless one sentence is a page. */
+export function paginate(text: string, cap = PAGE_WORDS): string[] {
+  const paras = text.replace(/\r/g, "").split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+  const pages: string[] = [];
+  let cur: string[] = [];
+  let n = 0;
+  const flush = () => {
+    if (cur.length) pages.push(cur.join("\n\n"));
+    cur = [];
+    n = 0;
+  };
+  for (const p of paras) {
+    const w = countWords(p);
+    if (n + w <= cap) {
+      cur.push(p);
+      n += w;
+      continue;
+    }
+    // too long for what is left: close this page unless it is empty, then
+    // lay the paragraph sentence by sentence
+    if (cur.length) flush();
+    if (w <= cap) {
+      cur.push(p);
+      n = w;
+      continue;
+    }
+    const sentences = p.match(/[^.!?]+[.!?]+["']?\s*|[^.!?]+$/g) ?? [p];
+    let piece: string[] = [];
+    let m = 0;
+    for (const s of sentences) {
+      const sw = countWords(s);
+      if (m + sw > cap && piece.length) {
+        pages.push(piece.join("").trim());
+        piece = [];
+        m = 0;
+      }
+      piece.push(s);
+      m += sw;
+    }
+    if (piece.length) {
+      cur = [piece.join("").trim()];
+      n = m;
+    }
+  }
+  flush();
+  return pages.length ? pages : [""];
+}
+
+/** Lay a text onto a page and, past what it holds, onto the pages after it —
+ *  the empty ones already there, then new ones made to the right. A page
+ *  with words of its own is never written over. Inside a commit. */
+export function layOnPages(pageId: string, text: string) {
+  const g = graph.get();
+  const first = g.nodes[pageId];
+  if (!first || first.kind !== "page") return;
+  const parts = paginate(text);
+  // the run of pages after this one, in order, while they are empty
+  const siblings = g.order
+    .map((id) => g.nodes[id])
+    .filter((n) => n.parent === first.parent && n.kind === "page")
+    .sort((a, b) => a.seq - b.seq);
+  const at = siblings.findIndex((n) => n.id === pageId);
+  const after = at >= 0 ? siblings.slice(at + 1) : [];
+  const targets: string[] = [pageId];
+  for (const n of after) {
+    if (targets.length >= parts.length) break;
+    if (String(n.data.text ?? "").trim()) break;
+    targets.push(n.id);
+  }
+  // more to lay than pages to take it: new pages to the right of the last
+  let last = g.nodes[targets[targets.length - 1]];
+  const count = siblings.length;
+  const made: GraphNode[] = [];
+  while (targets.length < parts.length) {
+    const page = makeNode("page", last.x + last.w + 40, last.y, { parent: first.parent, title: `Page ${count + made.length + 1}`, status: first.status });
+    made.push(page);
+    targets.push(page.id);
+    last = page;
+  }
+  graph.set((x) => {
+    const nodes = { ...x.nodes };
+    for (const p of made) nodes[p.id] = p;
+    targets.forEach((id, i) => {
+      nodes[id] = { ...nodes[id], data: { ...nodes[id].data, text: parts[i] ?? "" } };
+    });
+    return { ...x, nodes, order: [...x.order, ...made.map((p) => p.id)] };
+  });
+}
+
 export const selectAll = () => graph.set((g) => ({ ...g, selection: [...g.order], edgeSelection: [] }));
 
 /** Remove whatever is selected — nodes take their wires with them. */

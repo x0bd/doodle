@@ -11,7 +11,7 @@ import { urlFor, assets } from "../state/assets";
 import { enter, step, sibling, siblings } from "../state/nav";
 import { fitAll } from "./view";
 import { doc } from "../state/doc";
-import { jobs, enqueue, jobFor, RUNNABLE } from "../state/jobs";
+import { jobs, enqueue, jobFor, partialFor, RUNNABLE } from "../state/jobs";
 import { FieldRow } from "../shell/Fields";
 import { useMentions } from "./mentions";
 import { useState } from "react";
@@ -446,7 +446,9 @@ function Body({ node }: { node: GraphNode }) {
 
 function Prose({ node, field = "text" }: { node: GraphNode; field?: string }) {
   const ref = useRef<HTMLTextAreaElement>(null);
-  const value = String(node.data[field] ?? "");
+  const j = jobs.use();
+  const partial = node.kind === "page" ? partialFor(j, node.id) : undefined;
+  const value = partial ?? String(node.data[field] ?? "");
   const set = (v: string) => updateData(node.id, { [field]: v });
   const m = useMentions(ref, value, set, GLYPH);
   const [sel, setSel] = useState<string>("");
@@ -480,7 +482,8 @@ function Prose({ node, field = "text" }: { node: GraphNode; field?: string }) {
     <div className="prose-wrap">
       <textarea
         ref={ref}
-        className="prose selectable"
+        className={`prose selectable${partial !== undefined ? " arriving" : ""}`}
+        readOnly={partial !== undefined}
         value={value}
         placeholder={node.kind === "page" ? "Start writing…" : "Write it the way you would say it. @ names a character, a style, a shot. Expand it from the bar when it is enough."}
         onChange={(e) => (set(e.target.value), requestAnimationFrame(m.afterChange))}

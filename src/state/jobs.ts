@@ -4,7 +4,7 @@
  * journal entry so it can be undone like anything else.
  */
 import { createStore } from "./store";
-import { graph, childrenOf, type GraphNode } from "./graph";
+import { graph, childrenOf, layOnPages, type GraphNode } from "./graph";
 import { commit } from "./history";
 import { pick } from "../providers/registry";
 import { doc, bibleText } from "./doc";
@@ -33,6 +33,8 @@ export interface Job {
   outputs?: string[];
   /** how many were asked for */
   count?: number;
+  /** the words so far, while a writer streams — shown, not yet the document */
+  partial?: string;
 }
 
 export interface JobsState {
@@ -112,6 +114,17 @@ export function textRequestFor(w: GraphNode): TextRequest {
   const brief = fed(w, "brief");
   const system = [bibleText(), describe(fed(w, "character")), describe(fed(w, "style")), `Length: ${w.data.length}`].filter(Boolean).join("\n");
   return { prompt: String(brief?.data.text ?? ""), system, model: String(w.data.model) };
+}
+
+/** the words a running writer has so far for this page, if any */
+export function partialFor(s: JobsState, pageId: string): string | undefined {
+  const g = graph.get();
+  for (const jid of s.order) {
+    const j = s.jobs[jid];
+    if (j.state !== "running" || j.kind !== "text" || !j.partial) continue;
+    if (Object.values(g.edges).some((e) => e.from.node === j.nodeId && e.from.port === "text" && e.to.node === pageId)) return j.partial;
+  }
+  return undefined;
 }
 
 export const RUNNABLE = new Set(["generate", "write"]);
@@ -200,19 +213,26 @@ async function run(id: string) {
       const req = job.request as TextRequest;
       const { provider, fellBack } = await pick("text.generate", ui.get().writeWith);
       patch(id, { note: fellBack ? "mock instead" : provider.descriptor.name.toLowerCase(), provider: provider.descriptor.id });
-      const text = await provider.generateText!(req, ctl.signal);
+      // the words as they come, shown on the page they are for; the document
+      // takes them only at the end, as one journal entry
+      const onDelta = (partial: string) => patch(id, { partial });
+      const text = provider.streamText ? await provider.streamText(req, onDelta, ctl.signal) : await provider.generateText!(req, ctl.signal);
       if (ctl.signal.aborted) throw new DOMException("Cancelled", "AbortError");
-      // the words land on the writer and flow into whatever its text feeds
+      patch(id, { partial: undefined });
+      // the words land on the writer and flow into whatever its text feeds —
+      // a page takes what it can hold and turns the rest onto the pages after
       commit("Write", () => {
         const g = graph.get();
         const targets = Object.values(g.edges)
           .filter((e) => e.from.node === gen.id && e.from.port === "text")
           .map((e) => e.to.node);
-        graph.set((x) => {
-          const nodes = { ...x.nodes, [gen.id]: { ...x.nodes[gen.id], data: { ...x.nodes[gen.id].data, output: text } } };
-          for (const t of targets) if (nodes[t]) nodes[t] = { ...nodes[t], data: { ...nodes[t].data, text } };
-          return { ...x, nodes };
-        });
+        graph.set((x) => ({ ...x, nodes: { ...x.nodes, [gen.id]: { ...x.nodes[gen.id], data: { ...x.nodes[gen.id].data, output: text } } } }));
+        for (const t of targets) {
+          const n = graph.get().nodes[t];
+          if (!n) continue;
+          if (n.kind === "page") layOnPages(t, text);
+          else graph.set((x) => ({ ...x, nodes: { ...x.nodes, [t]: { ...x.nodes[t], data: { ...x.nodes[t].data, text } } } }));
+        }
       });
     } else {
       const base = job.request as ImageRequest;
