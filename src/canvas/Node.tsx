@@ -1,8 +1,7 @@
 import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
 import { Icon, ChevronDownIcon, ChevronRightIcon } from "../icons";
 import { urlFor, assets } from "../state/assets";
-import { KINDS } from "../graph/kinds";
-import { FieldRow } from "../shell/Fields";
+import { KINDS, NODE_ROWS } from "../graph/kinds";
 import { graph, inputs, outputs, updateData, childCount, childrenOf, measure, setWidth, takeOutput, type GraphNode, type PortRef } from "../state/graph";
 import { camera } from "./camera";
 import { jobs, jobFor, partialFor } from "../state/jobs";
@@ -200,31 +199,33 @@ function Body({ node }: { node: GraphNode }) {
     case "generate": {
       const outs = node.outputs ?? [];
       return (
-        <div className="node-body node-form">
-          <Form node={node} bare />
+        <div className="node-body node-rows">
+          <Rows node={node} rows={NODE_ROWS.generate ?? []} mono />
           {outs.length > 0 && (
-            <>
-              <div className="node-rule" aria-hidden><span>Takes</span></div>
-              <div className="bloom" role="radiogroup" aria-label="Candidates">
-                {outs.slice(-4).map((ref, i) => {
-                  const url = urlFor(ref);
-                  const on = node.asset === ref;
-                  return (
-                    <button
-                      key={`${i}:${ref}`}
-                      className={`bloom-take${on ? " on" : ""}`}
-                      role="radio"
-                      aria-checked={on}
-                      title={on ? "The take" : "Make this the take"}
-                      onPointerDown={(e) => e.stopPropagation()}
-                      onClick={() => !on && takeOutput(node.id, ref)}
-                    >
-                      {url && <img src={url} alt="" draggable={false} />}
-                    </button>
-                  );
-                })}
-              </div>
-            </>
+            <div className="node-rule" aria-hidden>
+              <span>Takes</span>
+            </div>
+          )}
+          {outs.length > 0 && (
+            <div className="bloom" role="radiogroup" aria-label="Candidates">
+              {outs.slice(-4).map((ref, i) => {
+                const url = urlFor(ref);
+                const on = node.asset === ref;
+                return (
+                  <button
+                    key={`${i}:${ref}`}
+                    className={`bloom-take${on ? " on" : ""}`}
+                    role="radio"
+                    aria-checked={on}
+                    title={on ? "The take" : "Make this the take"}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={() => !on && takeOutput(node.id, ref)}
+                  >
+                    {url && <img src={url} alt="" draggable={false} />}
+                  </button>
+                );
+              })}
+            </div>
           )}
         </div>
       );
@@ -248,11 +249,25 @@ function Body({ node }: { node: GraphNode }) {
         </div>
       );
     case "style":
-      return <Form node={node} />;
+      return (
+        <div className="node-body node-rows">
+          <div className="node-desc">{String(node.data.description || "No description yet")}</div>
+          <Rows node={node} rows={(NODE_ROWS.style ?? []).filter((r) => node.data[r.key])} />
+        </div>
+      );
     case "write":
-      return <Form node={node} />;
+      return (
+        <div className="node-body node-rows">
+          <Rows node={node} rows={NODE_ROWS.write ?? []} />
+        </div>
+      );
     case "shot":
-      return <Form node={node} />;
+      return (
+        <div className="node-body node-shot">
+          <p className="node-desc">{String(node.data.description || "What the camera sees")}</p>
+          <span className="node-cam px">{String(node.data.shotSize)} · {String(node.data.lensMm)}mm · {String(node.data.movement)}</span>
+        </div>
+      );
     case "note":
       return (
         <div className="node-body well">
@@ -329,25 +344,27 @@ function ChapterBody({ node }: { node: GraphNode }) {
   );
 }
 
-/** The card as the panel it is: every field the kind declares, live —
- *  keys, tracks, a chooser — under a hairline naming its section. The
- *  inspector shows the same fields; there is one registry. */
-function Form({ node, bare }: { node: GraphNode; bare?: boolean }) {
-  const groups = KINDS[node.kind].groups;
-  const form = (
+/** The rows of a card, under the panel sections they belong to — a
+ *  hairline with the section's name centred on it, the way a front
+ *  panel names a group of controls. */
+function Rows({ node, rows, mono }: { node: GraphNode; rows: { label: string; key: string; under?: string }[]; mono?: boolean }) {
+  return (
     <>
-      {groups.map((g, i) => (
-        <div key={g.name} className="node-part">
-          {(groups.length > 1 || i > 0 || node.kind === "generate") && (
-            <div className="node-rule" aria-hidden><span>{g.name}</span></div>
+      {rows.map((r) => (
+        <div key={r.key} className="node-part">
+          {r.under && (
+            <div className="node-rule" aria-hidden>
+              <span>{r.under}</span>
+            </div>
           )}
-          {g.fields.map((f) => (
-            <FieldRow key={f.key} node={node} field={f} />
-          ))}
+          <div className="node-row">
+            <span className="node-row-k">{r.label}</span>
+            <span className={`node-row-v${mono ? " px" : ""}`}>{mono ? fmt(node.data[r.key]) : String(node.data[r.key] ?? "")}</span>
+          </div>
         </div>
       ))}
     </>
   );
-  return bare ? form : <div className="node-body node-form">{form}</div>;
 }
 
+const fmt = (v: string | number | undefined) => (typeof v === "number" ? (Number.isInteger(v) ? String(v) : v.toFixed(1)) : String(v ?? ""));

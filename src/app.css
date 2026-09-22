@@ -421,8 +421,8 @@ html, body, #root { height: 100%; }
 .ghost-acts { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; margin-top: 2px; }
 .ghost-acts .pill-sm { --rim-gap: var(--surface); }
 .beat.is-shot .beat-n { padding-top: 5px; color: hsl(var(--role-orange)); }
-.node-shot { display: flex; flex-direction: column; gap: 4px; padding: 9px 10px 8px; }
-.node-cam { font-size: var(--t-micro); color: var(--fg-faint); padding-top: 2px; }
+.node-shot { display: flex; flex-direction: column; gap: 4px; padding: 2px 4px 0; }
+.node-cam { font-size: var(--t-micro); color: var(--fg-faint); }
 
 /* a draft: the agent's proposal, set apart, waiting */
 .draft {
@@ -533,18 +533,9 @@ html, body, #root { height: 100%; }
 /* progress is the role, full, along the foot of the head */
 .node-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: hsl(var(--role) / 0.25); overflow: hidden; }
 .node-progress-bar { height: 100%; background: hsl(var(--role)); transition: width 60ms linear; }
-/* the plate: what the card holds is cut into it, one slot, the way the
-   system cuts a well into a page. The body takes what its content needs;
-   the kinds that would otherwise collapse ask for a minimum here. */
-.node-body {
-  flex: 1;
-  min-height: 0;
-  border-radius: var(--r-plate);
-  overflow: hidden;
-  background: var(--surface);
-  box-shadow: inset 0 1px 1px var(--rim-in), inset 0 -1px 0 var(--rim-lit);
-}
-.node.leaf .node-body { background: none; box-shadow: none; }
+/* the body takes what the card's content needs; the kinds that would
+   otherwise collapse say how much room they want, once, here */
+.node-body { flex: 1; min-height: 0; border-radius: var(--r-plate); overflow: hidden; }
 .k-prompt .node-body, .k-note .node-body { min-height: 96px; }
 .k-preview .node-body { min-height: 200px; }
 .k-preview .node-body:has(.node-img) { min-height: 0; }
@@ -641,17 +632,15 @@ html, body, #root { height: 100%; }
 }
 .node-text:focus { color: var(--fg); }
 .node-text::placeholder { color: var(--fg-faint); }
-/* ─── The card as a panel ───────────────────────────────────────────────────
-   Every field the kind declares, live on the card: keys in a well, a
-   track with its figure, a chooser. The same FieldRow the inspector uses,
-   at the card's density. */
-.node-form { display: flex; flex-direction: column; padding: 2px 0 4px; }
+.node-rows { display: flex; flex-direction: column; gap: 1px; padding: 2px 0 0; }
+.node-part { display: flex; flex-direction: column; gap: 1px; }
+.node-part + .node-part { margin-top: 0; }
 /* a section of the panel: a hairline with its name set on it */
 .node-rule {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 8px 10px 4px;
+  margin: 7px 2px 4px;
   font-family: var(--font-mono);
   font-size: 9px;
   letter-spacing: 0.1em;
@@ -660,26 +649,18 @@ html, body, #root { height: 100%; }
 }
 .node-rule::before, .node-rule::after { content: ""; flex: 1; height: 1px; background: var(--rim-edge); }
 .node-rule span { flex-shrink: 0; }
-.node-part:first-child .node-rule { margin-top: 4px; }
-.node-part { display: flex; flex-direction: column; }
-.node-form .group-row {
-  min-height: 30px;
-  padding: 3px 10px;
-  gap: 8px;
-  background: none;
-  box-shadow: inset 0 -1px 0 var(--rim-edge);
+.node-part:first-child .node-rule { margin-top: 2px; }
+.node-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  height: 30px;
+  padding: 0 6px 0 8px;
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  box-shadow: inset 0 1px 1px var(--rim-in), inset 0 -1px 0 var(--rim-lit);
 }
-.node-part:last-child .group-row:last-child { box-shadow: none; }
-.node-form .group-name { font-size: var(--t-micro); color: var(--fg-muted); white-space: nowrap; }
-.node-form .group-ctl { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-.node-form .group-row.col { align-items: stretch; gap: 4px; padding: 6px 10px 8px; }
-.node-form .group-row.col .inp { background: var(--surface); font-size: var(--t-micro); padding: 6px 8px; }
-.node-form .seg { padding: 1.5px; gap: 1px; }
-.node-form .seg-btn { padding: 3px 7px; font-size: 10px; }
-.node-form .pill-sm { height: 22px; padding: 0 8px; font-size: var(--t-micro); }
-.node-form .px { font-size: var(--t-micro); }
-.node-form .pill-icon.sm { width: 20px; height: 20px; }
-
 /* ── THE TRACK. A number you set by hand: a slot cut into the ground, as
    much of it as the value fills in the role's own tone, and a raised knob
    you take hold of. The figure sits beside it, always true. ── */
@@ -726,7 +707,7 @@ html, body, #root { height: 100%; }
 .pane .slide input[type="range"] { width: 74px; }
 
 /* the bloom: what a generator produced, the take ringed */
-.bloom { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 2px 10px 10px; }
+.bloom { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 6px 0 0; }
 .bloom-take {
   aspect-ratio: 1;
   border-radius: var(--r-sm);
@@ -744,7 +725,7 @@ html, body, #root { height: 100%; }
 .node-row-v { font-size: var(--t-micro); color: var(--fg); }
 
 /* character: a reference beside a name and a line */
-.node-char { display: flex; gap: 10px; padding: 9px 10px; }
+.node-char { display: flex; gap: 8px; }
 .node-ref { width: 72px; flex-shrink: 0; border-radius: var(--r-plate); overflow: hidden; }
 .node-char-what { flex: 1; min-width: 0; padding: 2px 2px 0 0; }
 .node-char-name { font-size: var(--t-label); font-weight: var(--w-mid); color: var(--fg); }
@@ -763,7 +744,7 @@ html, body, #root { height: 100%; }
 .node-desc {
   flex: 1;
   min-height: 0;
-  padding: 9px 10px 8px;
+  padding: 2px 4px 6px;
   font-size: var(--t-micro);
   line-height: 1.45;
   color: var(--fg-muted);
