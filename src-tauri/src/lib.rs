@@ -1,3 +1,4 @@
+mod archive;
 mod codex;
 mod commands;
 mod menu;
@@ -20,6 +21,8 @@ pub fn run() {
             commands::read_asset,
             commands::write_asset,
             commands::write_text,
+            archive::export_archive,
+            archive::import_archive,
             codex::codex_status,
             codex::codex_text,
             codex::codex_image,

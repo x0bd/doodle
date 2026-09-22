@@ -40,6 +40,16 @@ export async function onFileDrop(handler: (paths: string[], at: { x: number; y: 
 /** Ask where a new `.doodle` folder should go. */
 export const writeText = (path: string, text: string) => invoke<void>("write_text", { path, text });
 
+export interface Imported { dir: string; name: string; files: number }
+export const exportArchive = (dir: string, path: string, name: string) => invoke<number>("export_archive", { dir, path, name });
+export const importArchive = (path: string, dir: string) => invoke<Imported>("import_archive", { path, dir });
+
+/** Ask for an archive to read. */
+export async function pickOpenFile(ext: string, title: string): Promise<string | null> {
+  const p = await open({ multiple: false, title, filters: [{ name: "Doodle archive", extensions: [ext] }] });
+  return typeof p === "string" ? p : null;
+}
+
 /** Ask where to put a file that is not the document — an export. */
 export async function pickSaveFile(name: string, ext: string, title: string): Promise<string | null> {
   const p = await save({ defaultPath: `${name}.${ext}`, title, filters: [{ name: ext.toUpperCase(), extensions: [ext] }] });

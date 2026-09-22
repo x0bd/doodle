@@ -9,7 +9,7 @@ import { camera, type Camera } from "../canvas/camera";
 import { history, reset as resetHistory } from "./history";
 import { nav, resetNav } from "./nav";
 import { restoreJobs, forgetJobs } from "./jobs";
-import { inTauri, loadGraph, pickOpenDir, pickSaveDir, pickSaveFile, saveGraph, graphExists, writeAsset, duplicateGraph, revealPath, writeText } from "../platform/fs";
+import { inTauri, loadGraph, pickOpenDir, pickOpenFile, pickSaveDir, pickSaveFile, saveGraph, graphExists, writeAsset, duplicateGraph, revealPath, writeText, exportArchive, importArchive, confirmAsk } from "../platform/fs";
 import { templateById, type TemplateId } from "../graph/templates";
 import { PLACES } from "../graph/kinds";
 import { prov, resetProv, rekey, type Prov } from "./prov";
@@ -161,6 +161,46 @@ export async function exportText() {
   if (!path) return;
   await writeText(path, text);
   await revealPath(path);
+}
+
+/** The whole project as one file: every file it holds, each with its hash
+ *  in a manifest. It must be on disk first — an archive of what was never
+ *  saved would be a lie. */
+export async function exportArchiveFile() {
+  if (!inTauri) return;
+  const d = doc.get();
+  if (!d.path) {
+    if (!(await confirmAsk("The project has to be saved before it can be archived. Save it now?", "Archive", "Save"))) return;
+    if (!(await save())) return;
+  }
+  const dir = doc.get().path!;
+  const name = doc.get().name;
+  const path = await pickSaveFile(name, "doodlebox", "Archive project");
+  if (!path) return;
+  try {
+    await exportArchive(dir, path, name);
+    await revealPath(path);
+  } catch (e) {
+    doc.set((x) => ({ ...x, save: "failed", error: String(e) }));
+  }
+}
+
+/** An archive back into a project: every file checked against the manifest
+ *  before a byte is written, then opened as it was. */
+export async function importArchiveFile() {
+  if (!inTauri) return;
+  const from = await pickOpenFile("doodlebox", "Open archive");
+  if (!from) return;
+  const name = from.split("/").pop()?.replace(/\.doodlebox$/, "") ?? "Imported";
+  const dir = await pickSaveDir(name);
+  if (!dir) return;
+  try {
+    const got = await importArchive(from, dir);
+    await openFrom(got.dir);
+  } catch (e) {
+    doc.set((x) => ({ ...x, save: "failed", error: String(e) }));
+    await confirmAsk(String(e).replace(/^Error: /, ""), "That archive could not be opened", "Alright");
+  }
 }
 
 export async function saveAs() {

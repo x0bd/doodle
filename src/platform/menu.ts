@@ -7,7 +7,7 @@ import { listen } from "@tauri-apps/api/event";
 import { openChooser, openPalette, openSettings, openShortcuts, toggleInspector, toggleNavigator, togglePanes, toggleTheme } from "../state/ui";
 import { fitAll, zoomActual, zoomIn, zoomOut } from "../canvas/view";
 import { step } from "../state/nav";
-import { openDialog, save, saveAs, duplicate, reveal, exportText } from "../state/doc";
+import { openDialog, save, saveAs, duplicate, reveal, exportText, exportArchiveFile, importArchiveFile } from "../state/doc";
 import { redo, undo } from "../state/history";
 import { deleteSelected, duplicateSelected, selectAll } from "../state/graph";
 import { clearQueue, enqueue } from "../state/jobs";
@@ -25,6 +25,8 @@ export const actions: Record<string, () => void> = {
   "file.save": () => void save(),
   "file.save-as": () => void saveAs(),
   "file.export": () => void exportText(),
+  "file.archive": () => void exportArchiveFile(),
+  "file.unarchive": () => void importArchiveFile(),
   "file.duplicate": () => void duplicate(),
   "file.reveal": () => void reveal(),
   "view.search": openPalette,
