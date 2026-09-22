@@ -909,6 +909,57 @@ html, body, #root { height: 100%; }
 .row-glyph.big { width: 28px; height: 28px; border-radius: 8px; }
 .list-row.hl .row-glyph, .list-row.on .row-glyph { color: var(--fg); }
 
+/* the outline: a tree of the document. The twist folds a row's children;
+   depth is an indent; a drop shows as a line before or after, or the tint
+   on the row it would go into */
+.tree { gap: 0; }
+.tree-row { position: relative; min-height: 26px; padding-right: 8px; gap: 6px; font-size: var(--t-label); cursor: default; user-select: none; }
+.tree-row.root { margin-bottom: 2px; }
+.tree-row.off { opacity: 0.5; }
+.tree-twist {
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  color: var(--fg-faint);
+  flex-shrink: 0;
+  transition: transform var(--fast) var(--ease), color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+.tree-twist.open { transform: rotate(90deg); }
+@media (hover: hover) and (pointer: fine) { .tree-twist:not(.none):hover { color: var(--fg); background: var(--tint); } }
+.tree-row .row-glyph { width: 18px; height: 18px; border-radius: 5px; }
+.tree-row .list-word { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.tree-n { color: var(--fg-faint); }
+.tree-name {
+  flex: 1;
+  min-width: 0;
+  height: 20px;
+  padding: 0 4px;
+  margin: 0 -4px;
+  border-radius: 4px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--rim-edge);
+  outline: none;
+  font-family: var(--font-ui);
+  font-size: var(--t-label);
+  color: var(--fg);
+}
+.tree-row.drop-into { background: var(--tint-2); box-shadow: inset 0 0 0 1.5px var(--ink); }
+.tree-row.drop-before::before, .tree-row.drop-after::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--ink);
+  pointer-events: none;
+}
+.tree-row.drop-before::before { top: -1px; }
+.tree-row.drop-after::after { bottom: -1px; }
+.tree-row[draggable="true"]:active { cursor: grabbing; }
+
 /* the inspector's form: the group, at pane density */
 .pane .group-head { padding: 10px 8px 6px; }
 .pane .group-head:first-child { padding-top: 6px; }

@@ -208,6 +208,41 @@ export function moveInto(ids: string[], parent: string) {
   );
 }
 
+/** Put a node under a parent at a place among its siblings — before
+ *  `before`, or last. Order is `seq`; the siblings are renumbered so the
+ *  order reads the same everywhere (the outliner, the turn, a reading).
+ *  Changing parent also gives it a spot on that field. */
+export function reorder(id: string, parent: string | null, before: string | null) {
+  const g = graph.get();
+  const n = g.nodes[id];
+  if (!n || id === parent) return;
+  if (parent && descendants(g, [id]).has(parent)) return; // a node cannot hold itself
+  commit("Reorder", () =>
+    graph.set((x) => {
+      const nodes = { ...x.nodes };
+      const moved = nodes[id];
+      const siblings = x.order
+        .map((i) => nodes[i])
+        .filter((s) => s.parent === parent && s.id !== id)
+        .sort((a, b) => a.seq - b.seq);
+      const at = before ? Math.max(0, siblings.findIndex((s) => s.id === before)) : siblings.length;
+      const placed = moved.parent === parent ? moved : place(moved, parent, nodes);
+      siblings.splice(at, 0, placed);
+      // renumber from the smallest seq among them so nothing else shifts
+      const base = Math.min(...siblings.map((s) => s.seq), placed.seq);
+      siblings.forEach((s, i) => (nodes[s.id] = { ...s, seq: base + i }));
+      return { ...x, nodes };
+    }),
+  );
+}
+
+/** a spot on a field for a node arriving from elsewhere: to the right of the last one there */
+function place(n: GraphNode, parent: string | null, nodes: Record<string, GraphNode>): GraphNode {
+  const there = Object.values(nodes).filter((s) => s.parent === parent && s.id !== n.id);
+  const last = there.reduce<GraphNode | undefined>((m, s) => (!m || s.x + s.w > m.x + m.w ? s : m), undefined);
+  return { ...n, parent, x: last ? last.x + last.w + 40 : 60, y: last ? last.y : 60 };
+}
+
 /** Make one of a generator's outputs its take; it flows to what its image feeds. */
 export function takeOutput(id: string, ref: string) {
   commit("Take", () =>
