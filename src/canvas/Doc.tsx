@@ -71,7 +71,6 @@ export function Doc({ id }: { id: string }) {
         </header>
 
         <Body node={node} />
-        {node.kind === "page" && <Turn node={node} />}
 
         {mine.map((d) => (
             <section key={d.id} className={`draft ${d.state}`} aria-live="polite">
@@ -159,6 +158,8 @@ export function Doc({ id }: { id: string }) {
             )}
           </section>
         ))}
+
+        {node.kind === "page" && <Turn node={node} />}
 
         <footer className="paper-below">
           <Section

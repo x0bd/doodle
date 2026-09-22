@@ -35,7 +35,31 @@ const PROMPTS: Record<Ask, string> = {
   ask: "",
 };
 
-/** Ask the agent about a node's text. The node's notes ride along as context. */
+/** what came before: the chapter's line, and the tail of the page before
+ *  this one — so a page continues the book, not just itself */
+function before(nodeId: string): string {
+  const g = graph.get();
+  const node = g.nodes[nodeId];
+  if (!node || node.kind !== "page") return "";
+  const parts: string[] = [];
+  const parent = node.parent ? g.nodes[node.parent] : undefined;
+  if (parent?.kind === "chapter") {
+    const line = String(parent.data.summary ?? "").trim();
+    parts.push(`Chapter "${parent.title}"${line ? `: ${line}` : ""}`);
+  }
+  const pages = g.order
+    .map((id) => g.nodes[id])
+    .filter((n) => n.parent === node.parent && n.kind === "page" && n.status !== "rejected")
+    .sort((a, b) => a.seq - b.seq);
+  const i = pages.findIndex((p) => p.id === nodeId);
+  const prev = i > 0 ? pages[i - 1] : undefined;
+  const tail = prev ? String(prev.data.text ?? "").trim().slice(-900) : "";
+  if (prev && tail) parts.push(`The page before ("${prev.title}") ends:\n…${tail}`);
+  return parts.join("\n\n");
+}
+
+/** Ask the agent about a node's text. The node's notes ride along as
+ *  context; a page brings its chapter and the page before it. */
 export async function propose(nodeId: string, ask: Ask, instruction = "") {
   const g = graph.get();
   const node = g.nodes[nodeId];
@@ -47,13 +71,16 @@ export async function propose(nodeId: string, ask: Ask, instruction = "") {
     .filter((n) => n.data.text && n.status !== "rejected")
     .map((n) => `${n.title}: ${n.data.text}`)
     .join("\n");
-  const system = [PROMPTS[ask], instruction, bibleText(), notes && `Context:\n${notes}`].filter(Boolean).join("\n\n");
+  const prior = before(nodeId);
+  const system = [PROMPTS[ask], instruction, bibleText(), prior && `What came before:\n${prior}`, notes && `Context:\n${notes}`].filter(Boolean).join("\n\n");
   const ctl = new AbortController();
   controllers.set(id, ctl);
   try {
     const { provider } = await pick("text.generate", ui.get().writeWith);
     drafts.set((d) => (d[id] ? { ...d, [id]: { ...d[id], provider: provider.descriptor.name } } : d));
-    const req = { prompt: expandMentions(String(node.data[proseKey(node.kind)] ?? "")), system };
+    const words = expandMentions(String(node.data[proseKey(node.kind)] ?? "")).trim();
+    // a blank page continued begins from what came before
+    const req = { prompt: words || (ask === "continue" ? "This page is blank. Begin it, carrying on from what came before." : words), system };
     // words as they come, when the provider can give them
     const onDelta = (partial: string) => drafts.set((d) => (d[id] ? { ...d, [id]: { ...d[id], text: partial } } : d));
     const text = provider.streamText ? await provider.streamText(req, onDelta, ctl.signal) : await provider.generateText!(req, ctl.signal);
