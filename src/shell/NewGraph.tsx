@@ -5,6 +5,7 @@ import { ui, closeChooser } from "../state/ui";
 import { doc, newGraph } from "../state/doc";
 import { fitAll } from "../canvas/view";
 import { graph } from "../state/graph";
+import { confirmAsk } from "../platform/fs";
 
 const GLYPH: Record<TemplateId, IconSvgElement> = { images: ImageIcon, film: FilmIcon, manga: MangaIcon, book: BookIcon };
 
@@ -28,8 +29,8 @@ export function NewGraph() {
 
   if (!open) return null;
 
-  const pick = (id: TemplateId) => {
-    if (dirty && !empty && !window.confirm("Start a new graph? Unsaved changes will be lost.")) return;
+  const pick = async (id: TemplateId) => {
+    if (dirty && !empty && !(await confirmAsk("Start a new graph? Unsaved changes will be lost.", "New graph", "Start new"))) return;
     newGraph(id);
     closeChooser();
     requestAnimationFrame(fitAll);

@@ -3,7 +3,7 @@
  * filesystem itself; it asks, and it is told.
  */
 import { invoke } from "@tauri-apps/api/core";
-import { open, save } from "@tauri-apps/plugin-dialog";
+import { open, save, ask } from "@tauri-apps/plugin-dialog";
 
 export const inTauri = "__TAURI_INTERNALS__" in window;
 
@@ -48,4 +48,12 @@ export async function pickSaveDir(name: string): Promise<string | null> {
 export async function pickOpenDir(): Promise<string | null> {
   const p = await open({ directory: true, multiple: false, title: "Open graph" });
   return typeof p === "string" ? p : null;
+}
+
+/** A yes-or-no put to the user as the platform's own sheet. The web view
+ *  has no working `confirm` — it answers no at once — so this is the one
+ *  way to ask. In a browser, the browser's will do. */
+export async function confirmAsk(message: string, title = "Doodle", ok = "OK"): Promise<boolean> {
+  if (!inTauri) return window.confirm(message);
+  return ask(message, { title, kind: "warning", okLabel: ok, cancelLabel: "Cancel" });
 }
