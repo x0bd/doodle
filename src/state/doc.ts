@@ -12,6 +12,7 @@ import { restoreJobs, forgetJobs } from "./jobs";
 import { inTauri, loadGraph, pickOpenDir, pickSaveDir, pickSaveFile, saveGraph, graphExists, writeAsset, duplicateGraph, revealPath, writeText } from "../platform/fs";
 import { templateById, type TemplateId } from "../graph/templates";
 import { PLACES } from "../graph/kinds";
+import { prov, resetProv, rekey, type Prov } from "./prov";
 import { asMarkdown } from "./reading";
 
 export type SaveState = "idle" | "saving" | "saved" | "failed";
@@ -63,6 +64,8 @@ interface FileGraph {
   /** each workspace's last view, by node id; "root" for the top */
   views?: Record<string, Camera>;
   bible?: Bible;
+  /** where every generated thing came from, by what it produced */
+  provenance?: Record<string, Prov>;
 }
 
 function serialize(): string {
@@ -77,6 +80,7 @@ function serialize(): string {
     camera: camera.get(),
     views: { ...nav.get().views, [nav.get().focus ?? "root"]: camera.get() },
     bible: doc.get().bible,
+    provenance: prov.get(),
   };
   return JSON.stringify(file, null, 2);
 }
@@ -103,6 +107,7 @@ async function materialize(path: string) {
     }
   }
   if (!moves.size) return;
+  rekey(moves); // the records follow their outputs into the folder
   const swap = (r: string | undefined) => (r && moves.get(r)) || r;
   graph.set((x) => {
     const nodes = { ...x.nodes };
@@ -191,6 +196,7 @@ function load(file: FileGraph, path: string | null) {
   resetNav(file.views ?? {});
   if (!file.views?.root && file.camera) camera.set(file.camera);
   resetHistory();
+  resetProv(file.provenance ?? {});
   doc.set({ path, name: file.name ?? (path ? nameOf(path) : "Untitled"), dirty: false, save: path ? "saved" : "idle", bible: { ...EMPTY_BIBLE, ...(file.bible ?? {}) } });
 }
 
@@ -233,6 +239,7 @@ export function newGraph(template: TemplateId = "images") {
   resetHistory();
   resetNav();
   forgetJobs();
+  resetProv();
   doc.set({ path: null, name: `Untitled ${t.name.toLowerCase()}`, dirty: false, save: "idle", bible: EMPTY_BIBLE });
 }
 

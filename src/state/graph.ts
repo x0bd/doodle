@@ -32,6 +32,8 @@ export interface GraphNode extends Rect {
   parent: string | null;
   /** the passage of its parent's words this one came from, if it did */
   anchor?: Anchor;
+  /** the run whose words these are, while they are still its words */
+  from?: string;
 }
 
 export interface PortRef {
@@ -316,7 +318,7 @@ export function paginate(text: string, cap = PAGE_WORDS): string[] {
 /** Lay a text onto a page and, past what it holds, onto the pages after it —
  *  the empty ones already there, then new ones made to the right. A page
  *  with words of its own is never written over. Inside a commit. */
-export function layOnPages(pageId: string, text: string) {
+export function layOnPages(pageId: string, text: string, from?: string) {
   const g = graph.get();
   const first = g.nodes[pageId];
   if (!first || first.kind !== "page") return;
@@ -348,7 +350,7 @@ export function layOnPages(pageId: string, text: string) {
     const nodes = { ...x.nodes };
     for (const p of made) nodes[p.id] = p;
     targets.forEach((id, i) => {
-      nodes[id] = { ...nodes[id], data: { ...nodes[id].data, text: parts[i] ?? "" } };
+      nodes[id] = { ...nodes[id], data: { ...nodes[id].data, text: parts[i] ?? "" }, from };
     });
     return { ...x, nodes, order: [...x.order, ...made.map((p) => p.id)] };
   });

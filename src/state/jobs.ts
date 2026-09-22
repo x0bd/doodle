@@ -11,6 +11,7 @@ import { doc, bibleText } from "./doc";
 import { writeAsset, saveRecord, loadRecord, inTauri } from "../platform/fs";
 import { ui } from "./ui";
 import { expandMentions } from "../canvas/mentions";
+import { record, inputsOf } from "./prov";
 import type { ImageRequest, Progress, TextRequest } from "../providers/types";
 
 export type JobState = "queued" | "running" | "completed" | "failed" | "cancelled";
@@ -221,17 +222,30 @@ async function run(id: string) {
       patch(id, { partial: undefined });
       // the words land on the writer and flow into whatever its text feeds —
       // a page takes what it can hold and turns the rest onto the pages after
+      // where these words came from, kept with the document
+      record({
+        key: id,
+        kind: "text",
+        provider: provider.descriptor.name,
+        model: req.model,
+        at: Date.now(),
+        prompt: req.prompt,
+        system: req.system,
+        inputs: inputsOf(gen.id),
+        rules: bibleText() || undefined,
+        job: id,
+      });
       commit("Write", () => {
         const g = graph.get();
         const targets = Object.values(g.edges)
           .filter((e) => e.from.node === gen.id && e.from.port === "text")
           .map((e) => e.to.node);
-        graph.set((x) => ({ ...x, nodes: { ...x.nodes, [gen.id]: { ...x.nodes[gen.id], data: { ...x.nodes[gen.id].data, output: text } } } }));
+        graph.set((x) => ({ ...x, nodes: { ...x.nodes, [gen.id]: { ...x.nodes[gen.id], data: { ...x.nodes[gen.id].data, output: text }, from: id } } }));
         for (const t of targets) {
           const n = graph.get().nodes[t];
           if (!n) continue;
-          if (n.kind === "page") layOnPages(t, text);
-          else graph.set((x) => ({ ...x, nodes: { ...x.nodes, [t]: { ...x.nodes[t], data: { ...x.nodes[t].data, text } } } }));
+          if (n.kind === "page") layOnPages(t, text, id);
+          else graph.set((x) => ({ ...x, nodes: { ...x.nodes, [t]: { ...x.nodes[t], data: { ...x.nodes[t].data, text }, from: id } } }));
         }
       });
     } else {
@@ -250,7 +264,21 @@ async function run(id: string) {
           ctl.signal,
         );
         if (ctl.signal.aborted) throw new DOMException("Cancelled", "AbortError");
-        outputs.push(await keep(result.asset));
+        const ref = await keep(result.asset);
+        outputs.push(ref);
+        record({
+          key: ref,
+          kind: "image",
+          provider: provider.descriptor.name,
+          model: String(fed(gen, "model")?.data.model ?? "default"),
+          at: Date.now(),
+          prompt: req.prompt,
+          system: req.negative || undefined,
+          seed: result.seed,
+          inputs: inputsOf(gen.id),
+          rules: bibleText() || undefined,
+          job: id,
+        });
         lastSeed = result.seed;
       }
       patch(id, { outputs });

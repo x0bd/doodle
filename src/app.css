@@ -1007,6 +1007,41 @@ html, body, #root { height: 100%; }
 .tree-row.drop-after::after { bottom: -1px; }
 .tree-row[draggable="true"]:active { cursor: grabbing; }
 
+/* where a thing came from: what happened, not a form */
+.group-val { font-size: var(--t-label); color: var(--fg); text-align: right; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.group-val.mono { font-family: var(--font-mono); font-size: var(--t-micro); }
+.group-more { width: 100%; text-align: left; cursor: default; }
+@media (hover: hover) and (pointer: fine) { .group-more:hover { background: var(--tint); } }
+.from-list { list-style: none; display: flex; flex-direction: column; gap: 2px; width: 100%; }
+.from-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  padding: 3px 6px;
+  border-radius: var(--r-sm);
+  text-align: left;
+}
+@media (hover: hover) and (pointer: fine) { .from-row:hover { background: var(--tint); } }
+.from-port { color: var(--fg-faint); min-width: 58px; }
+.from-title { flex: 1; min-width: 0; font-size: var(--t-label); color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.from-row::before { content: ""; width: 5px; height: 5px; border-radius: var(--r-pill); background: hsl(var(--role)); flex-shrink: 0; align-self: center; }
+.said {
+  width: 100%;
+  max-height: 180px;
+  overflow: auto;
+  padding: 8px 10px;
+  border-radius: var(--r-plate);
+  background: var(--surface);
+  box-shadow: inset 0 1px 1px var(--rim-in);
+  font-family: var(--font-ui);
+  font-size: var(--t-micro);
+  line-height: 1.5;
+  color: var(--fg-muted);
+  white-space: pre-wrap;
+}
+.said + .said { margin-top: 4px; color: var(--fg-faint); }
+
 /* the inspector's form: the group, at pane density */
 .pane .group-head { padding: 10px 8px 6px; }
 .pane .group-head:first-child { padding-top: 6px; }

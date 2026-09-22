@@ -1,5 +1,7 @@
 import { KINDS } from "../graph/kinds";
-import { graph, setStatus, type Canon } from "../state/graph";
+import { useState } from "react";
+import { graph, select, setStatus, type Canon, type GraphNode } from "../state/graph";
+import { prov, behind } from "../state/prov";
 import { FieldRow } from "./Fields";
 import { GLYPH } from "../canvas/Doc";
 import { Icon } from "../icons";
@@ -88,7 +90,72 @@ export function Inspector() {
           {KINDS[node.kind].groups.length === 0 && <p className="pane-empty">Nothing to set. It shows what it is given.</p>}
         </div>
       )}
+      {node && <Source node={node} />}
     </aside>
+  );
+}
+
+const when = (t: number) => {
+  const d = new Date(t);
+  const today = new Date().toDateString() === d.toDateString();
+  return today
+    ? d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
+    : d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + " · " + d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+};
+
+/** Where this came from: the record kept when it was made. Nothing here is
+ *  editable — it is what happened. */
+function Source({ node }: { node: GraphNode }) {
+  prov.use();
+  const [open, setOpen] = useState(false);
+  const p = behind(node.id);
+  if (!p) return null;
+  return (
+    <div className="pane-body">
+      <div className="group-head">Where this came from</div>
+      <div className="group">
+        <div className="group-row">
+          <div className="group-name">Made by</div>
+          <div className="group-val">{p.provider}{p.model && p.model !== "default" ? ` · ${p.model}` : ""}</div>
+        </div>
+        <div className="group-row">
+          <div className="group-name">When</div>
+          <div className="group-val">{when(p.at)}</div>
+        </div>
+        {p.seed !== undefined && (
+          <div className="group-row">
+            <div className="group-name">Seed</div>
+            <div className="group-val mono">{p.seed}</div>
+          </div>
+        )}
+        {p.inputs.length > 0 && (
+          <div className="group-row col">
+            <div className="group-name">From</div>
+            <ul className="from-list">
+              {p.inputs.map((i) => (
+                <li key={i.port + i.node}>
+                  <button className={`from-row k-${i.kind}`} onClick={() => select([i.node])} title={`Select ${i.title}`}>
+                    <span className="from-port px">{i.port}</span>
+                    <span className="from-title">{i.title}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        <button className="group-row group-more" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+          <div className="group-name">What was asked</div>
+          <div className="group-val">{open ? "hide" : "show"}</div>
+        </button>
+        {open && (
+          <div className="group-row col">
+            <pre className="said selectable">{p.prompt}</pre>
+            {p.system && <pre className="said dim selectable">{p.system}</pre>}
+            {p.rules && <pre className="said dim selectable">{p.rules}</pre>}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
