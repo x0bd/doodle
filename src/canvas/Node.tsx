@@ -32,9 +32,14 @@ export function Node({ node, selected, into, dim, handlers }: { node: GraphNode;
     return e ? g.nodes[e.from.node]?.title : undefined;
   };
 
+  // a sheet: a page or a chapter wears a running head, not a band — its
+  // input sits on the head's left edge, its source named in the head
+  const sheet = node.kind === "page" || node.kind === "chapter";
+  const fedBy = sheet && ins[0] ? source({ node: node.id, port: ins[0].id }) : undefined;
+
   return (
     <div
-      className={`node card k-${node.kind} st-${node.status}${selected ? " sel" : ""}${running ? " running" : ""}${into ? " into" : ""}${dim ? " dim" : ""}`}
+      className={`node card k-${node.kind} st-${node.status}${selected ? " sel" : ""}${running ? " running" : ""}${into ? " into" : ""}${dim ? " dim" : ""}${sheet ? " leaf" : ""}`}
       style={
         node.kind === "generate" && node.outputs?.length
           ? { left: node.x, top: node.y, width: node.w, minHeight: node.h }
@@ -46,8 +51,32 @@ export function Node({ node, selected, into, dim, handlers }: { node: GraphNode;
       aria-label={`${node.title}, ${KINDS[node.kind].title}`}
     >
       <div className="node-head">
-        <span className="node-dot" />
-        <span className="node-name">{node.title}</span>
+        {sheet && ins[0] && (() => {
+          const p = ins[0];
+          const ref = { node: node.id, port: p.id };
+          return (
+            <button
+              className={`port in edge t-${p.type}${fedBy ? " on" : ""}`}
+              data-port={`${node.id}:${p.id}`}
+              data-dir="in"
+              aria-label={`${p.name} input`}
+              title={fedBy ? `${p.name} ← ${fedBy} — drag to move the wire` : `${p.name} — drop a wire here`}
+              onPointerDown={(e) => handlers.onPortDown(e, ref, "in")}
+            >
+              <span className="port-dot" />
+            </button>
+          );
+        })()}
+        {!sheet && <span className="node-dot" />}
+        {sheet ? (
+          <span className="node-run">
+            <span className="node-run-name">{node.title}</span>
+            {node.kind === "chapter" && <span className="node-run-of"> · chapter</span>}
+            {fedBy && <span className="node-run-of"> · from {fedBy}</span>}
+          </span>
+        ) : (
+          <span className="node-name">{node.title}</span>
+        )}
         {node.status !== "canon" && <span className="node-st">{node.status === "exploration" ? "explore" : node.status}</span>}
         {inside > 0 && <span className="node-inside badge" title={`${inside} inside — double-click to enter`}>{inside}</span>}
         {job && job.state !== "completed" && (
@@ -81,7 +110,7 @@ export function Node({ node, selected, into, dim, handlers }: { node: GraphNode;
         )}
       </div>
 
-      {ins.length > 0 && (
+      {ins.length > 0 && !sheet && (
         <div className="ins">
           {ins.map((p) => {
             const ref = { node: node.id, port: p.id };

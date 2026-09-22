@@ -436,11 +436,16 @@ export function Canvas() {
       onPointerUp={onUp}
       onPointerCancel={onUp}
     >
-      <div className="world" style={{ transform: `translate(${cam.x}px, ${cam.y}px) scale(${cam.zoom})` }}>
-        <Wires live={live} liveType={liveType} lit={lit} />
-        {here.map((id) => (
-          <Node key={id} node={g.nodes[id]} selected={g.selection.includes(id)} into={into === id} dim={!!lit && !lit.has(id)} handlers={handlers} />
-        ))}
+      {/* the world moves by a transform and grows by `zoom`, not `scale` — zoom
+          lays the cards out again at the new size, so type and hairlines stay
+          crisp at any magnification instead of being a bitmap stretched */}
+      <div className="world" style={{ transform: `translate(${cam.x}px, ${cam.y}px)` }}>
+        <div className="world-scale" style={{ zoom: cam.zoom }}>
+          <Wires live={live} liveType={liveType} lit={lit} />
+          {here.map((id) => (
+            <Node key={id} node={g.nodes[id]} selected={g.selection.includes(id)} into={into === id} dim={!!lit && !lit.has(id)} handlers={handlers} />
+          ))}
+        </div>
       </div>
       {marquee && (
         <div className="marquee" style={{ left: marquee.x, top: marquee.y, width: marquee.w, height: marquee.h }} />

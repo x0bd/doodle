@@ -207,7 +207,7 @@ export const KINDS: Record<NodeKind, KindDef> = {
     note: "A sheet — written on, or written into",
     inputs: [{ id: "text", name: "text", type: "text" }],
     outputs: [{ id: "text", name: "text", type: "text" }],
-    size: { w: 320, h: 400 },
+    size: { w: 300, h: 400 },
     data: { text: "" },
     groups: [],
   },

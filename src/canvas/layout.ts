@@ -19,6 +19,8 @@ export const setMapMode = (on: boolean) => (mapMode = on);
  *  outputs (none yet) would follow the inputs. */
 export function portPos(node: GraphNode, ref: PortRef, dir: "in" | "out"): Point {
   if (mapMode) return { x: dir === "in" ? node.x : node.x + node.w, y: node.y + HEAD_H / 2 };
+  // a sheet (a page, a chapter) takes its one input on the head's left edge
+  if (dir === "in" && (node.kind === "page" || node.kind === "chapter")) return { x: node.x, y: node.y + HEAD_H / 2 };
   if (dir === "out") {
     const i = Math.max(0, outputs(node).findIndex((p) => p.id === ref.port));
     if (i === 0) return { x: node.x + node.w, y: node.y + HEAD_H / 2 };

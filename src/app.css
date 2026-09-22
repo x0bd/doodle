@@ -115,8 +115,8 @@ html, body, #root { height: 100%; }
   left: 0;
   top: 0;
   transform-origin: 0 0;
-  will-change: transform;
 }
+.world-scale { position: absolute; left: 0; top: 0; }
 .marquee {
   position: absolute;
   background: var(--tint);
@@ -599,26 +599,44 @@ html, body, #root { height: 100%; }
    the head. The words are the whole face of it, at a reading size, and
    you write on it where it lies — the way an editor is nothing but the
    page. */
-:root { --paper: #fcfbf7; --paper-ink: #1a1a18; --paper-edge: rgba(14, 14, 13, 0.16); }
-.dark { --paper: #232321; --paper-ink: #ecebe6; --paper-edge: rgba(242, 242, 240, 0.12); }
-.node.k-page, .node.k-chapter {
+:root { --paper: #fffefa; --paper-ink: #1a1a18; --paper-edge: rgba(14, 14, 13, 0.14); --paper-shade: 14, 14, 13; }
+.dark { --paper: #292927; --paper-ink: #efeee9; --paper-edge: rgba(242, 242, 240, 0.13); --paper-shade: 0, 0, 0; }
+.node.leaf {
+  padding: 0 0 12px;
+  gap: 0;
   background: var(--paper);
-  border-radius: 6px;
-  box-shadow: 0 0 0 1px var(--paper-edge), 0 1px 2px rgba(14, 14, 13, 0.06), 0 8px 24px rgba(14, 14, 13, 0.08);
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px var(--paper-edge), 0 1px 2px rgba(var(--paper-shade), 0.08), 0 10px 28px rgba(var(--paper-shade), 0.14);
 }
 @media (hover: hover) and (pointer: fine) {
-  .node.k-page:hover, .node.k-chapter:hover { box-shadow: 0 0 0 1px var(--paper-edge), 0 2px 4px rgba(14, 14, 13, 0.08), 0 14px 36px rgba(14, 14, 13, 0.12); }
+  .node.leaf:hover { box-shadow: 0 0 0 1px var(--paper-edge), 0 2px 4px rgba(var(--paper-shade), 0.1), 0 16px 40px rgba(var(--paper-shade), 0.18); }
 }
-.node.k-page.sel, .node.k-chapter.sel, .node.k-page.sel:hover, .node.k-chapter.sel:hover { box-shadow: 0 0 0 1px var(--paper-edge), 0 0 0 3px var(--bg), 0 0 0 5px var(--ink), 0 14px 36px rgba(14, 14, 13, 0.12); }
-.node.k-page .node-head, .node.k-chapter .node-head { background: transparent; border-radius: 6px 6px 0 0; padding-left: 16px; padding-right: 12px; }
-.node.k-page .node-name, .node.k-chapter .node-name { font-size: 14px; font-weight: var(--w-mid); letter-spacing: -0.01em; color: var(--paper-ink); }
-.node.k-page .node-dot, .node.k-chapter .node-dot { width: 6px; height: 6px; box-shadow: none; opacity: 0.8; }
-.node.k-page .ins, .node.k-chapter .ins { padding-left: 4px; }
-.node.k-page .in-row, .node.k-chapter .in-row { opacity: 0.75; }
+.node.leaf.sel, .node.leaf.sel:hover { box-shadow: 0 0 0 1px var(--paper-edge), 0 0 0 3px var(--bg), 0 0 0 5px var(--ink), 0 16px 40px rgba(var(--paper-shade), 0.18); }
+/* the running head: the sheet's name in small mono, the way a book runs
+   its title along the top of every page; the ports on the head's edges */
+.node.leaf .node-head { height: 36px; margin: 0; padding: 0 12px 0 20px; border-radius: 3px 3px 0 0; background: transparent; gap: 6px; }
+.node-run {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  letter-spacing: var(--tr-micro);
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.node-run-name { color: var(--fg-muted); }
+.node-run-of { color: var(--fg-faint); }
+.node.leaf .node-inside { background: var(--tint-2); }
+.port.in.edge { position: absolute; left: -10px; top: 8px; }
+.node.leaf .port.out.top { top: 8px; }
+/* the words: the whole face of the sheet, at a reading size, with margins */
 .node-sheet {
   display: flex;
   flex-direction: column;
-  padding: 2px 8px 0;
+  padding: 2px 20px 0;
 }
 .sheet-text {
   flex: 1;
@@ -636,17 +654,22 @@ html, body, #root { height: 100%; }
   overflow: auto;
 }
 .sheet-text::placeholder { color: var(--fg-faint); font-style: italic; }
+/* the folio: the count where a page keeps its number */
 .sheet-foot {
   height: 18px;
   padding: 4px 0 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
   color: var(--fg-faint);
   text-align: right;
 }
 /* the map keeps a sheet a sheet */
-.lod-map .node.k-page .node-name, .lod-map .node.k-chapter .node-name { font-size: 22px; }
+.lod-map .node.leaf .node-head { height: 34px; }
+.lod-map .node-run { font-size: 18px; letter-spacing: 0; text-transform: none; font-family: var(--font-ui); font-weight: var(--w-declare); color: var(--fg); }
 
 /* the chapter: pages as a small stack, each a sheet on the sheet */
-.node-stack { display: flex; flex-direction: column; gap: 8px; padding: 0 8px; }
+.node-stack { display: flex; flex-direction: column; gap: 8px; padding: 2px 20px 0; }
 .stack-line { font-size: var(--t-label); line-height: 1.5; color: var(--fg-muted); }
 .stack { flex: 1; min-height: 0; position: relative; display: flex; flex-direction: column; gap: 6px; }
 .stack-sheet {
