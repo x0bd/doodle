@@ -1,5 +1,6 @@
 import { Icon, ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, DiceIcon } from "../icons";
 import type { Field } from "../graph/kinds";
+import type { CSSProperties } from "react";
 import { updateData, type GraphNode } from "../state/graph";
 
 /** One field of a node, as a group row: the inspector and the document share it. */
@@ -54,6 +55,32 @@ export function FieldRow({ node, field }: { node: GraphNode; field: Field }) {
                 <option key={o} value={o}>{o}</option>
               ))}
             </select>
+          </label>
+        )}
+        {field.type === "choice" && (
+          <div className="seg" role="radiogroup" aria-label={field.label}>
+            {field.options.map((o) => (
+              <button key={o} className={`seg-btn key${String(v) === o ? " on" : ""}`} role="radio" aria-checked={String(v) === o} onClick={() => set(o)}>
+                {o}
+              </button>
+            ))}
+          </div>
+        )}
+        {field.type === "range" && (
+          <label className="slide" style={{ "--at": `${((Number(v ?? field.min) - field.min) / (field.max - field.min)) * 100}%` } as CSSProperties}>
+            <input
+              type="range"
+              min={field.min}
+              max={field.max}
+              step={field.step}
+              value={Number(v ?? field.min)}
+              onChange={(e) => set(round(Number(e.target.value), field.digits))}
+              aria-label={field.label}
+            />
+            <span className="slide-fig px">
+              {fmt(Number(v ?? field.min), field.digits)}
+              {field.unit && <i>{field.unit}</i>}
+            </span>
           </label>
         )}
         {field.type === "number" && (

@@ -641,15 +641,17 @@ html, body, #root { height: 100%; }
 }
 .node-text:focus { color: var(--fg); }
 .node-text::placeholder { color: var(--fg-faint); }
-.node-rows { display: flex; flex-direction: column; gap: 0; padding: 0; }
-.node-part { display: flex; flex-direction: column; gap: 1px; }
-.node-part + .node-part { margin-top: 0; }
+/* ─── The card as a panel ───────────────────────────────────────────────────
+   Every field the kind declares, live on the card: keys in a well, a
+   track with its figure, a chooser. The same FieldRow the inspector uses,
+   at the card's density. */
+.node-form { display: flex; flex-direction: column; padding: 2px 0 4px; }
 /* a section of the panel: a hairline with its name set on it */
 .node-rule {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 9px 10px 5px;
+  margin: 8px 10px 4px;
   font-family: var(--font-mono);
   font-size: 9px;
   letter-spacing: 0.1em;
@@ -658,18 +660,71 @@ html, body, #root { height: 100%; }
 }
 .node-rule::before, .node-rule::after { content: ""; flex: 1; height: 1px; background: var(--rim-edge); }
 .node-rule span { flex-shrink: 0; }
-.node-part:first-child .node-rule { margin-top: 2px; }
-.node-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  height: 28px;
-  padding: 0 10px;
+.node-part:first-child .node-rule { margin-top: 4px; }
+.node-part { display: flex; flex-direction: column; }
+.node-form .group-row {
+  min-height: 30px;
+  padding: 3px 10px;
+  gap: 8px;
   background: none;
   box-shadow: inset 0 -1px 0 var(--rim-edge);
 }
-.node-part:last-child .node-row { box-shadow: none; }
+.node-part:last-child .group-row:last-child { box-shadow: none; }
+.node-form .group-name { font-size: var(--t-micro); color: var(--fg-muted); white-space: nowrap; }
+.node-form .group-ctl { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.node-form .group-row.col { align-items: stretch; gap: 4px; padding: 6px 10px 8px; }
+.node-form .group-row.col .inp { background: var(--surface); font-size: var(--t-micro); padding: 6px 8px; }
+.node-form .seg { padding: 1.5px; gap: 1px; }
+.node-form .seg-btn { padding: 3px 7px; font-size: 10px; }
+.node-form .pill-sm { height: 22px; padding: 0 8px; font-size: var(--t-micro); }
+.node-form .px { font-size: var(--t-micro); }
+.node-form .pill-icon.sm { width: 20px; height: 20px; }
+
+/* ── THE TRACK. A number you set by hand: a slot cut into the ground, as
+   much of it as the value fills in the role's own tone, and a raised knob
+   you take hold of. The figure sits beside it, always true. ── */
+.slide { display: inline-flex; align-items: center; gap: 8px; }
+.slide input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 86px;
+  height: 16px;
+  background: none;
+  cursor: pointer;
+}
+.slide input[type="range"]::-webkit-slider-runnable-track {
+  height: 5px;
+  border-radius: var(--r-pill);
+  background: linear-gradient(to right, hsl(var(--lit, var(--role-slate))) var(--at, 50%), var(--bg) var(--at, 50%));
+  transition: none;
+  box-shadow: inset 0 1px 2px var(--rim-in);
+}
+.slide input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 13px;
+  height: 13px;
+  margin-top: -4px;
+  border-radius: var(--r-pill);
+  background: var(--surface-raised);
+  box-shadow: inset 0 1px 0 var(--rim-lit), 0 0 0 1px var(--rim-edge), var(--lift);
+  transition: transform var(--press) var(--ease), box-shadow var(--fast) var(--ease);
+}
+@media (hover: hover) and (pointer: fine) { .slide input[type="range"]:hover::-webkit-slider-thumb { box-shadow: inset 0 1px 0 var(--rim-lit), 0 0 0 1px var(--rim-edge), 0 0 0 4px var(--tint), var(--lift); } }
+.slide input[type="range"]:active::-webkit-slider-thumb { transform: scale(0.94); }
+.slide input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ink); }
+.slide-fig {
+  min-width: 42px;
+  padding: 3px 7px;
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  box-shadow: inset 0 1px 1px var(--rim-in);
+  color: var(--fg);
+  text-align: right;
+  white-space: nowrap;
+}
+.slide-fig i { font-style: normal; color: var(--fg-faint); }
+.pane .slide input[type="range"] { width: 74px; }
+
 /* the bloom: what a generator produced, the take ringed */
 .bloom { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 2px 10px 10px; }
 .bloom-take {

@@ -22,6 +22,10 @@ export interface Port {
 export type Field =
   | { key: string; label: string; type: "select"; options: string[] }
   | { key: string; label: string; type: "number"; min: number; max: number; step: number; digits?: number }
+  /** a number you set by hand along a track, with its figure beside it */
+  | { key: string; label: string; type: "range"; min: number; max: number; step: number; digits?: number; unit?: string }
+  /** one of a few, all of them shown — a row of keys in a well */
+  | { key: string; label: string; type: "choice"; options: string[] }
   | { key: string; label: string; type: "seed" }
   | { key: string; label: string; type: "line" }
   | { key: string; label: string; type: "text"; rows?: number };
@@ -85,16 +89,16 @@ export const KINDS: Record<NodeKind, KindDef> = {
         name: "Sampling",
         fields: [
           { key: "seed", label: "Randomness", type: "seed" },
-          { key: "control", label: "Control mode", type: "select", options: ["Fixed", "Random", "Increment"] },
-          { key: "steps", label: "Quality steps", type: "number", min: 1, max: 150, step: 1 },
-          { key: "strength", label: "Prompt strength", type: "number", min: 0, max: 30, step: 0.5, digits: 1 },
+          { key: "control", label: "Control mode", type: "choice", options: ["Fixed", "Random", "Increment"] },
+          { key: "steps", label: "Quality steps", type: "range", min: 1, max: 150, step: 1 },
+          { key: "strength", label: "Prompt strength", type: "range", min: 0, max: 30, step: 0.5, digits: 1 },
           { key: "sampler", label: "Sampling method", type: "select", options: ["dpm++ 2M", "euler", "euler a", "ddim"] },
         ],
       },
       {
         name: "Output",
         fields: [
-          { key: "count", label: "Candidates", type: "number", min: 1, max: 4, step: 1 },
+          { key: "count", label: "Candidates", type: "choice", options: ["1", "2", "3", "4"] },
           { key: "width", label: "Width", type: "number", min: 256, max: 2048, step: 64 },
           { key: "height", label: "Height", type: "number", min: 256, max: 2048, step: 64 },
         ],
@@ -165,7 +169,7 @@ export const KINDS: Record<NodeKind, KindDef> = {
         name: "Writing",
         fields: [
           { key: "model", label: "Model", type: "select", options: ["Default", "llama3.2", "gemma3", "qwen3", "mistral"] },
-          { key: "length", label: "Length", type: "select", options: ["Beat", "Scene", "Chapter"] },
+          { key: "length", label: "Length", type: "choice", options: ["Beat", "Scene", "Chapter"] },
         ],
       },
     ],
@@ -184,9 +188,9 @@ export const KINDS: Record<NodeKind, KindDef> = {
         fields: [
           { key: "description", label: "What we see", type: "text", rows: 3 },
           { key: "shotSize", label: "Size", type: "select", options: ["ECU", "CU", "MCU", "MS", "MLS", "WS", "EWS"] },
-          { key: "lensMm", label: "Lens", type: "number", min: 8, max: 200, step: 1 },
+          { key: "lensMm", label: "Lens", type: "range", min: 8, max: 200, step: 1, unit: "mm" },
           { key: "movement", label: "Movement", type: "select", options: ["static", "pan", "tilt", "dolly-in", "dolly-out", "truck", "handheld", "crane"] },
-          { key: "durationMs", label: "Duration (ms)", type: "number", min: 500, max: 60000, step: 250 },
+          { key: "durationMs", label: "Duration", type: "range", min: 500, max: 60000, step: 250, unit: "ms" },
         ],
       },
     ],
@@ -221,24 +225,4 @@ export const KINDS: Record<NodeKind, KindDef> = {
     data: { summary: "" },
     groups: [{ name: "Chapter", fields: [{ key: "summary", label: "In a line", type: "text", rows: 3 }] }],
   },
-};
-
-/** the rows the in-node fields show, per kind — label, the key to read,
- *  and the panel section it opens, if it opens one */
-export const NODE_ROWS: Partial<Record<NodeKind, { label: string; key: string; under?: string }[]>> = {
-  write: [
-    { label: "Model", key: "model", under: "Writing" },
-    { label: "Length", key: "length" },
-  ],
-  style: [
-    { label: "Palette", key: "palette", under: "The look" },
-    { label: "Lighting", key: "lighting" },
-  ],
-  generate: [
-    { label: "Randomness", key: "seed", under: "Sampling" },
-    { label: "Control mode", key: "control" },
-    { label: "Quality steps", key: "steps" },
-    { label: "Prompt strength", key: "strength" },
-    { label: "Sampling method", key: "sampler" },
-  ],
 };

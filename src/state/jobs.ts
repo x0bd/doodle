@@ -77,15 +77,20 @@ function describe(n: GraphNode | undefined): string {
   return expandMentions(String(d.text ?? ""));
 }
 
+/** everything given to a node by hand, in the order it was given */
+function given(n: GraphNode): string[] {
+  return (n.extras ?? []).map((p) => describe(fed(n, p.id))).filter(Boolean);
+}
+
 /** The prompt compiler, in its smallest form: the scene, then who is in
- *  it, then how it looks. */
+ *  it, then how it looks — and then whatever else it was given. */
 export function requestFor(gen: GraphNode): ImageRequest {
   const model = fed(gen, "model");
   const pos = fed(gen, "positive");
   const neg = fed(gen, "negative");
   const d = gen.data;
   const seed = d.control === "Random" ? Math.floor(Math.random() * 1_000_000) : Number(d.seed);
-  const prompt = [describe(pos), describe(fed(gen, "character")), describe(fed(gen, "style")), bibleText().replace(/\n/g, ". ")].filter(Boolean).join(". ");
+  const prompt = [describe(pos), describe(fed(gen, "character")), describe(fed(gen, "style")), ...given(gen), bibleText().replace(/\n/g, ". ")].filter(Boolean).join(". ");
   return {
     prompt,
     negative: String(neg?.data.text ?? ""),
@@ -113,7 +118,7 @@ async function keep(asset: string): Promise<string> {
 
 export function textRequestFor(w: GraphNode): TextRequest {
   const brief = fed(w, "brief");
-  const system = [bibleText(), describe(fed(w, "character")), describe(fed(w, "style")), `Length: ${w.data.length}`].filter(Boolean).join("\n");
+  const system = [bibleText(), describe(fed(w, "character")), describe(fed(w, "style")), ...given(w), `Length: ${w.data.length}`].filter(Boolean).join("\n");
   return { prompt: String(brief?.data.text ?? ""), system, model: String(w.data.model) };
 }
 

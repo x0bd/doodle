@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Icon, PlusIcon, type IconSvgElement } from "../icons";
 import { KINDS, type NodeKind } from "../graph/kinds";
-import { graph, select, addNode, makeNode, duplicateSelected, deleteSelected, setStatus, childCount, type Canon } from "../state/graph";
+import { graph, select, addNode, makeNode, duplicateSelected, deleteSelected, setStatus, childCount, addInput, dropInput, connect, edgeInto, inputs, outputs, type Canon, type GraphNode } from "../state/graph";
 import { enter, nav } from "../state/nav";
 import { enqueue, RUNNABLE } from "../state/jobs";
 import { fitAll } from "./view";
@@ -16,6 +16,15 @@ export interface Menu {
 }
 
 const ADDABLE: NodeKind[] = ["page", "chapter", "prompt", "note", "character", "style", "shot", "generate", "preview", "write", "model"];
+/** what can be given to a node that takes words: the kind, and the name
+ *  its port gets. A writer can hold as many of these as the work needs. */
+const GIVEABLE: { kind: NodeKind; port: string; word: string }[] = [
+  { kind: "character", port: "character", word: "A character" },
+  { kind: "style", port: "style", word: "A style or a voice" },
+  { kind: "prompt", port: "scene", word: "A scene" },
+  { kind: "note", port: "note", word: "A note" },
+  { kind: "shot", port: "shot", word: "A shot" },
+];
 const STATES: { id: Canon; word: string }[] = [
   { id: "canon", word: "Canon" },
   { id: "draft", word: "Draft" },
@@ -41,6 +50,19 @@ export function ContextMenu({ menu, onClose }: { menu: Menu; onClose: () => void
     };
   }, [onClose]);
 
+  /** Make the thing and wire it in: a new port on the node, a card to its
+   *  left where there is room, and the wire between them — one gesture. */
+  const give = (to: GraphNode, kind: NodeKind, port: string) => {
+    const def = KINDS[kind];
+    const below = Object.values(g.nodes).filter((n) => n.parent === focus && n.x + n.w < to.x + 40);
+    const y = below.length ? Math.max(...below.map((n) => n.y + n.h)) + 30 : to.y;
+    const made = makeNode(kind, Math.round(to.x - def.size.w - 90), Math.round(y), { parent: focus, status: to.status });
+    addNode(made);
+    const id = addInput(to.id, port, "text");
+    connect({ node: made.id, port: outputs(made)[0].id }, { node: to.id, port: id });
+    select([made.id]);
+  };
+
   const add = (kind: NodeKind) => {
     const def = KINDS[kind];
     addNode(makeNode(kind, Math.round(menu.world.x - def.size.w / 2), Math.round(menu.world.y - 20), { parent: focus }));
@@ -49,7 +71,7 @@ export function ContextMenu({ menu, onClose }: { menu: Menu; onClose: () => void
   const ids = node ? (g.selection.includes(node.id) ? g.selection : [node.id]) : [];
   const many = ids.length > 1;
 
-  const rows = 2 + (node ? 8 : ADDABLE.length + 1);
+  const rows = 2 + (node ? (takesWords(node) ? 15 : 8) : ADDABLE.length + 1);
   const h = 20 + rows * 30;
   const left = Math.min(menu.at.x + 4, window.innerWidth - 236);
   const top = menu.at.y + h > window.innerHeight - 24 ? Math.max(70, menu.at.y - h) : menu.at.y + 4;
@@ -67,6 +89,22 @@ export function ContextMenu({ menu, onClose }: { menu: Menu; onClose: () => void
             )}
             {!many && RUNNABLE.has(node.kind) && (
               <Row key_="⌘⏎" onClick={() => (onClose(), enqueue([node.id]))}>Run this one</Row>
+            )}
+            {!many && takesWords(node) && (
+              <>
+                <div className="list-gap" />
+                <div className="list-head">Give it</div>
+                {GIVEABLE.map((giv) => (
+                  <Row key={giv.port} icon={GLYPH[giv.kind]} onClick={() => (give(node, giv.kind, giv.port), onClose())}>
+                    {giv.word}
+                  </Row>
+                ))}
+                {(node.extras ?? []).length > 0 && (
+                  <Row onClick={() => (node.extras ?? []).forEach((p) => (edgeInto({ node: node.id, port: p.id }) ? undefined : dropInput(node.id, p.id)))}>
+                    Tidy the empty ones
+                  </Row>
+                )}
+              </>
             )}
             <Row key_="⌘D" onClick={() => (select(ids), duplicateSelected(), onClose())}>Duplicate</Row>
             <div className="list-gap" />
@@ -95,6 +133,9 @@ export function ContextMenu({ menu, onClose }: { menu: Menu; onClose: () => void
     </div>
   );
 }
+
+/** a node with an input that takes words can be given more of them */
+const takesWords = (n: GraphNode) => inputs(n).some((p) => p.type === "text");
 
 function Row({ icon, key_, on, children, onClick }: { icon?: IconSvgElement; key_?: string; on?: boolean; children: React.ReactNode; onClick: () => void }) {
   return (

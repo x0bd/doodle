@@ -34,6 +34,8 @@ export interface GraphNode extends Rect {
   anchor?: Anchor;
   /** the run whose words these are, while they are still its words */
   from?: string;
+  /** inputs given to this node by hand, beyond the kind's own */
+  extras?: Port[];
 }
 
 export interface PortRef {
@@ -74,7 +76,8 @@ export const graph = createStore<GraphState>({
 });
 
 /* ── ports ── */
-export const inputs = (n: GraphNode): Port[] => KINDS[n.kind].inputs;
+/** what a node takes: the kind's own inputs, then any given to it by hand */
+export const inputs = (n: GraphNode): Port[] => (n.extras?.length ? [...KINDS[n.kind].inputs, ...n.extras] : KINDS[n.kind].inputs);
 export const outputs = (n: GraphNode): Port[] => KINDS[n.kind].outputs;
 export const portOf = (ref: PortRef, dir: "in" | "out"): Port | undefined => {
   const n = graph.get().nodes[ref.node];
@@ -354,6 +357,36 @@ export function layOnPages(pageId: string, text: string, from?: string) {
     });
     return { ...x, nodes, order: [...x.order, ...made.map((p) => p.id)] };
   });
+}
+
+/** Give a node another input of its own — a second character, a place,
+ *  another scene. Ports are named for what they take. */
+export function addInput(id: string, name: string, type: Port["type"]): string {
+  const n = graph.get().nodes[id];
+  if (!n) return "";
+  const taken = new Set(inputs(n).map((p) => p.id));
+  let port = name;
+  let word = name;
+  for (let i = 2; taken.has(port); i++) {
+    port = `${name}${i}`;
+    word = `${name} ${i}`;
+  }
+  const extras = [...(n.extras ?? []), { id: port, name: word, type }];
+  commit("Add input", () => graph.set((g) => (g.nodes[id] ? { ...g, nodes: { ...g.nodes, [id]: { ...g.nodes[id], extras } } } : g)));
+  return port;
+}
+
+/** Take back an input given by hand, with whatever fed it. */
+export function dropInput(id: string, port: string) {
+  commit("Remove input", () =>
+    graph.set((g) => {
+      const n = g.nodes[id];
+      if (!n?.extras?.some((p) => p.id === port)) return g;
+      const edges = { ...g.edges };
+      for (const e of Object.values(g.edges)) if (e.to.node === id && e.to.port === port) delete edges[e.id];
+      return { ...g, edges, nodes: { ...g.nodes, [id]: { ...n, extras: n.extras.filter((p) => p.id !== port) } } };
+    }),
+  );
 }
 
 /** A card's height is whatever its content needs. The engine measures the
