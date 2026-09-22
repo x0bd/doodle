@@ -4,7 +4,7 @@ import { urlFor, assets } from "../state/assets";
 import { KINDS, NODE_ROWS } from "../graph/kinds";
 import { graph, inputs, outputs, updateData, childCount, childrenOf, measure, setWidth, takeOutput, type GraphNode, type PortRef } from "../state/graph";
 import { camera } from "./camera";
-import { jobs, jobFor, partialFor, enqueue, RUNNABLE } from "../state/jobs";
+import { jobs, jobFor, partialFor } from "../state/jobs";
 
 export interface NodeHandlers {
   onPointerDown: (e: ReactPointerEvent, node: GraphNode) => void;
@@ -144,23 +144,6 @@ export function Node({ node, selected, into, dim, handlers }: { node: GraphNode;
       )}
 
       <Body node={node} />
-
-      {RUNNABLE.has(node.kind) && (
-        <div className="node-foot">
-          <span className="node-foot-word px">
-            {job?.state === "running" ? job.note ?? "working" : node.kind === "generate" ? `${node.data.count ?? 1} ${Number(node.data.count ?? 1) === 1 ? "take" : "takes"}` : String(node.data.length ?? "")}
-          </span>
-          <button
-            className="node-go"
-            disabled={running}
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={() => enqueue([node.id])}
-            title="Run this one — ⌘↩"
-          >
-            {running ? "Running" : "Run"}
-          </button>
-        </div>
-      )}
 
       {/* the card's edge: drag it and the card is as wide as you want it */}
       <button

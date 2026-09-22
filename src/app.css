@@ -59,18 +59,44 @@
   --wire: 0.75;
 }
 
+/* THE LIT TONES. A role as a ground is muted; a role as a *dot* is the
+   thing itself and is said at full voice. Only the small round marks
+   take these — never a wash, never type. */
+:root {
+  --lit-slate:  212 32% 60%;
+  --lit-blue:   212 88% 60%;
+  --lit-sand:    42 95% 55%;
+  --lit-orange:  20 92% 58%;
+  --lit-rose:   348 85% 62%;
+  --lit-violet: 266 80% 68%;
+  --lit-teal:   172 80% 44%;
+  --lit-indigo: 234 85% 66%;
+  --lit-green:  142 70% 45%;
+}
+.dark {
+  --lit-slate:  212 34% 68%;
+  --lit-blue:   212 92% 66%;
+  --lit-sand:    42 96% 60%;
+  --lit-orange:  20 94% 64%;
+  --lit-rose:   348 88% 68%;
+  --lit-violet: 266 86% 74%;
+  --lit-teal:   172 84% 50%;
+  --lit-indigo: 234 92% 72%;
+  --lit-green:  142 72% 52%;
+}
+
 /* what each kind wears */
-.k-model     { --role: var(--role-slate); }
-.k-prompt    { --role: var(--role-blue); }
-.k-note      { --role: var(--role-sand); }
-.k-shot      { --role: var(--role-orange); }
-.k-character { --role: var(--role-rose); }
-.k-style     { --role: var(--role-violet); }
-.k-generate  { --role: var(--role-teal); }
-.k-write     { --role: var(--role-indigo); }
-.k-preview   { --role: var(--role-green); }
-.k-page      { --role: var(--role-green); }
-.k-chapter   { --role: var(--role-green); }
+.k-model     { --role: var(--role-slate); --lit: var(--lit-slate); }
+.k-prompt    { --role: var(--role-blue); --lit: var(--lit-blue); }
+.k-note      { --role: var(--role-sand); --lit: var(--lit-sand); }
+.k-shot      { --role: var(--role-orange); --lit: var(--lit-orange); }
+.k-character { --role: var(--role-rose); --lit: var(--lit-rose); }
+.k-style     { --role: var(--role-violet); --lit: var(--lit-violet); }
+.k-generate  { --role: var(--role-teal); --lit: var(--lit-teal); }
+.k-write     { --role: var(--role-indigo); --lit: var(--lit-indigo); }
+.k-preview   { --role: var(--role-green); --lit: var(--lit-green); }
+.k-page      { --role: var(--role-green); --lit: var(--lit-green); }
+.k-chapter   { --role: var(--role-green); --lit: var(--lit-green); }
 /* what flows through a wire */
 .t-model { --flow: var(--role-slate); }
 .t-text  { --flow: var(--role-blue); }
@@ -162,7 +188,7 @@ html, body, #root { height: 100%; }
   text-transform: uppercase;
   color: var(--fg-faint);
 }
-.paper-meta .dot { width: 6px; height: 6px; border-radius: var(--r-pill); background: hsl(var(--role)); }
+.paper-meta .dot { width: 6px; height: 6px; border-radius: var(--r-pill); background: hsl(var(--lit)); }
 .paper-meta .sep { opacity: 0.5; }
 .paper-run { margin-left: 6px; text-transform: none; letter-spacing: 0; }
 .paper-title {
@@ -461,32 +487,34 @@ html, body, #root { height: 100%; }
 .node.into { background: var(--tint-2); }
 
 /* the head: the role's wash across the top of the card, rounded with it */
-/* the head: a plain row — a dot in the role, the name, the keys. No band:
-   the card is one tone, and colour is the dot and the wires. */
+/* the head: the role's wash across the top of the card, rounded with it,
+   with a lit dot of the role and the name */
 .node-head {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 8px;
   height: 30px;
-  margin: 0 -2px 0;
-  padding: 0 2px;
+  margin: 0 -10px 4px;
+  padding: 0 12px 0 14px;
+  border-radius: 14px 14px 0 0;
+  background: hsl(var(--role) / var(--wash));
   flex-shrink: 0;
 }
 .node-dot {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: var(--r-pill);
-  background: hsl(var(--role));
-  box-shadow: 0 0 0 3px hsl(var(--role) / 0.16);
+  background: hsl(var(--lit));
+  box-shadow: 0 0 0 3px hsl(var(--lit) / 0.2);
   flex-shrink: 0;
 }
 .node-name {
   flex: 1;
   min-width: 0;
-  font-size: 13px;
-  font-weight: var(--w-mid);
-  letter-spacing: -0.01em;
+  font-size: var(--t-label);
+  font-weight: var(--w-declare);
+  letter-spacing: -0.005em;
   color: var(--fg);
   white-space: nowrap;
   overflow: hidden;
@@ -786,26 +814,6 @@ html, body, #root { height: 100%; }
 .stack-sheet b { font-size: var(--t-label); font-weight: var(--w-mid); color: var(--paper-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .stack-sheet span { font-size: var(--t-micro); line-height: 1.4; color: var(--fg-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .stack-none { flex: 1; font-size: var(--t-label); font-style: italic; color: var(--fg-faint); }
-
-/* the foot: what this card would do, and the key that does it — the one
-   place on a card the signal appears */
-.node-foot { display: flex; align-items: center; gap: 8px; padding: 2px 2px 0; flex-shrink: 0; }
-.node-foot-word { flex: 1; min-width: 0; color: var(--fg-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.node-go {
-  height: 26px;
-  padding: 0 14px;
-  border-radius: var(--r-ctl);
-  background: var(--signal);
-  color: var(--signal-ink);
-  font-size: var(--t-label);
-  font-weight: var(--w-mid);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 -1px 0 rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.14);
-  transition: filter var(--fast) var(--ease), transform var(--press) var(--ease), box-shadow var(--press) var(--ease);
-}
-@media (hover: hover) and (pointer: fine) { .node-go:hover { filter: brightness(1.05); background: var(--signal); color: var(--signal-ink); } }
-.node-go:active { transform: translateY(1px); box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.14); }
-.node-go:focus-visible { box-shadow: 0 0 0 2px var(--surface-raised), 0 0 0 4px var(--ink); }
-.node-go[disabled] { background: var(--surface); color: var(--fg-faint); box-shadow: inset 0 1px 1px var(--rim-in); }
 
 /* the card's right edge: a grip, there under the pointer */
 .node-grip {
@@ -1111,7 +1119,7 @@ html, body, #root { height: 100%; }
 @media (hover: hover) and (pointer: fine) { .from-row:hover { background: var(--tint); } }
 .from-port { color: var(--fg-faint); min-width: 58px; }
 .from-title { flex: 1; min-width: 0; font-size: var(--t-label); color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.from-row::before { content: ""; width: 5px; height: 5px; border-radius: var(--r-pill); background: hsl(var(--role)); flex-shrink: 0; align-self: center; }
+.from-row::before { content: ""; width: 5px; height: 5px; border-radius: var(--r-pill); background: hsl(var(--lit)); flex-shrink: 0; align-self: center; }
 .said {
   width: 100%;
   max-height: 180px;
@@ -1243,7 +1251,7 @@ html, body, #root { height: 100%; }
   text-transform: uppercase;
   color: var(--fg-faint);
 }
-.bar-from .dot { width: 6px; height: 6px; border-radius: var(--r-pill); background: hsl(var(--role)); flex-shrink: 0; }
+.bar-from .dot { width: 6px; height: 6px; border-radius: var(--r-pill); background: hsl(var(--lit)); flex-shrink: 0; }
 .bar-from .to { color: var(--fg-faint); opacity: 0.7; }
 .bar-from b { font-weight: var(--w-mid); color: var(--fg-muted); }
 .bar-text {
