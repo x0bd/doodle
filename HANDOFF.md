@@ -61,14 +61,14 @@ Rules kept: no `border:` anywhere (paper's edge is a `box-shadow` hairline) (`gr
 
 ## Working
 
-`pnpm tauri dev` (Rust ~1 min first time; `DOODLE_CODEX_TRACE=1 pnpm tauri dev` to watch Codex). The webview sometimes holds a half-applied HMR — `touch index.html` forces a reload. Capture only when Doodle is frontmost (a `cap.sh` that fronts it, reads the window frame, crops the screenshot at 2×); drive the app read-only; leave file dialogs to the user. The web view has no working `window.confirm` (it answers no at once) — ask through `confirmAsk()` in `platform/fs.ts` (the dialog plugin's `ask`). `http://localhost:1430` in a browser works for pointer tests (⌘ keys mapped in `devKeys`); the Tauri `listen` error there is harmless; the browser tool's Return key does not reach the page — dispatch a KeyboardEvent instead.
+`pnpm tauri dev` (Rust ~1 min first time; `DOODLE_CODEX_TRACE=1 pnpm tauri dev` to watch Codex). The webview sometimes holds a half-applied HMR — `touch index.html` forces a reload. Capture only when Doodle is frontmost: front it with System Events, find the window by CoreGraphics (a 10-line Swift `win` listing `CGWindowListCopyWindowInfo` for owner `doodle`), `screencapture -R` its frame; keys via System Events `keystroke`; clicks via a CGEvent `click x y` (System Events `click at` is refused). Drive the app read-only; leave file dialogs to the user. The web view has no working `window.confirm` (it answers no at once) — ask through `confirmAsk()` in `platform/fs.ts` (the dialog plugin's `ask`). `http://localhost:1430` in a browser works for pointer tests (⌘ keys mapped in `devKeys`); the Tauri `listen` error there is harmless; the browser tool's Return key does not reach the page — dispatch a KeyboardEvent instead.
 
 ## Known
 
 - Inert: the cluster's reveal key.
 - The mock writer repeats the brief before its paragraph.
 - Outputs rendered before a graph is saved are data URLs until the first save moves them.
-- The pane state once flipped to off/off during HMR + a process swap; never on a clean launch; store key is `doodle.ui.v1`.
+- The pane state once flipped to off/off during HMR + a process swap; never on a clean launch; store key is `doodle.ui.v1`. After many HMR patches the webview can hold stale handlers (keys, the wheel) — the fix is a relaunch, not code. Nothing may focus a field on arrival (the bar once did, and every field key went into the prompt).
 
 ## Next, in the order I would take them
 

@@ -30,9 +30,14 @@ export function Bar() {
   const [ask, setAsk] = useState("");
   const [hist, setHist] = useState(false);
   const text = useRef<HTMLTextAreaElement>(null);
-  // brought back by a key: the text is ready to edit, the caret at its end
+  // brought back by a key: the text is ready to edit, the caret at its end.
+  // Only when it comes back — never on arrival, or the field's keys would
+  // all land in the prompt.
+  const wasShown = useRef(shown);
   useEffect(() => {
-    if (!shown || !text.current) return;
+    const came = shown && !wasShown.current;
+    wasShown.current = shown;
+    if (!came || !text.current) return;
     const el = text.current;
     el.focus();
     el.setSelectionRange(el.value.length, el.value.length);
