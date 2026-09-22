@@ -4,16 +4,17 @@ import {
   ChevronRightIcon,
   ChevronDownIcon,
   CloseIcon,
-  MoreIcon,
+  ChapterIcon,
   RunIcon,
   CopyIcon,
   MenuIcon,
 } from "../icons";
-import { ui, togglePanes } from "../state/ui";
+import { ui, togglePanes, toggleRead } from "../state/ui";
 import { doc } from "../state/doc";
 import { jobs, enqueue, clearQueue, pending, current } from "../state/jobs";
 import { nav, trail, riseTo, sibling, step } from "../state/nav";
 import { graph } from "../state/graph";
+import { PLACES } from "../graph/kinds";
 import { fitAll } from "../canvas/view";
 import { QueueMenu } from "./QueueMenu";
 import { useState } from "react";
@@ -27,8 +28,10 @@ export function Head() {
   const j = jobs.use();
   const waiting = pending(j).length;
   const running = current(j);
-  nav.use((n) => n.focus);
+  const focus = nav.use((n) => n.focus);
   const nodes = graph.use((g) => g.nodes);
+  const read = ui.use((u) => u.read);
+  const place = !focus || PLACES.has(nodes[focus]?.kind);
   const path = trail();
   const [menu, setMenu] = useState(false);
   const { drawWith } = ui.use();
@@ -75,9 +78,11 @@ export function Head() {
       <div className="spacer" data-tauri-drag-region />
 
       <div className="tools">
-        <button className="pill-icon" aria-label="More">
-          <Icon icon={MoreIcon} size={15} strokeWidth={2} />
-        </button>
+        {place && (
+          <button className={`pill-icon${read ? " on" : ""}`} aria-label="Read" aria-pressed={read} title={read ? "Back to the field" : "Read as one — every page in order"} onClick={toggleRead}>
+            <Icon icon={ChapterIcon} size={15} strokeWidth={2} />
+          </button>
+        )}
         <span className="queue-group">
           <button className="pill queue" onClick={() => enqueue()} title={`Run the graph with ${drawer} — ⌘↩`}>
             <Icon icon={RunIcon} size={13} strokeWidth={2.2} />

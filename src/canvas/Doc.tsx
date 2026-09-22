@@ -444,7 +444,7 @@ function Body({ node }: { node: GraphNode }) {
   }
 }
 
-function Prose({ node, field = "text" }: { node: GraphNode; field?: string }) {
+export function Prose({ node, field = "text", focus = true }: { node: GraphNode; field?: string; focus?: boolean }) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const j = jobs.use();
   const partial = node.kind === "page" ? partialFor(j, node.id) : undefined;
@@ -474,10 +474,10 @@ function Prose({ node, field = "text" }: { node: GraphNode; field?: string }) {
   // the page opens with the caret in the words, at the end — nothing to click first
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
+    if (!el || !focus) return;
     el.focus({ preventScroll: true });
     el.setSelectionRange(el.value.length, el.value.length);
-  }, [node.id]);
+  }, [node.id, focus]);
   return (
     <div className="prose-wrap">
       <textarea

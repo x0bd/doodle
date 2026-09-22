@@ -19,7 +19,8 @@ import { nav, reading } from "./state/nav";
 export function App() {
   const { navigator, inspector } = ui.use();
   const focus = nav.use((n) => n.focus);
-  const writing = reading(focus);
+  const read = ui.use((u) => u.read);
+  const writing = reading(focus, read);
   useEffect(listenToMenu, []);
   // the last graph if it is still there — with its view — else the template, framed
   useEffect(() => {

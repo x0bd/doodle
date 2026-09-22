@@ -11,11 +11,12 @@ import { ContextMenu, type Menu } from "./ContextMenu";
 import { begin as journalBegin, end as journalEnd, commit, type Snapshot } from "../state/history";
 import { Node, type NodeHandlers } from "./Node";
 import { nav, enter, rise, clearArrival } from "../state/nav";
-import { ui, showBar, showAsk } from "../state/ui";
+import { ui, showBar, showAsk, setRead } from "../state/ui";
 import { childrenOf } from "../state/graph";
 import { fitAll, screenRect } from "./view";
 import { Wires } from "./Wires";
 import { Doc } from "./Doc";
+import { Read } from "./Read";
 import { portPos, setMapMode } from "./layout";
 
 type Drag =
@@ -87,7 +88,10 @@ export function Canvas() {
   const arriveClass = arriveStyle ? ` arrive-${arrival!.dir}` : "";
   // entered, a written thing is a document; a place (a chapter) is a field of what it holds
   const focused = focus ? g.nodes[focus] : undefined;
-  const writing = !!focused && !PLACES.has(focused.kind);
+  const read = ui.use((u) => u.read);
+  const place = !focused || PLACES.has(focused.kind);
+  // a document, or a place read as one: the wheel is the platform's
+  const writing = (!!focused && !PLACES.has(focused.kind)) || (place && read);
   const ref = useRef<HTMLDivElement>(null);
   const drag = useRef<Drag | null>(null);
   const [marquee, setMarquee] = useState<Rect | null>(null);
@@ -195,6 +199,11 @@ export function Canvas() {
         if (nav.get().focus) showAsk();
         else showBar();
       } else if (e.key === "Escape") {
+        // reading a place as one: back to its field first
+        if (ui.get().read && (!nav.get().focus || PLACES.has(graph.get().nodes[nav.get().focus!]?.kind))) {
+          setRead(false);
+          return;
+        }
         // with a selection, let go; with none, rise out of this workspace
         const s = graph.get();
         if (s.selection.length || s.edgeSelection.length) clearSelection();
@@ -413,7 +422,7 @@ export function Canvas() {
   if (writing) {
     return (
       <div ref={ref} className={`stage reading${arriveClass}`} style={arriveStyle} onAnimationEnd={(e) => e.target === e.currentTarget && clearArrival()}>
-        <Doc id={focus!} />
+        {place ? <Read id={focus} /> : <Doc id={focus!} />}
       </div>
     );
   }

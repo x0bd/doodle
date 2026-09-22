@@ -18,7 +18,8 @@ export function Foot() {
   const zoom = camera.use((c) => c.zoom);
   const focus = nav.use((x) => x.focus);
   const n = graph.use((g) => childrenOf(g, focus).length);
-  const writing = reading(focus);
+  const read = ui.use((u) => u.read);
+  const writing = reading(focus, read);
   const lens = ui.use((u) => u.lens);
   const j = jobs.use();
   const running = current(j);

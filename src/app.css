@@ -217,6 +217,20 @@ html, body, #root { height: 100%; }
 
 /* sections: a name, a note, an action; then the thing */
 /* .sec and .sec-head are the system's — space and a label, never a rule */
+/* reading a place as one: the title, then chapter by chapter, page by page,
+   each page written in where it lies with its name as a folio */
+.read-title { font-size: 32px; font-weight: var(--w-declare); letter-spacing: -0.025em; line-height: 1.15; color: var(--fg); }
+.read-line { margin-top: 4px; font-size: var(--t-body); line-height: 1.5; color: var(--fg-muted); }
+.read-none { font-size: var(--t-body); font-style: italic; color: var(--fg-faint); }
+.read-chapter { margin-top: 36px; }
+.read-chapter:first-of-type { margin-top: 12px; }
+.read-chapter-head { margin-bottom: 18px; }
+.read-chapter-name { font-size: 22px; font-weight: var(--w-declare); letter-spacing: -0.02em; line-height: 1.2; color: var(--fg); }
+.read-page { position: relative; margin-top: 22px; }
+.read-page:first-child { margin-top: 0; }
+.read-chapter-head + .read-page { margin-top: 0; }
+.read-folio { display: block; margin-bottom: 6px; color: var(--fg-faint); }
+.read .prose { min-height: 60px; }
 /* the turn of the page: under the words, quiet until the pointer is near */
 .paper-turn { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 28px; min-height: 28px; }
 .turn {

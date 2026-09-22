@@ -28,10 +28,11 @@ export interface NavState {
 
 export const nav = createStore<NavState>({ focus: null, views: {}, arrival: null });
 
-/** entered into a written thing — a document, not a field */
-export const reading = (focus: string | null) => {
+/** a document is on: a written thing entered, or a place being read as one */
+export const reading = (focus: string | null, read = false) => {
   const n = focus ? graph.get().nodes[focus] : undefined;
-  return !!n && !PLACES.has(n.kind);
+  const place = !n || PLACES.has(n.kind);
+  return place ? read : true;
 };
 
 const arrive = (dir: "in" | "out", from?: { x: number; y: number }) =>
