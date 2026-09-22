@@ -130,63 +130,75 @@ html, body, #root { height: 100%; }
    a head that names it, sections that are what it is, lists of what it
    holds. Prose reads at a reading size on a measure; forms are groups;
    pictures are prints. */
-.stage.reading { background-image: none; overflow-y: auto; cursor: auto; }
-.docpage { min-height: 100%; padding: 84px 40px 220px; }
+/* ─── Reading: the page ─────────────────────────────────────────────────────
+   Entered, a written thing is the whole window: a calmer ground than the
+   field, one column at a reading measure set between the panes, the
+   title inline and large, the words under it and nothing between you and
+   the first line. Everything else — what it holds, its media, the ask —
+   waits below or in one key. */
+:root { --reading: #f7f6f2; }
+.dark { --reading: #151513; }
+.stage.reading { background: var(--reading); background-image: none; overflow-y: auto; cursor: auto; }
+.docpage { min-height: 100%; padding: 96px 40px 200px; transition: padding var(--fast) var(--ease); }
+.win.nav-on .docpage { padding-left: 264px; }
+.win.ins-on .docpage { padding-right: 312px; }
+@media (max-width: 1100px) { .win.nav-on .docpage, .win.ins-on .docpage { padding-left: 40px; padding-right: 40px; } }
 .paper {
-  width: min(760px, 100%);
+  width: min(680px, 100%);
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
-.paper-head { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 18px; }
-.paper-glyph {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  margin-top: 2px;
-  border-radius: 12px;
-  background: hsl(var(--role) / var(--wash-2));
-  box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), var(--lift);
-  color: var(--fg);
-  flex-shrink: 0;
+.paper-head { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.paper-meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 22px;
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  letter-spacing: var(--tr-micro);
+  text-transform: uppercase;
+  color: var(--fg-faint);
 }
-.paper-name { flex: 1; min-width: 0; }
-.paper-head .pill-ink { margin-top: 8px; }
+.paper-meta .dot { width: 6px; height: 6px; border-radius: var(--r-pill); background: hsl(var(--role)); }
+.paper-meta .sep { opacity: 0.5; }
+.paper-run { margin-left: 6px; text-transform: none; letter-spacing: 0; }
 .paper-title {
   width: 100%;
   font-family: var(--font-ui);
-  font-size: 26px;
+  font-size: 32px;
   font-weight: var(--w-declare);
-  letter-spacing: -0.02em;
-  line-height: 1.2;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
   color: var(--fg);
   outline: none;
   border-radius: var(--r-sm);
-  padding: 3px 6px;
-  margin: 0 -6px;
+  padding: 2px 8px;
+  margin: 0 -8px;
   cursor: text;
 }
+.paper-title::placeholder { color: var(--fg-faint); }
 .paper-title:focus { background: var(--tint); }
-.paper-meta { font-size: var(--t-label); color: var(--fg-faint); margin-top: 1px; }
 
 /* prose: written at a reading size, grows as it goes */
 .prose {
   width: 100%;
-  min-height: 120px;
+  min-height: 200px;
   padding: 0;
   background: none;
   resize: none;
   outline: none;
   font-family: var(--font-ui);
-  font-size: 17px;
-  line-height: 1.65;
+  font-size: 16.5px;
+  line-height: 1.75;
+  letter-spacing: -0.004em;
   color: var(--fg);
   cursor: text;
   overflow: hidden;
 }
-.prose::placeholder { color: var(--fg-faint); }
+.prose::placeholder { color: var(--fg-faint); font-style: italic; }
 .prose-wrap { position: relative; }
 .prose-act { position: absolute; right: 0; bottom: -4px; animation: in var(--fast) var(--ease) both; }
 /* the mentions menu: the graph's names, under the field */
@@ -205,6 +217,14 @@ html, body, #root { height: 100%; }
 
 /* sections: a name, a note, an action; then the thing */
 /* .sec and .sec-head are the system's — space and a label, never a rule */
+.paper-below { margin-top: 48px; display: flex; flex-direction: column; gap: 6px; }
+.paper-below .sec { margin-top: 0; padding: 6px 0; }
+.paper-below .sec-head { min-height: 28px; margin-bottom: 0; gap: 8px; }
+.paper-below .sec-name { font-size: var(--t-label); font-weight: var(--w-mid); color: var(--fg-muted); }
+.paper-below .sec-note { font-size: var(--t-label); font-style: italic; color: var(--fg-faint); }
+.paper-below .sec-head .pill-icon { opacity: 0; transition: opacity var(--fast) var(--ease); }
+.paper-below .sec:hover .sec-head .pill-icon, .paper-below .sec-head .pill-icon:focus-visible { opacity: 1; }
+.paper-below .beats, .paper-below .media { margin-top: 8px; }
 .paper .sec-head { margin-bottom: 10px; }
 .sec-name { font-size: var(--t-body); font-weight: var(--w-declare); color: var(--fg); }
 .sec-note { flex: 1; font-size: var(--t-label); color: var(--fg-faint); }
@@ -963,6 +983,24 @@ html, body, #root { height: 100%; }
 .bar-acts .gap { flex: 1; }
 .bar-note { padding-right: 10px; font-size: var(--t-micro); color: var(--fg-faint); }
 .bar.ask .bar-acts .pill-sm { margin-right: 4px; }
+/* folded away, the bar and the ask are one quiet round key at the foot */
+.bar-key {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border-radius: var(--r-pill);
+  color: var(--fg-muted);
+}
+@media (hover: hover) and (pointer: fine) { .bar-key:hover { color: var(--fg); background: var(--tint); } }
+.bar-key:active { transform: translateX(-50%) translateY(1px); }
+.bar-key:focus-visible { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--ink); }
 /* the key: the signal, round, the play — the same GO as the queue */
 .bar-go {
   display: grid;

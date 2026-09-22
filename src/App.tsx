@@ -14,12 +14,12 @@ import { Palette } from "./shell/Palette";
 import { Shortcuts } from "./shell/Shortcuts";
 import { onFileDrop } from "./platform/fs";
 import { attachFiles, attachTo } from "./state/assets";
-import { nav } from "./state/nav";
+import { nav, reading } from "./state/nav";
 
 export function App() {
   const { navigator, inspector } = ui.use();
   const focus = nav.use((n) => n.focus);
-  const writing = !!focus;
+  const writing = reading(focus);
   useEffect(listenToMenu, []);
   // the last graph if it is still there — with its view — else the template, framed
   useEffect(() => {
@@ -61,7 +61,7 @@ export function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
   return (
-    <div className={`win${writing ? " writing" : ""}`}>
+    <div className={`win${writing ? " writing" : ""}${navigator ? " nav-on" : ""}${inspector ? " ins-on" : ""}`}>
       <Canvas />
       <Head />
       {navigator && <Navigator />}

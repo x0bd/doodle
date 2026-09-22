@@ -1,12 +1,12 @@
-import { Icon, HistoryIcon, SaveIcon, RunIcon, CloseIcon, UpIcon } from "../icons";
+import { Icon, HistoryIcon, SaveIcon, RunIcon, CloseIcon, UpIcon, GenerateIcon, TextIcon } from "../icons";
 import { save } from "../state/doc";
 import { graph, updateData } from "../state/graph";
 import { jobs, enqueue, generators, current, latest, mainPort, clearQueue } from "../state/jobs";
-import { ui, hideBar } from "../state/ui";
+import { ui, hideBar, showBar, hideAsk, toggleAsk } from "../state/ui";
 import { nav } from "../state/nav";
 import { propose } from "../state/drafts";
 import { proposeShots } from "../state/shots";
-import { KINDS } from "../graph/kinds";
+import { KINDS, PLACES } from "../graph/kinds";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { History } from "./History";
 
@@ -26,6 +26,7 @@ export function Bar() {
   const j = jobs.use();
   const focus = nav.use((n) => n.focus);
   const shown = ui.use((u) => u.bar);
+  const asking = ui.use((u) => u.ask);
   const [ask, setAsk] = useState("");
   const [hist, setHist] = useState(false);
   const text = useRef<HTMLTextAreaElement>(null);
@@ -36,8 +37,13 @@ export function Bar() {
     el.focus();
     el.setSelectionRange(el.value.length, el.value.length);
   }, [shown]);
+  const askRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (asking) askRef.current?.focus();
+  }, [asking]);
   const entered = focus ? g.nodes[focus] : undefined;
-  if (entered) {
+  // a document gets the ask; a place (a chapter) is a field and gets the prompt bar for what runs there
+  if (entered && !PLACES.has(entered.kind)) {
     const prose = entered.kind === "prompt" || entered.kind === "note" || entered.kind === "page";
     const described = entered.kind === "character" || entered.kind === "style";
     const send = () => {
@@ -45,6 +51,14 @@ export function Bar() {
       void propose(entered.id, "ask", ask.trim());
       setAsk("");
     };
+    // closed, the ask is one quiet key at the foot: the page is the page
+    if (!asking) {
+      return (
+        <button className="bar-key card" aria-label="Ask the agent" title="Ask — /" onClick={toggleAsk}>
+          <Icon icon={GenerateIcon} size={16} strokeWidth={1.9} />
+        </button>
+      );
+    }
     return (
       <div className={`bar card ask k-${entered.kind}`}>
         <div className="bar-from">
@@ -54,11 +68,15 @@ export function Bar() {
           <span>{entered.title}</span>
         </div>
         <input
+          ref={askRef}
           className="bar-text"
           value={ask}
           placeholder={prose ? "What should happen to this passage?" : described ? `What should the agent add to ${entered.title}?` : "Ask about this"}
           onChange={(e) => setAsk(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), send())}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") (e.preventDefault(), send());
+            else if (e.key === "Escape") (e.preventDefault(), hideAsk());
+          }}
           spellCheck={false}
         />
         <div className="bar-acts">
@@ -74,6 +92,9 @@ export function Bar() {
           )}
           <div className="gap" />
           <span className="bar-note">{prose || described ? "Drafts wait on the page until you keep them" : "Answers arrive as drafts on the page"}</span>
+          <button className="pill-icon" aria-label="Close" title="Close — esc" onClick={hideAsk}>
+            <Icon icon={CloseIcon} size={13} strokeWidth={2.2} />
+          </button>
           <button className="bar-go" aria-label="Ask" title="Ask — ⏎" disabled={!ask.trim()} onClick={send}>
             <Icon icon={UpIcon} size={16} strokeWidth={2.25} />
           </button>
@@ -81,8 +102,16 @@ export function Bar() {
       </div>
     );
   }
-  if (!shown) return null;
-  const gen = generators()[0];
+  // away, the bar is one quiet key: the field is the field
+  if (!shown) {
+    return (
+      <button className="bar-key card" aria-label="The prompt" title="The prompt — /" onClick={showBar}>
+        <Icon icon={TextIcon} size={16} strokeWidth={1.9} />
+      </button>
+    );
+  }
+  // the first runnable at this level, else anywhere
+  const gen = generators().find((n) => n.parent === (focus ?? null)) ?? generators()[0];
   const edge = gen && Object.values(g.edges).find((e) => e.to.node === gen.id && e.to.port === mainPort(gen));
   const promptNode = edge ? g.nodes[edge.from.node] : undefined;
   const running = current(j);
@@ -118,6 +147,9 @@ export function Bar() {
         </button>
         <button className="pill-icon" aria-label="Save" title="Save — ⌘S" onClick={() => void save()}>
           <Icon icon={SaveIcon} size={15} strokeWidth={2} />
+        </button>
+        <button className="pill-icon" aria-label="Put away" title="Put away — the key brings it back" onClick={hideBar}>
+          <Icon icon={CloseIcon} size={13} strokeWidth={2.2} />
         </button>
         <div className="gap" />
         {note && <span className="bar-note">{note}</span>}

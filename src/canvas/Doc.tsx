@@ -41,31 +41,32 @@ export function Doc({ id }: { id: string }) {
   const proposed = proposalsFor(proposals, id);
   const parent = node.parent ? g.nodes[node.parent]?.title : name;
   const job = RUNNABLE.has(node.kind) ? jobFor(j, id) : undefined;
+  const written = String(node.data[node.kind === "character" || node.kind === "style" || node.kind === "shot" ? "description" : "text"] ?? "");
+  const words = written.trim() ? written.trim().split(/\s+/).length : 0;
 
   const addNote = () => addNode(makeNode("note", 60 + kids.length * 260, 60, { parent: id, title: node.kind === "prompt" ? `Beat ${kids.length + 1}` : "Note" }));
 
   return (
     <div className="docpage" onPointerDown={(e) => e.stopPropagation()}>
-      <article className="paper">
+      <article className={`paper k-${node.kind}`}>
         <header className="paper-head">
-          <span className={`paper-glyph k-${node.kind}`}>
-            <Icon icon={GLYPH[node.kind]} size={18} strokeWidth={1.7} />
-          </span>
-          <div className="paper-name">
-            <input className="paper-title" value={node.title} onChange={(e) => rename(id, e.target.value)} spellCheck={false} aria-label="Title" />
-            <p className="paper-meta">
-              {def.title} · in {parent}
-              {node.status !== "canon" && ` · ${node.status}`}
-              {kids.length > 0 && ` · ${kids.length} inside`}
-              {images.length > 0 && ` · ${images.length} ${images.length === 1 ? "image" : "images"}`}
-              {job && ` · ${job.state === "running" ? `running ${job.note ?? ""}` : job.state}`}
-            </p>
-          </div>
-          {RUNNABLE.has(node.kind) && (
-            <button className="pill pill-ink" onClick={() => enqueue([id])} title="Run this one — ⌘↩">
-              Run
-            </button>
-          )}
+          <p className="paper-meta">
+            <span className="dot" />
+            <span>{def.title}</span>
+            <span className="sep">·</span>
+            <span>in {parent}</span>
+            {node.status !== "canon" && <><span className="sep">·</span><span>{node.status}</span></>}
+            {words > 0 && <><span className="sep">·</span><span>{words.toLocaleString("en-US")} words</span></>}
+            {kids.length > 0 && <><span className="sep">·</span><span>{kids.length} inside</span></>}
+            {images.length > 0 && <><span className="sep">·</span><span>{images.length} {images.length === 1 ? "image" : "images"}</span></>}
+            {job && <><span className="sep">·</span><span>{job.state === "running" ? `running ${job.note ?? ""}` : job.state}</span></>}
+            {RUNNABLE.has(node.kind) && (
+              <button className="pill pill-sm paper-run" onClick={() => enqueue([id])} title="Run this one — ⌘↩">
+                Run
+              </button>
+            )}
+          </p>
+          <input className="paper-title" value={node.title} onChange={(e) => rename(id, e.target.value)} spellCheck={false} aria-label="Title" placeholder="Untitled" />
         </header>
 
         <Body node={node} />
@@ -157,42 +158,36 @@ export function Doc({ id }: { id: string }) {
           </section>
         ))}
 
-        <Section
-          name={node.kind === "prompt" ? "Beats and shots" : "Notes"}
-          note={node.kind === "prompt" ? "The scene in order. Each opens as its own page." : "Kept with it. Each opens as its own page."}
-          action={
-            <button className="pill pill-sm" onClick={addNote}>
-              <Icon icon={PlusIcon} size={11} strokeWidth={2.4} />
-              {node.kind === "prompt" ? "Beat" : "Note"}
-            </button>
-          }
-        >
-          {kids.length === 0 ? (
-            <p className="sec-empty">Nothing yet.</p>
-          ) : (
-            <ol className="beats">
-              {kids.map((k, i) => (
-                <Beat key={k.id} node={k} n={i + 1} />
-              ))}
-            </ol>
-          )}
-        </Section>
+        <footer className="paper-below">
+          <Section
+            name={node.kind === "prompt" ? "Beats" : "Notes"}
+            note={kids.length ? (node.kind === "prompt" ? "In order. Each opens as its own page." : "Each opens as its own page.") : undefined}
+            action={
+              <button className="pill-icon sm" aria-label={node.kind === "prompt" ? "Add a beat" : "Add a note"} title={node.kind === "prompt" ? "A beat" : "A note"} onClick={addNote}>
+                <Icon icon={PlusIcon} size={12} strokeWidth={2.4} />
+              </button>
+            }
+          >
+            {kids.length > 0 && (
+              <ol className="beats">
+                {kids.map((k, i) => (
+                  <Beat key={k.id} node={k} n={i + 1} />
+                ))}
+              </ol>
+            )}
+          </Section>
 
-        <Section name="Media" note="Drop images anywhere on this page.">
-          {images.length === 0 ? (
-            <div className="media-empty diag">
-              <Icon icon={ImageIcon} size={16} strokeWidth={1.6} />
-              <span>No images yet</span>
-            </div>
-          ) : (
-            <div className="media">
-              {images.map((ref) => {
-                const url = urlFor(ref);
-                return <div key={ref} className="media-img well">{url && <img src={url} alt="" draggable={false} />}</div>;
-              })}
-            </div>
-          )}
-        </Section>
+          <Section name="Media" note={images.length ? undefined : "Drop an image anywhere on this page."}>
+            {images.length > 0 && (
+              <div className="media">
+                {images.map((ref) => {
+                  const url = urlFor(ref);
+                  return <div key={ref} className="media-img well">{url && <img src={url} alt="" draggable={false} />}</div>;
+                })}
+              </div>
+            )}
+          </Section>
+        </footer>
       </article>
     </div>
   );
@@ -432,13 +427,20 @@ function Prose({ node, field = "text" }: { node: GraphNode; field?: string }) {
     addNode(makeNode("note", 60 + n * 260, 60, { parent: node.id, title, data: { text: sel } }));
     setSel("");
   };
+  // the page opens with the caret in the words, at the end — nothing to click first
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.focus({ preventScroll: true });
+    el.setSelectionRange(el.value.length, el.value.length);
+  }, [node.id]);
   return (
     <div className="prose-wrap">
       <textarea
         ref={ref}
         className="prose selectable"
         value={value}
-        placeholder={node.kind === "page" ? "Nothing written yet. Wire a writer in and run, or write here." : "Write it the way you would say it. @ names a character, a style, a shot. Expand it from the bar when it is enough."}
+        placeholder={node.kind === "page" ? "Start writing…" : "Write it the way you would say it. @ names a character, a style, a shot. Expand it from the bar when it is enough."}
         onChange={(e) => (set(e.target.value), requestAnimationFrame(m.afterChange))}
         onKeyDown={m.onKeyDown}
         onSelect={read}

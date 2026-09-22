@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import { camera, panBy, toWorld, zoomAt, type Point, type Rect } from "./camera";
+import { camera, panBy, toWorld, zoomAt, fitRect, type Point, type Rect } from "./camera";
 import {
   graph, clearSelection, select, toggleSelect, moveNodes, raise, intersects, deleteSelected,
   connectNow, canConnect, disconnectNow, edgeInto, moveInto, portOf, addNode, makeNode, connect, type PortRef,
@@ -11,9 +11,9 @@ import { ContextMenu, type Menu } from "./ContextMenu";
 import { begin as journalBegin, end as journalEnd, commit, type Snapshot } from "../state/history";
 import { Node, type NodeHandlers } from "./Node";
 import { nav, enter, rise, clearArrival } from "../state/nav";
-import { ui, showBar } from "../state/ui";
+import { ui, showBar, showAsk } from "../state/ui";
 import { childrenOf } from "../state/graph";
-import { fitAll } from "./view";
+import { fitAll, screenRect } from "./view";
 import { Wires } from "./Wires";
 import { Doc } from "./Doc";
 import { portPos, setMapMode } from "./layout";
@@ -157,6 +157,8 @@ export function Canvas() {
           const n = under ? graph.get().nodes[under] : undefined;
           if (n && WRITTEN.has(n.kind)) {
             crossedAt = Date.now();
+            // park this level framed on the card, not mid-zoom, so coming back lands well
+            fitRect(n, screenRect(), 120);
             enter(n.id, () => requestAnimationFrame(fitAll), { x: e.clientX, y: e.clientY });
             return;
           }
@@ -188,9 +190,10 @@ export function Canvas() {
       } else if (e.key === "l" && !e.metaKey && !e.ctrlKey && !e.repeat) {
         setLHeld(true);
       } else if (e.key === "/" && !e.metaKey && !e.ctrlKey) {
-        // the prompt bar, back at the foot with its text ready
+        // the prompt bar, back at the foot with its text ready — the ask, on a page
         e.preventDefault();
-        showBar();
+        if (nav.get().focus) showAsk();
+        else showBar();
       } else if (e.key === "Escape") {
         // with a selection, let go; with none, rise out of this workspace
         const s = graph.get();

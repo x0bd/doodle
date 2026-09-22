@@ -2,7 +2,7 @@ import { Icon, PlusIcon, MinusIcon, FitIcon, EyeIcon, LinkIcon } from "../icons"
 import Avatar from "boring-avatars";
 import { openSettings, ui, toggleLens } from "../state/ui";
 import { graph, childrenOf } from "../state/graph";
-import { nav } from "../state/nav";
+import { nav, reading } from "../state/nav";
 import { jobs, current, latest } from "../state/jobs";
 import { useEffect, useState } from "react";
 import { camera, fitAll, zoomIn, zoomOut } from "../canvas/view";
@@ -18,7 +18,7 @@ export function Foot() {
   const zoom = camera.use((c) => c.zoom);
   const focus = nav.use((x) => x.focus);
   const n = graph.use((g) => childrenOf(g, focus).length);
-  const writing = !!focus;
+  const writing = reading(focus);
   const lens = ui.use((u) => u.lens);
   const j = jobs.use();
   const running = current(j);

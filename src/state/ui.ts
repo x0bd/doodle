@@ -20,18 +20,20 @@ export interface UiState {
   shortcuts: boolean;
   /** the prompt bar: out until Enter starts a run, back on / — never remembered */
   bar: boolean;
+  /** the ask on a page: a key until opened — never remembered */
+  ask: boolean;
   /** who draws and who writes when Queue is pressed */
   drawWith: string;
   writeWith: string;
 }
 
 const KEY = "doodle.ui.v1";
-const base: UiState = { navigator: true, inspector: true, theme: "dark", motion: "full", settings: false, chooser: false, palette: false, lens: false, shortcuts: false, bar: true, drawWith: "mock", writeWith: "mock" };
+const base: UiState = { navigator: true, inspector: true, theme: "dark", motion: "full", settings: false, chooser: false, palette: false, lens: false, shortcuts: false, bar: true, ask: false, drawWith: "mock", writeWith: "mock" };
 
 function load(): UiState {
   try {
     const raw = localStorage.getItem(KEY);
-    return raw ? { ...base, ...JSON.parse(raw), settings: false, chooser: false, palette: false, lens: false, shortcuts: false, bar: true } : base;
+    return raw ? { ...base, ...JSON.parse(raw), settings: false, chooser: false, palette: false, lens: false, shortcuts: false, bar: true, ask: false } : base;
   } catch {
     return base;
   }
@@ -50,7 +52,7 @@ dark.addEventListener("change", apply);
 apply();
 
 ui.subscribe(() => {
-  const { settings: _settings, chooser: _chooser, palette: _palette, lens: _lens, shortcuts: _shortcuts, bar: _bar, ...rest } = ui.get();
+  const { settings: _settings, chooser: _chooser, palette: _palette, lens: _lens, shortcuts: _shortcuts, bar: _bar, ask: _ask, ...rest } = ui.get();
   try {
     localStorage.setItem(KEY, JSON.stringify(rest));
   } catch {
@@ -84,3 +86,7 @@ export const openShortcuts = () => ui.set((s) => ({ ...s, shortcuts: true }));
 export const closeShortcuts = () => ui.set((s) => ({ ...s, shortcuts: false }));
 export const hideBar = () => ui.set((s) => ({ ...s, bar: false }));
 export const showBar = () => ui.set((s) => ({ ...s, bar: true }));
+export const showAsk = () => ui.set((s) => ({ ...s, ask: true }));
+export const hideAsk = () => ui.set((s) => ({ ...s, ask: false }));
+export const toggleAsk = () => ui.set((s) => ({ ...s, ask: !s.ask }));
+export const toggleBar = () => ui.set((s) => ({ ...s, bar: !s.bar }));

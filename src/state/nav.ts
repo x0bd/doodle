@@ -7,6 +7,7 @@
 import { createStore } from "./store";
 import { camera, type Camera } from "../canvas/camera";
 import { graph, clearSelection, select } from "./graph";
+import { PLACES } from "../graph/kinds";
 
 export interface Arrival {
   dir: "in" | "out";
@@ -26,6 +27,12 @@ export interface NavState {
 }
 
 export const nav = createStore<NavState>({ focus: null, views: {}, arrival: null });
+
+/** entered into a written thing — a document, not a field */
+export const reading = (focus: string | null) => {
+  const n = focus ? graph.get().nodes[focus] : undefined;
+  return !!n && !PLACES.has(n.kind);
+};
 
 const arrive = (dir: "in" | "out", from?: { x: number; y: number }) =>
   from ? { dir, x: from.x, y: from.y, at: Date.now() } : null;
