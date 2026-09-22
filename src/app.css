@@ -588,7 +588,7 @@ html, body, #root { height: 100%; }
 .bloom-take:focus-visible { box-shadow: 0 0 0 1.5px var(--fg-muted); background: var(--surface); }
 .bloom-take:active { transform: translateY(1px); }
 .bloom-take.on { box-shadow: 0 0 0 2px var(--surface-raised), 0 0 0 4px var(--ink); }
-.node-row-k { font-size: var(--t-micro); color: var(--fg-muted); }
+.node-row-k { font-size: var(--t-micro); color: var(--fg-muted); white-space: nowrap; }
 .node-row-v { font-size: var(--t-micro); color: var(--fg); }
 
 /* character: a reference beside a name and a line */
@@ -606,7 +606,22 @@ html, body, #root { height: 100%; }
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.node-desc { padding: 2px 4px 6px; font-size: var(--t-micro); line-height: 1.45; color: var(--fg-muted); }
+/* a description on a card: as much as the card has room for, no more —
+   the rows below it keep their places */
+.node-desc {
+  flex: 1;
+  min-height: 0;
+  padding: 2px 4px 6px;
+  font-size: var(--t-micro);
+  line-height: 1.45;
+  color: var(--fg-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.node-rows .node-row { flex-shrink: 0; }
+.node-row-v { max-width: 62%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; }
 /* ─── Paper ─────────────────────────────────────────────────────────────────
    A page and a chapter are sheets, not cards: a warmer, brighter ground
    than the field's objects, a hairline edge like a cut sheet, no wash on
@@ -912,7 +927,8 @@ html, body, #root { height: 100%; }
 /* the outline: a tree of the document. The twist folds a row's children;
    depth is an indent; a drop shows as a line before or after, or the tint
    on the row it would go into */
-.tree { gap: 0; }
+.tree { gap: 0; outline: none; }
+.tree:focus-visible { box-shadow: inset 0 0 0 1.5px var(--ink); border-radius: var(--r-sm); }
 .tree-row { position: relative; min-height: 26px; padding-right: 8px; gap: 6px; font-size: var(--t-label); cursor: default; user-select: none; }
 .tree-row.root { margin-bottom: 2px; }
 .tree-row.off { opacity: 0.5; }

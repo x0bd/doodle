@@ -35,6 +35,8 @@ pub fn build(app: &App) -> tauri::Result<Menu<Wry>> {
         .item(&item("file.save", "Save", Some("CmdOrCtrl+S"))?)
         .item(&item("file.save-as", "Save As…", Some("CmdOrCtrl+Shift+S"))?)
         .separator()
+        .item(&item("file.export", "Export as Markdown…", Some("Shift+CmdOrCtrl+E"))?)
+        .separator()
         .item(&item("file.duplicate", "Duplicate Graph", None)?)
         .item(&item("file.reveal", "Reveal in Finder", None)?)
         .separator()

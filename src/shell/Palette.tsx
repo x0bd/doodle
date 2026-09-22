@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Icon, SearchIcon, RunIcon, PlusIcon, SettingsIcon, FitIcon } from "../icons";
+import { Icon, SearchIcon, RunIcon, PlusIcon, SettingsIcon, FitIcon, PageIcon } from "../icons";
 import { graph, select } from "../state/graph";
 import { nav, enter, riseTo } from "../state/nav";
 import { fitRect } from "../canvas/camera";
 import { screenRect, fitAll } from "../canvas/view";
 import { ui, closePalette, openChooser, openSettings, showBar } from "../state/ui";
 import { enqueue } from "../state/jobs";
+import { exportText } from "../state/doc";
 import { GLYPH } from "../canvas/Doc";
 import { KINDS } from "../graph/kinds";
 import type { GraphNode } from "../state/graph";
@@ -36,6 +37,7 @@ export function Palette() {
       { kind: "cmd", id: "new", label: "New graph…", icon: PlusIcon, run: openChooser },
       { kind: "cmd", id: "fit", label: "Fit to view", icon: FitIcon, run: fitAll },
       { kind: "cmd", id: "bar", label: "The prompt bar", icon: RunIcon, run: showBar },
+      { kind: "cmd", id: "export", label: "Export as Markdown…", icon: PageIcon, run: () => void exportText() },
       { kind: "cmd", id: "settings", label: "Settings…", icon: SettingsIcon, run: openSettings },
     ];
     const cmds = all.filter((c) => c.kind === "cmd" && (!needle || c.label.toLowerCase().includes(needle)));

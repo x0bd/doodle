@@ -108,6 +108,66 @@ export function Navigator() {
     setDrop(null);
   };
 
+  /** every row on screen, in the order they are drawn — what the arrows walk */
+  const flat = (parent: string | null): GraphNode[] =>
+    kids(g, parent).flatMap((n) => [n, ...(open.has(n.id) ? flat(n.id) : [])]);
+
+  /** the arrows walk the tree; left folds or goes up; right unfolds or goes
+   *  in; ⌘↑ and ⌘↓ move a row among its siblings; ⏎ enters; F2 renames */
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (editing) return;
+    const rows = flat(null);
+    if (!rows.length) return;
+    const here = g.selection.length === 1 ? rows.findIndex((n) => n.id === g.selection[0]) : -1;
+    const n = here >= 0 ? rows[here] : undefined;
+    const step = (to: number) => {
+      const t = rows[Math.max(0, Math.min(rows.length - 1, to))];
+      if (t) go(t);
+    };
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        if (e.metaKey && n) {
+          const sib = kids(g, n.parent);
+          const i = sib.findIndex((s) => s.id === n.id);
+          const after = sib[i + 2];
+          if (sib[i + 1]) reorder(n.id, n.parent, after?.id ?? null);
+        } else step(here + 1);
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        if (e.metaKey && n) {
+          const sib = kids(g, n.parent);
+          const i = sib.findIndex((s) => s.id === n.id);
+          if (i > 0) reorder(n.id, n.parent, sib[i - 1].id);
+        } else step(here < 0 ? 0 : here - 1);
+        break;
+      case "ArrowRight":
+        if (!n) return;
+        e.preventDefault();
+        if (childrenOf(g, n.id).length && !open.has(n.id)) toggle(n.id);
+        else if (childrenOf(g, n.id).length) step(here + 1);
+        break;
+      case "ArrowLeft": {
+        if (!n) return;
+        e.preventDefault();
+        if (open.has(n.id)) toggle(n.id);
+        else if (n.parent && g.nodes[n.parent]) go(g.nodes[n.parent]);
+        break;
+      }
+      case "Enter":
+        if (!n) return;
+        e.preventDefault();
+        into(n.id);
+        break;
+      case "F2":
+        if (!n) return;
+        e.preventDefault();
+        setEditing(n.id);
+        break;
+    }
+  };
+
   /** one row, then its children while it is open */
   const rows = (parent: string | null, depth: number): React.ReactNode[] =>
     kids(g, parent).flatMap((n) => {
@@ -171,7 +231,9 @@ export function Navigator() {
         </button>
       </div>
       <div className="pane-body">
-        <div className="list tree" role="tree">
+        {/* the tree takes the keyboard when it is clicked into: the arrows
+            walk it, ⌘↑ ⌘↓ move a row, ⏎ enters, F2 renames */}
+        <div className="list tree" role="tree" tabIndex={0} onKeyDown={onKeyDown}>
           <div
             className={`tree-row list-row root${focus === null ? " on" : ""}${drop?.id === "root" ? " drop-into" : ""}`}
             onClick={home}

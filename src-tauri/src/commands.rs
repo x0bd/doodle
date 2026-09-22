@@ -52,6 +52,20 @@ pub fn save_graph(dir: String, json: String) -> Result<(), String> {
     Ok(())
 }
 
+/// Write a text file where the user asked for it — an export, not the
+/// document. Atomic, like everything else we write.
+#[tauri::command]
+pub fn write_text(path: String, text: String) -> Result<(), String> {
+    let path = PathBuf::from(path);
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    }
+    let tmp = path.with_extension("tmp");
+    fs::write(&tmp, text).map_err(|e| e.to_string())?;
+    fs::rename(&tmp, &path).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 #[tauri::command]
 pub fn load_graph(dir: String) -> Result<String, String> {
     let dir = PathBuf::from(dir);

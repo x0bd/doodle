@@ -7,7 +7,7 @@ import { listen } from "@tauri-apps/api/event";
 import { openChooser, openPalette, openSettings, openShortcuts, toggleInspector, toggleNavigator, togglePanes, toggleTheme } from "../state/ui";
 import { fitAll, zoomActual, zoomIn, zoomOut } from "../canvas/view";
 import { step } from "../state/nav";
-import { openDialog, save, saveAs, duplicate, reveal } from "../state/doc";
+import { openDialog, save, saveAs, duplicate, reveal, exportText } from "../state/doc";
 import { redo, undo } from "../state/history";
 import { deleteSelected, duplicateSelected, selectAll } from "../state/graph";
 import { clearQueue, enqueue } from "../state/jobs";
@@ -24,6 +24,7 @@ export const actions: Record<string, () => void> = {
   "file.open": () => void openDialog(),
   "file.save": () => void save(),
   "file.save-as": () => void saveAs(),
+  "file.export": () => void exportText(),
   "file.duplicate": () => void duplicate(),
   "file.reveal": () => void reveal(),
   "view.search": openPalette,
@@ -69,6 +70,7 @@ function devKeys() {
       k === "z" ? (e.shiftKey ? "edit.redo" : "edit.undo")
       : k === "d" ? "edit.duplicate"
       : k === "a" ? "edit.select-all"
+      : k === "e" && e.shiftKey ? "file.export"
       : k === "s" ? "file.save"
       : k === "n" ? "file.new"
       : k === "k" ? "view.search"

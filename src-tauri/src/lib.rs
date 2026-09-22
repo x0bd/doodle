@@ -19,6 +19,7 @@ pub fn run() {
             commands::import_asset,
             commands::read_asset,
             commands::write_asset,
+            commands::write_text,
             codex::codex_status,
             codex::codex_text,
             codex::codex_image,

@@ -9,8 +9,10 @@ import { camera, type Camera } from "../canvas/camera";
 import { history, reset as resetHistory } from "./history";
 import { nav, resetNav } from "./nav";
 import { restoreJobs, forgetJobs } from "./jobs";
-import { inTauri, loadGraph, pickOpenDir, pickSaveDir, saveGraph, graphExists, writeAsset, duplicateGraph, revealPath } from "../platform/fs";
+import { inTauri, loadGraph, pickOpenDir, pickSaveDir, pickSaveFile, saveGraph, graphExists, writeAsset, duplicateGraph, revealPath, writeText } from "../platform/fs";
 import { templateById, type TemplateId } from "../graph/templates";
+import { PLACES } from "../graph/kinds";
+import { asMarkdown } from "./reading";
 
 export type SaveState = "idle" | "saving" | "saved" | "failed";
 
@@ -137,6 +139,23 @@ export async function save(): Promise<boolean> {
   }
   await write(path);
   return doc.get().save === "saved";
+}
+
+/** What is written here, out of the app: the place you are in — the book,
+ *  or the chapter — as Markdown, in the order it reads. Where the user
+ *  says, and then shown to them in the Finder. */
+export async function exportText() {
+  if (!inTauri) return;
+  const g = graph.get();
+  const focus = nav.get().focus;
+  const here = focus && g.nodes[focus] && PLACES.has(g.nodes[focus].kind) ? focus : null;
+  const d = doc.get();
+  const name = here ? g.nodes[here].title : d.name;
+  const text = asMarkdown(g, here, d.name);
+  const path = await pickSaveFile(name, "md", "Export as Markdown");
+  if (!path) return;
+  await writeText(path, text);
+  await revealPath(path);
 }
 
 export async function saveAs() {

@@ -27,6 +27,16 @@ const GROUPS: { name: string; keys: [string, string][] }[] = [
     ],
   },
   {
+    name: "The outline",
+    keys: [
+      ["Click · double-click", "Go there · enter it"],
+      ["Click a chosen row", "Write its name"],
+      ["Arrows", "Walk · fold · unfold"],
+      ["⌘↑ · ⌘↓", "Move it among its own"],
+      ["Drag", "Before, after, or into"],
+    ],
+  },
+  {
     name: "Wires",
     keys: [
       ["Drag from a port", "A wire; it snaps"],
@@ -43,6 +53,7 @@ const GROUPS: { name: string; keys: [string, string][] }[] = [
       ["⌘K", "Search"],
       ["⌘Z · ⇧⌘Z", "Undo · redo"],
       ["⌘S · ⌘O · ⌘N", "Save · open · new"],
+      ["⇧⌘E", "Export as Markdown"],
       ["Tab · ⌘,", "Panes · settings"],
       ["@ in a page", "Name a thing"],
     ],

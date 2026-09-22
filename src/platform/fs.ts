@@ -38,6 +38,15 @@ export async function onFileDrop(handler: (paths: string[], at: { x: number; y: 
 }
 
 /** Ask where a new `.doodle` folder should go. */
+export const writeText = (path: string, text: string) => invoke<void>("write_text", { path, text });
+
+/** Ask where to put a file that is not the document — an export. */
+export async function pickSaveFile(name: string, ext: string, title: string): Promise<string | null> {
+  const p = await save({ defaultPath: `${name}.${ext}`, title, filters: [{ name: ext.toUpperCase(), extensions: [ext] }] });
+  if (!p) return null;
+  return p.endsWith(`.${ext}`) ? p : `${p}.${ext}`;
+}
+
 export async function pickSaveDir(name: string): Promise<string | null> {
   const p = await save({ defaultPath: `${name}.doodle`, title: "Save graph" });
   if (!p) return null;
