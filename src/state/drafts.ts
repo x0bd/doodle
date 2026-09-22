@@ -100,7 +100,7 @@ export function cancel(id: string) {
 }
 
 /** where a kind keeps its words */
-export const proseKey = (kind: string) => (kind === "character" || kind === "style" || kind === "shot" ? "description" : kind === "chapter" ? "summary" : "text");
+export const proseKey = (kind: string) => (kind === "character" || kind === "location" || kind === "style" || kind === "shot" ? "description" : kind === "chapter" ? "summary" : "text");
 
 export function accept(id: string) {
   const d = drafts.get()[id];

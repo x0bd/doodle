@@ -15,11 +15,12 @@ export interface Menu {
   node?: string;
 }
 
-const ADDABLE: NodeKind[] = ["page", "chapter", "prompt", "note", "character", "style", "shot", "generate", "preview", "write", "model"];
+const ADDABLE: NodeKind[] = ["page", "chapter", "prompt", "note", "character", "location", "style", "shot", "generate", "preview", "write", "model"];
 /** what can be given to a node that takes words: the kind, and the name
  *  its port gets. A writer can hold as many of these as the work needs. */
 const GIVEABLE: { kind: NodeKind; port: string; word: string }[] = [
   { kind: "character", port: "character", word: "A character" },
+  { kind: "location", port: "place", word: "A place" },
   { kind: "style", port: "style", word: "A style or a voice" },
   { kind: "prompt", port: "scene", word: "A scene" },
   { kind: "note", port: "note", word: "A note" },

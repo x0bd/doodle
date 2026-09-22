@@ -37,6 +37,7 @@ export {
   DashboardSquare02Icon as MangaIcon,
   Film01Icon as FilmIcon,
   UserIcon as CharacterIcon,
+  Location01Icon as LocationIcon,
   PaintBrush01Icon as StyleIcon,
   PenTool03Icon as WriteIcon,
   File01Icon as PageIcon,

@@ -66,7 +66,7 @@ function fed(node: GraphNode, port: string): GraphNode | undefined {
 function describe(n: GraphNode | undefined): string {
   if (!n || n.status === "rejected") return "";
   const d = n.data;
-  if (n.kind === "character") return [d.name, d.description].filter(Boolean).join(": ");
+  if (n.kind === "character" || n.kind === "location") return [d.name, d.description].filter(Boolean).join(": ");
   if (n.kind === "style") return [d.description, d.palette && `palette: ${d.palette}`, d.lighting && `lighting: ${d.lighting}`].filter(Boolean).join(", ");
   if (n.kind === "shot") return [expandMentions(String(d.description ?? "")), `${d.shotSize} shot`, `${d.lensMm}mm`, `${d.movement}`].filter(Boolean).join(", ");
   if (n.kind === "chapter") {

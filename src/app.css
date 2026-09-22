@@ -68,6 +68,7 @@
   --lit-sand:    42 95% 55%;
   --lit-orange:  20 92% 58%;
   --lit-rose:   348 85% 62%;
+  --lit-khaki:   74 62% 40%;
   --lit-violet: 266 80% 68%;
   --lit-teal:   172 80% 44%;
   --lit-indigo: 234 85% 66%;
@@ -79,6 +80,7 @@
   --lit-sand:    42 96% 60%;
   --lit-orange:  20 94% 64%;
   --lit-rose:   348 88% 68%;
+  --lit-khaki:   74 66% 50%;
   --lit-violet: 266 86% 74%;
   --lit-teal:   172 84% 50%;
   --lit-indigo: 234 92% 72%;
@@ -91,6 +93,7 @@
 .k-note      { --role: var(--role-sand); --lit: var(--lit-sand); }
 .k-shot      { --role: var(--role-orange); --lit: var(--lit-orange); }
 .k-character { --role: var(--role-rose); --lit: var(--lit-rose); }
+.k-location  { --role: var(--role-khaki); --lit: var(--lit-khaki); }
 .k-style     { --role: var(--role-violet); --lit: var(--lit-violet); }
 .k-generate  { --role: var(--role-teal); --lit: var(--lit-teal); }
 .k-write     { --role: var(--role-indigo); --lit: var(--lit-indigo); }

@@ -4,7 +4,7 @@
  * the inspector edits. The canvas and the inspector both read from here;
  * neither knows a kind by name.
  */
-export type NodeKind = "model" | "prompt" | "generate" | "preview" | "character" | "style" | "write" | "page" | "note" | "shot" | "chapter";
+export type NodeKind = "model" | "prompt" | "generate" | "preview" | "character" | "location" | "style" | "write" | "page" | "note" | "shot" | "chapter";
 
 /** the kinds that are written in — entered, they are a document; zoomed
  *  into on the field, they open */
@@ -129,6 +129,24 @@ export const KINDS: Record<NodeKind, KindDef> = {
         fields: [
           { key: "name", label: "Name", type: "line" },
           { key: "description", label: "Appearance", type: "text", rows: 5 },
+        ],
+      },
+    ],
+  },
+  location: {
+    kind: "location",
+    title: "Location",
+    note: "Somewhere in the world — reused, never retyped",
+    inputs: [],
+    outputs: [{ id: "text", name: "description", type: "text" }],
+    size: { w: 240, h: 190 },
+    data: { name: "", description: "" },
+    groups: [
+      {
+        name: "The place",
+        fields: [
+          { key: "name", label: "Name", type: "line" },
+          { key: "description", label: "What it is like", type: "text", rows: 5 },
         ],
       },
     ],

@@ -233,6 +233,7 @@ function Body({ node }: { node: GraphNode }) {
           {node.asset && <img className="node-img" src={urlFor(node.asset)} alt="" draggable={false} />}
         </div>
       );
+    case "location":
     case "character":
       return (
         <div className="node-body node-char">

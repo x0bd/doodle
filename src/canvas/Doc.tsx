@@ -1,12 +1,12 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import {
-  Icon, PlusIcon, CheckIcon, CloseIcon, ImageIcon, ModelIcon, TextIcon, GenerateIcon, CharacterIcon, StyleIcon, WriteIcon, PageIcon, ChapterIcon, NoteIcon, ShotIcon, ChevronRightIcon, ChevronLeftIcon,
+  Icon, PlusIcon, CheckIcon, CloseIcon, ImageIcon, ModelIcon, TextIcon, GenerateIcon, CharacterIcon, LocationIcon, StyleIcon, WriteIcon, PageIcon, ChapterIcon, NoteIcon, ShotIcon, ChevronRightIcon, ChevronLeftIcon,
   type IconSvgElement,
 } from "../icons";
 import { shots, proposalsFor, keepShot, keepAll, dropShot, dismiss } from "../state/shots";
 import { KINDS, type NodeKind } from "../graph/kinds";
 import { graph, updateData, rename, childrenOf, makeNode, addNode, takeOutput, type GraphNode } from "../state/graph";
-import { drafts, draftsFor, accept, reject, cancel } from "../state/drafts";
+import { drafts, draftsFor, accept, reject, cancel, proseKey } from "../state/drafts";
 import { urlFor, assets } from "../state/assets";
 import { enter, step, sibling, siblings } from "../state/nav";
 import { tiedTo, tie, untie, held, holdBeat, askToTie, type Tied } from "../state/anchors";
@@ -19,7 +19,7 @@ import { useState } from "react";
 
 export const GLYPH: Record<NodeKind, IconSvgElement> = {
   model: ModelIcon, prompt: TextIcon, generate: GenerateIcon, preview: ImageIcon,
-  character: CharacterIcon, style: StyleIcon, write: WriteIcon, page: PageIcon, note: NoteIcon, shot: ShotIcon, chapter: ChapterIcon,
+  character: CharacterIcon, location: LocationIcon, style: StyleIcon, write: WriteIcon, page: PageIcon, note: NoteIcon, shot: ShotIcon, chapter: ChapterIcon,
 };
 
 const ASK_LABEL = { expand: "Expanded", continue: "Continued", rewrite: "Rewritten", ask: "Answered" } as const;
@@ -44,7 +44,7 @@ export function Doc({ id }: { id: string }) {
   const parent = node.parent ? g.nodes[node.parent]?.title : name;
   const job = RUNNABLE.has(node.kind) ? jobFor(j, id) : undefined;
   const ties = tiedTo(g, id);
-  const written = String(node.data[node.kind === "character" || node.kind === "style" || node.kind === "shot" ? "description" : "text"] ?? "");
+  const written = String(node.data[proseKey(node.kind)] ?? "");
   const words = written.trim() ? written.trim().split(/\s+/).length : 0;
 
   const addNote = () => addNode(makeNode("note", 60 + kids.length * 260, 60, { parent: id, title: node.kind === "prompt" ? `Beat ${kids.length + 1}` : "Note" }));
@@ -331,6 +331,7 @@ function Body({ node }: { node: GraphNode }) {
     case "note":
     case "page":
       return <Prose node={node} />;
+    case "location":
     case "character":
       return (
         <div className="sheet-char">
