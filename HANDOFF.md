@@ -1,103 +1,80 @@
 # Doodle — handoff
 
-Updated 2026-09-21. Read this, then `../v00v/the-soft-machine.md` for the design system. `Doodle_Implementation_Plan.md` is the long plan; its agent-protocol, CI, Windows and ADR ceremony is ignored — keep its invariants (§4.3, §26.2) and its order of priorities (§35).
+Updated 2026-09-22. Read this first, then `../v00v/the-soft-machine.md` (the design system). `Doodle_Implementation_Plan.md` is the long plan; its agent-protocol, CI, Windows and ADR ceremony is ignored — keep its invariants (§4.3, §26.2) and its order of priorities (§35: data safety → spatial comprehension → authoring → reversible AI → generation → workflows).
+
+Repo: `~/Desktop/dev/personal/doodle`, public at https://github.com/x0bd/doodle, master, clean at `f861863`. Orb (`../orb`) and v00v (`../v00v`) are the siblings; Orb's HANDOFF explains the Mac title-bar geometry this app reuses.
 
 ## What Doodle is
 
-A recursively zoomable creative document. The first surface is the **image workflow graph** — Model → Prompt / Negative → Image Generator → Preview — from the dark node-graph mockup, translated into The Soft Machine. The plan's "Lab" came first; Studio (scenes, shots, pages) grows out of it. Four base workflows are templates (`src/graph/templates.ts`): **Images, Film, Manga, Book** — each a graph of kinds. File › New (⌘N) opens the chooser; so does an empty launch.
+A recursively zoomable creative document. On the field it is a node graph — Model → Prompt / Negative → Image Generator → Preview — in The Soft Machine. Every node can be **entered** and becomes a **page** (a document, not a sub-canvas). Four base workflows are templates: **Images, Film, Manga, Book**. The agent (ChatGPT via Codex, Ollama, or a mock) proposes; the user keeps.
 
-## Decisions
+## Decisions that hold
 
-- Vite + React + TypeScript in front of a Tauri 2 crate (not Next, not Svelte). Port 1430 so Orb (1420) can run beside it.
-- Our own canvas engine (`src/canvas/`) — no React Flow. A world layer under the chrome, one transform, SVG wires in world units.
-- The graph is JSON on disk now (`Name.doodle/graph.json` beside `assets/`); SQLite when objects, relationships and search arrive.
-- The work is in-window pills; the boring things are on the native menu bar (`src-tauri/src/menu.rs` → ids → `src/platform/menu.ts`).
-- Mock providers first. `src/providers/types.ts` is the port; `mock.ts` is real infrastructure (latency, per-step progress, cancel); `ollama.ts` is shaped for text and pings `localhost:11434`; the registry hands out the mock. A real image adapter behind an API key in the keychain is next in that area.
-- Signal is **electric yellow** (`--signal: #f4ec1a`, ink on it 15.5:1) and it appears on one thing: the play. Dark is the default; light must always hold. Icon is **DD** in Silkscreen on a charcoal tile at Adobe proportion (`design/app-icon.png`).
-- **Roles (Doodle's amendment to doctrine 8, 2026-09-21):** not one signal but a set — one muted hue per kind, the way a cutting room colours its roles: model slate, scene blue, note sand, shot orange, character rose, style violet, generator teal, writer indigo, preview/page green. Declared as `--role-*: h s l` in `app.css` (dark variants lighter), worn by `.k-<kind>` as `--role` and by `.t-<type>` as `--flow` (model slate, text blue, image green). Always a ground — a wash on a card's head (`--wash`), a full dot, a wire, a glyph tile — never type, never state (state stays a word). Port to v00v as an optional roles extension when it has settled.
+- Vite + React + TypeScript in front of a Tauri 2 crate. Port 1430 (Orb is 1420).
+- Our own canvas engine, no React Flow: a world layer under floating chrome, one transform, SVG wires in world units.
+- The graph is JSON in a folder — `Name.doodle/graph.json` + `assets/` + `backups/` + `jobs.json`. SQLite only when objects/relationships/search need it.
+- The work is in-window pills; the boring is on the native menu bar (`src-tauri/src/menu.rs` → ids → `src/platform/menu.ts`).
+- Providers behind one port (`src/providers/types.ts`): **mock** (real infrastructure — latency, steps, cancel, streaming, a fixed shot list, the fixture varied by seed), **Ollama** (text; available only with a writer-family model — `qwen3:14b` is installed), **ChatGPT through Codex** (text on the app server, images through `codex exec` and the CLI's image tool). Who draws / who writes is chosen on the Queue chevron and remembered (`ui.drawWith / writeWith`); node selects name checkpoints/models only.
+- Signal is **electric yellow** `#f4ec1a` on one thing: the play. **Roles** (Doodle's amendment to doctrine 8): one muted hue per kind — model slate, scene blue, note sand, shot orange, character rose, style violet, generator teal, writer indigo, preview/page green — `--role-*: h s l` in `app.css`, worn by `.k-<kind>` (`--role`) and `.t-<type>` (`--flow`: model slate, text blue, image green). Always a ground (a wash, a dot, a wire, a tile), never type, never state. Dark default; light must hold. Icon: DD in Silkscreen on charcoal.
+- Class names: `.field`, `.doc`, `.page`, `.sec`, `.head` are taken (system or shell). Check `soft-machine.css` and `app.css` before naming; the canvas surface is `.stage` (`.stage.reading` for a page).
 
-## The window
+## How it works, by area
 
-Overlay title bar, lights at `{20, 32}` so every row in the head centres on y 30 (see Orb's HANDOFF for why). Left to right: the document tab between its chevrons (name + Unsaved / Edited / Saving… / Saved / Save failed), `⋮`, the ink **Queue** pill (count waiting, then percentage), `×` clear, duplicate, `≡` panes. Two panes float as cards at content height — **Navigator** (graphs, nodes; `+` adds a prompt) and **Inspector** (the selection's fields from the kind registry) — toggled by `≡`, View, or Tab when not typing. Foot: gear (settings sheet: Motion, Appearance light/dark/system, About) with the mono readouts `T I N`; the view cluster `fit · reveal · lens │ − 84% +` bottom-right. The prompt bar is a plate at the foot and *is* the positive prompt of the first generator.
+**Window.** Overlay title bar, lights at `{20,32}` (rows centre on y 30). Head: `‹ tab ›` with the trail when entered (`Untitled film › Scene 08`), `⋮`, the yellow **Queue** split pill (run · chevron menu), `×` stop, duplicate, `≡` panes. Panes float as cards at content height: **Navigator** (graphs, then this level's nodes in creation order; Up when inside; `+` adds a prompt/note) and **Inspector** (state segment; the node's fields from the kind registry; the **Bible** — tone/rules/avoid — when nothing is selected at the root). Foot: gear → Settings (General: shortcuts, motion; Appearance: light/dark/system; Providers: who is up; About), readouts `T I N`, the view cluster (fit · reveal · lens │ − % +). The bar at the foot is the first runnable's main text on the field and the **ask** on a page.
 
-## Entering, the writer, drafts, assets
+**Field** (`canvas/Canvas.tsx`). Pan (trackpad, Space-drag, middle), pinch/⌘-wheel zoom, fixed zoom stops, fit between the panes, marquee, shift-select, drag with 8 px snap on drop, arrows nudge, ⌥-drop into a card, right-click menus (node: Open/Run/Duplicate/State/Delete; field: Add here/Fit), double-click empty → Add here, `›` open key on hover, Enter/Escape enter and rise, L or the cluster key = lens (unrelated fades), below 0.4 zoom = the map (`.lod-map`: title-only cards, ports on the band; `setMapMode` in `layout.ts`).
 
-A node has a `parent` (`state/nav.ts`: focus, a view per workspace, `enter`/`rise`/`riseTo`, the trail). Double-click or Enter enters; Escape leaves a field, then rises. **Entered, every node is a document** (`canvas/Doc.tsx`): a page with a glyph tile, title and meta; then what it is — prose for prompt/note/page, a character sheet (reference well, name, appearance), a style sheet (look, palette as chips, lighting), a contact sheet of takes plus settings and runs for a generator, the print for a preview, output and settings for a writer, the checkpoint for a model; then **Beats/Notes** — its children as a numbered list written in place, each openable — and **Media**. The sub-canvas no longer appears; children live on the page. The bar is the **ask** on every page (Expand / Continue / Rewrite where there is prose; a free ask everywhere); the answer is a **draft** on the page (`state/drafts.ts`) — Keep appends into the kind's own words (`proseKey`: text, or description for character/style; Replace for rewrite), discard drops it. Nothing the agent says becomes the document on its own. The canvas surface class is `.stage` (`.stage.reading` for a page) — `.field`, `.doc`, `.page`, `.sec` are the system's; check `soft-machine.css` before naming a class.
+**Cards** (`canvas/Node.tsx`, `layout.ts`). Head band in the role wash with a full dot and the name; the **output** is one dot on the band's right edge (`HEAD_H 30`); **inputs** are 24 px rows from `ROWS_TOP 36` down the left edge — dot, word, and *what feeds it* by name when wired; then the kind's rows; ports carry `data-port="node:port"` / `data-dir` and `.t-<type>`. Wires (`Wires.tsx`) are `.t-<type>` too. While a wire is out, landable inputs light and it snaps to the nearest within 40 px; let go on the field → `Offer` (one row per kind that takes it, made there, wired); **C** connects two selected; double-click cuts.
 
-Assets: `import_asset(dir, path)` hashes and copies into `Name.doodle/assets/<sha>.<ext>`; `read_asset` returns a data URL (the webview never reads disk; no asset protocol scope). `state/assets.ts` caches URLs (`urlFor`), `attachFiles` saves first if the graph has no home, `attachTo` puts refs on a node (first becomes its picture). Dropped files arrive through Tauri's drag-drop event (paths) in `App.tsx`: onto the card under the pointer, else onto the page being written.
+**Kinds** (`graph/kinds.ts`): model, prompt, generate, preview, character, style, write, page, note, shot — ports, size, default data, inspector groups. Templates in `graph/templates.ts`. Every node has `parent` (entering), `seq` (creation order), `status` (canon / draft / exploration / rejected — rejected never counts as context, wears the word, steps back).
 
-⌥-drag a card onto another card to move it inside (it wears the tint while it would).
+**Pages** (`canvas/Doc.tsx`). Entered, a node is a page: glyph tile, title (renames), meta; then its body — prose for prompt/note/page; character sheet; style sheet (palette as chips); generator = contact sheet of takes (ringed = the take) + settings + runs + its own Run; preview = the print; writer = output + settings; shot = description + Camera group; then **Beats/Notes** (children as a numbered list written in place, `›` opens) and **Media**. `@` in prose opens the graph's names (`canvas/mentions.tsx`); `expandMentions` turns `@Title` into the thing's description in every request. Select words in a scene → **Beat from selection**.
 
-Runs: a generator has a `Candidates` count (1–4); a job renders that many, each with the next seed along; outputs go to `assets/` through `write_asset` when the graph has a home (else data URLs stay in memory — and in the file, large — until it is saved). They bloom under the generator's rows; the ringed one is the take (`takeOutput`) and flows to what the image feeds. The bar's History key lists recent runs; picking one frames the node and makes that run's first output the take. The mock varies the fixture by seed (flip, tone) so candidates can be told apart. Entering by pointer animates the field (`nav.arrival`); keys never do. Writers and the ask go to Ollama when it is up with a writer-family model (`providers/registry.ts pick/pickAny`), else the mock, and the node says 'mock instead'.
+**The agent.** `state/drafts.ts`: Expand / Continue / Rewrite / free ask → a **draft** on the page, streamed word by word when the provider can (`streamText`), Stop cancels; Keep appends into the kind's words (`proseKey`; Replace for rewrite), discard drops. `state/shots.ts`: **Shots** on a scene → six under `SHOTS_SCHEMA` (Codex honours `outputSchema`; Ollama takes it as `format`; mock returns its list) → **Proposed shots** ghosts → Keep / Keep all / drop → `shot` nodes inside the scene. `bibleText()` and mentions ride into every request; rejected nodes never do.
 
-## ChatGPT through Codex
+**Codex** (`src-tauri/src/codex.rs`, `providers/codex.ts`). Finds the binary (`DOODLE_CODEX`, Homebrew, `/Applications/ChatGPT.app/Contents/Resources/codex`, `~/.local/bin`), reads only `auth_mode` from `~/.codex/auth.json`. **Text:** one long-lived `codex app-server` child, JSON-RPC over stdio (`initialize`/`initialized`; per turn a fresh ephemeral read-only thread, `approvalPolicy: never`; `turn/start` with prompt + optional `outputSchema`; `turn/interrupt`); the reader thread emits one Tauri event `codex` (`{kind: delta|done|failed, turnId, …}`, camelCase via `rename_all_fields`). **Images:** `codex exec --ephemeral -s workspace-write` in a scratch folder under the app cache, the CLI's `image_generation` tool, newest PNG = result (cannot be cancelled mid-flight). `DOODLE_CODEX_TRACE=1` prints every server line. Protocol schema for the installed version: `codex app-server generate-json-schema --out <dir>`. Each call carries Codex's preamble (~10–15k tokens). Verified 2026-09-21: `chatgpt · plus`, streaming, schema, images.
 
-The user's ChatGPT subscription answers through the Codex CLI the way T3 Code drives it: Doodle spawns the CLI, the CLI holds the login. `src-tauri/src/codex.rs` finds the binary (`DOODLE_CODEX`, Homebrew, `/Applications/ChatGPT.app/Contents/Resources/codex`, `~/.local/bin`), reads only `auth_mode` from `~/.codex/auth.json`, and runs `codex exec --ephemeral --skip-git-repo-check -s <sandbox> -C <scratch> -o <file> -` with the prompt on stdin: text in a read-only sandbox, images in a scratch folder under the app cache with the CLI's own `image_generation` tool (stable in 0.155), the newest PNG in the folder taken as the result. `providers/codex.ts` is the provider (`text.generate`, `image.generate`); the Model select's "ChatGPT (Codex)" and the Write select's "ChatGPT (Codex)" route to it; the writer's ask prefers it. Settings › Providers shows who is up. Every call carries Codex's preamble (~10–15k tokens) — scenes and pictures, not keystrokes. Claude would be API-key only (Anthropic's terms on claude.ai login); nothing of that exists yet. Text goes through the **app server** now: `codex.rs` keeps one `codex app-server` child (JSON-RPC over stdio; `initialize` → `initialized`; per turn a fresh ephemeral read-only thread with `approvalPolicy: never`; `turn/start` with the prompt and an optional `outputSchema`; `turn/interrupt` to cancel). A reader thread turns `item/agentMessage/delta`, `item/completed`, `turn/completed` and `error` into one Tauri event `codex` (`{kind: delta|done|failed, turnId, …}` — camelCase fields, note `rename_all_fields`). `providers/codex.ts` `turn()` listens per turnId; `streamText` feeds drafts word by word; abort interrupts. Images still go through `codex exec` and the CLI's image tool. `DOODLE_CODEX_TRACE=1` prints every line the server sends. The schema for the installed version: `codex app-server generate-json-schema --out <dir>`.
+**Jobs** (`state/jobs.ts`). One at a time; `requestFor`/`textRequestFor` read through the wires (scene, then character, then style, then the bible); a generator renders `count` candidates (next seed along each), outputs to `assets/` via `write_asset` when the graph has a home, bloom under the rows, the take flows on; History (bar clock) lists runs, retries failed ones. Runs persist in `jobs.json`; in-flight at close → cancelled.
 
-## State, the Bible, search, the map, the lens, wires, menus
+**Disk** (`state/doc.ts`, `src-tauri/src/commands.rs`). Save asks where once, then autosaves 600 ms after every journal entry; atomic writes; `backups/` before overwrite (≤1 per 10 min, newest 10); Duplicate Graph, Reveal in Finder; last graph restored on launch with its views. Assets hashed into `assets/<sha>.<ext>`; read back as data URLs (no asset-protocol scope); drops from Finder land on the card under the pointer or the open page. CSP set (`tauri.conf.json`; looser `devCsp`).
 
-- Every node has `status`: canon / draft / exploration / rejected (`setStatus`; the inspector's segment, the right-click menu). Templates are canon; what you add or keep is draft. Rejected never counts as context (`describe`, drafts, shots skip it), wears the word and steps back on the field.
-- The **Bible** (`doc.bible`: tone, rules, avoid) lives in the inspector when nothing is selected at the root, saves with the file, and `bibleText()` goes into every request.
-- **⌘K** (`shell/Palette.tsx`): nodes by title/kind/words + four commands; Enter frames, ⌘Enter opens.
-- **The map**: below 0.4 zoom the stage wears `.lod-map` — cards are titles, dots and wires thicken; back above 0.5 (hysteresis). **The lens**: hold L or the cluster key (`ui.lens`) — only what the selection touches stays lit.
-- **Wires**: port hit areas are bigger than the marks; while a wire is out the inputs it can land on light (`.wiring-<type>`) and it snaps to the nearest within 40 px (`nearestInput`); let go on the field and `Offer` lists what takes it, one row per kind, made there and wired; **C** with two selected connects; double-click a wire cuts it.
-- **Menus**: right-click on a node (Open, Run, Duplicate, State, Delete) or on the field (Add here, Fit) — `canvas/ContextMenu.tsx`; double-click on empty field also opens Add here. A card shows an open key `›` on hover. Cards land on the 8 px grid on drop. **⌘/** (Help, Settings) is the shortcuts sheet.
-- File › Duplicate Graph copies the folder and opens the copy; Reveal in Finder. A failed run in History retries on click.
+**Journal** (`state/history.ts`). Snapshot entries; a drag is one, a run of typing is one (coalesce by key ≤1 s); undo/redo; selection survives. Edit menu items are Doodle's own so the journal gets them.
 
-## The text-to-object bridge, smallest form
-
-`canvas/mentions.tsx`: type `@` in a page's prose (or a shot's description) and a list of the graph's characters, styles, shots, notes and scenes opens under the field; Enter/Tab/click inserts `@Title`. `expandMentions` turns `@Title` into what that thing is — a character's name and appearance, a style's look — and the prompt compiler, the ask and the shot proposal all pass their text through it, so a mention carries into every request. Select words in a scene and a **Beat from selection** pill makes a note inside the scene with those words (the text stays; no anchor remapping yet). Not yet: a block editor, headings, anchors that survive edits.
-
-## Ghost shots
-
-On a scene page (a prompt kind) the ask bar has **Shots**: `state/shots.ts` asks the writer for six shots under a JSON contract (`shotsContract`; the scene's beats, every character and style ride along as context; the ask text is the mood), parses the first array leniently (`parseShots`), and shows them as a **Proposed shots** section on the page — ghosts, translucent rows with camera and rationale. Keep makes one a `shot` node inside the scene (one journal entry); Keep all makes all of them as one entry; drop or dismiss and they are gone. Nothing becomes a node on its own. A shot has a `brief` text output (`describe()` folds description + camera) so it can feed a generator's positive. The mock answers with a fixed list of six. Shots list among the beats on the scene page with their camera; a shot's own page is its description and a Camera group.
-
-## Safety
-
-CSP is set (`tauri.conf.json`: self only; images from self/data/blob; connect to ipc, Ollama; a looser `devCsp` for Vite's HMR). `save_graph` keeps the previous `graph.json` in `backups/` at most once every ten minutes, newest ten. Runs persist beside the graph as `jobs.json` (`save_record`/`load_record`, a fixed name list) and come back on open — anything queued or running at close is marked cancelled, never resumed. On first save, outputs held as data URLs are written into `assets/` and the file holds references.
+**Search.** ⌘K palette: nodes by title/kind/words + run/new/fit/settings; Enter frames, ⌘Enter opens. ⌘/ shortcuts sheet.
 
 ## The code
 
 ```
-src/
-  app.css               the app on top of soft-machine.css: signal, field, head, panes, foot, bar, node, wires, sheet
-  App.tsx               launch: restore the last graph or the template; keys
-  canvas/  camera.ts    x, y, zoom; zoomAt, zoomStep (fixed stops), fitRect
-           view.ts      zoomIn/Out/Actual, fitAll (selection or all)
-           Canvas.tsx   pan (trackpad, space-drag, middle), pinch/⌘-wheel zoom, marquee, move, wire drags, keys; Doc when entered
-           Doc.tsx      the document a node becomes when entered
-           Node.tsx     the card by kind; ports on the edges (data-port for hit-testing); progress in the head
-           Wires.tsx    one SVG; wire-hit under wire-line; the live wire
-           layout.ts    the first output sits on the head band's right edge (HEAD_H 30); inputs are 24px rows from ROWS_TOP 36 down the left edge; on the map every port is on the band (setMapMode)
-  graph/   kinds.ts     the registry: model prompt generate preview character style write page
-           templates.ts images film manga book
-  state/   store.ts     createStore — value, set, subscribe, use (useSyncExternalStore)
-           graph.ts     nodes, order (z), edges, selection; journaled mutations; *Now forms for drags
-           history.ts   snapshot journal: commit / begin+end; coalesce by key within 1 s; undo, redo
-           doc.ts       path, name, dirty, save state; save/saveAs/open/new; autosave 600 ms; restoreLast
-           jobs.ts      queue, one job at a time; requestFor / textRequestFor read through the wires
-                        (the prompt compiler: scene, then character, then style); result → journal entry
-           ui.ts        panes, theme, motion, settings sheet
-  providers/ types.ts mock.ts ollama.ts registry.ts fixtures.ts
-  platform/ fs.ts (invoke save_graph/load_graph/graph_exists, dialogs) menu.ts (ids → actions; dev keys in a browser)
-  shell/   Head Navigator Inspector Foot Bar Settings NewGraph
-src-tauri/src/ lib.rs menu.rs commands.rs (atomic write of graph.json)
-public/fixtures/black-bear.png   the mock's output and the Preview's default
+src/app.css             the app on top of soft-machine.css (roles, signal, stage, node, page, panes, menus, sheets)
+src/App.tsx             launch (restore last or chooser), keys (Tab panes), file drops
+src/canvas/  camera view Canvas Node Wires layout Doc mentions ContextMenu
+src/graph/   kinds templates
+src/state/   store graph history doc nav jobs drafts shots assets ui
+src/providers/ types mock ollama codex registry fixtures
+src/platform/ fs menu
+src/shell/   Head Navigator Inspector Fields Foot Bar History QueueMenu Settings NewGraph Palette Shortcuts
+src-tauri/src/ lib.rs menu.rs commands.rs (graph, records, assets, duplicate) codex.rs (find, exec, app server)
+public/fixtures/black-bear.png
 ```
 
-Rules kept: no `border:` anywhere (`grep -rn "border[a-z-]*:" src/ | grep -v border-radius | grep -v "border: 0"` → nothing); `pnpm check` clean; ink only for the selection ring, progress, Queue, the connected port; hover is the tint; keyboard actions never animate.
+Rules kept: no `border:` anywhere (`grep -rn "border[a-z-]*:" src/ | grep -v border-radius | grep -v "border: 0"` → nothing); `pnpm check` clean; ink for the selection ring only; the signal for the play only; roles are grounds; hover is the tint; keys never animate.
 
 ## Working
 
-`pnpm tauri dev` (first Rust build ~1 min). The webview holds a half-applied HMR sometimes — `touch index.html` forces a full reload. Capture with a script that fronts Doodle and crops its window at 2×, and only when it is frontmost; drive the app read-only; leave file dialogs to the user. `http://localhost:1430` in a plain browser works for pointer testing (⌘ keys are mapped in `devKeys`); the Tauri `listen` error there is harmless.
+`pnpm tauri dev` (Rust ~1 min first time; `DOODLE_CODEX_TRACE=1 pnpm tauri dev` to watch Codex). The webview sometimes holds a half-applied HMR — `touch index.html` forces a reload. Capture only when Doodle is frontmost (a `cap.sh` that fronts it, reads the window frame, crops the screenshot at 2×); drive the app read-only; leave file dialogs to the user. `http://localhost:1430` in a browser works for pointer tests (⌘ keys mapped in `devKeys`); the Tauri `listen` error there is harmless; the browser tool's Return key does not reach the page — dispatch a KeyboardEvent instead.
 
-## Known / next
+## Known
 
-- Inert: bar's History / Model / Image keys, cluster's reveal and lens, `⋮`, the tab's `‹ ›`, `⋮` and the Queue chevron.
-- `Control mode: Random` reseeds; the mock always returns the bear.
-- Wires that cross levels (a child wired to something outside) still feed data but are never drawn.
+- Inert: `⋮` in the head, the tab's `‹ ›`, the cluster's reveal key, the bar's Model/Image keys.
+- Wires across levels feed data but are never drawn.
 - The mock writer repeats the brief before its paragraph.
-- No run history or candidates; no real adapter; no keychain; no assets folder use yet.
-- Ollama shows "Not running" both when it is down and when it is up without a writer model; say which.
-- Codex image runs (exec) cannot be cancelled mid-flight; text turns can (interrupt).
-- An unexplained early flip of the pane state to off/off happened twice during HMR + process swaps and never on a clean launch; the store key was bumped to `doodle.ui.v1`. If it recurs, log `togglePanes` callers.
+- Outputs rendered before a graph is saved are data URLs until the first save moves them.
+- The pane state once flipped to off/off during HMR + a process swap; never on a clean launch; store key is `doodle.ui.v1`.
+
+## Next, in the order I would take them
+
+1. **Vision** — pass a character's reference / a take to the writer (`localImage` input on `turn/start`).
+2. **Doodle as an MCP server** for Codex — `add_beat`, `propose_shots`, `set_state`, `read_scene`… so the agent works the document with tools.
+3. A block editor with anchors that survive edits (the `@` + selection→beat is the small form).
+4. Claude via API key + a keychain; a keyed image API for cheaper pictures.
+5. Export as one archive; a persisted queue that resumes real jobs; port the roles to v00v as an optional extension.
