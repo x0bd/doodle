@@ -226,23 +226,3 @@ export const KINDS: Record<NodeKind, KindDef> = {
     groups: [{ name: "Chapter", fields: [{ key: "summary", label: "In a line", type: "text", rows: 3 }] }],
   },
 };
-
-/** the rows the in-node fields show, per kind — label, the key to read,
- *  and the panel section it opens, if it opens one */
-export const NODE_ROWS: Partial<Record<NodeKind, { label: string; key: string; under?: string }[]>> = {
-  write: [
-    { label: "Model", key: "model", under: "Writing" },
-    { label: "Length", key: "length" },
-  ],
-  style: [
-    { label: "Palette", key: "palette", under: "The look" },
-    { label: "Lighting", key: "lighting" },
-  ],
-  generate: [
-    { label: "Randomness", key: "seed", under: "Sampling" },
-    { label: "Control mode", key: "control" },
-    { label: "Quality steps", key: "steps" },
-    { label: "Prompt strength", key: "strength" },
-    { label: "Sampling method", key: "sampler" },
-  ],
-};
