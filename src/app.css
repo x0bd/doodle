@@ -1522,41 +1522,65 @@ html, body, #root { height: 100%; }
 
 /* the chooser: four ways to begin */
 .sheet.chooser { flex-direction: column; width: min(560px, 100%); height: auto; }
-.tpls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 4px 14px 14px; }
-.tpl {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  padding: 14px 14px 12px;
-  border-radius: 10px;
-  background: var(--surface);
-  box-shadow: inset 0 1px 1px var(--rim-in), inset 0 -1px 0 var(--rim-lit);
-  text-align: left;
-  transition: background var(--fast) var(--ease), box-shadow var(--fast) var(--ease), transform var(--press) var(--ease);
+/* ─── The welcome ───────────────────────────────────────────────────────────
+   The whole window before there is anything to look at: the mark, then
+   what you were in the middle of, then what you could begin. Two
+   columns, held apart by distance; nothing drawn. */
+.welcome {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: var(--head-h) 24px 24px;
+  background: var(--bg);
+  animation: in var(--base) var(--ease) both;
+  overflow: auto;
 }
-@media (hover: hover) and (pointer: fine) {
-  .tpl:hover { background: var(--surface-raised); box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), var(--lift); }
+.welcome-drag { position: absolute; top: 0; left: 0; right: 0; height: var(--head-h); }
+.welcome-x { position: absolute; top: calc(var(--head-h) + 8px); right: 18px; }
+.welcome-sheet { width: min(760px, 100%); display: flex; flex-direction: column; }
+.welcome-head { display: flex; align-items: center; gap: var(--gap-near); margin-bottom: var(--gap-wide); }
+.welcome-mark {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: var(--r-card);
+  background: var(--ink);
+  color: var(--bg);
+  font-family: var(--font-sys);
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
 }
-.tpl:focus-visible { background: var(--surface-raised); box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), var(--lift); }
-.tpl:active { transform: translateY(1px); }
+.welcome-name { font-size: 26px; font-weight: var(--w-declare); letter-spacing: -0.02em; line-height: 1.1; color: var(--fg); }
+.welcome-note { margin-top: 3px; font-size: var(--t-body); color: var(--fg-muted); }
+.welcome-cols { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap-wide); }
+@media (max-width: 720px) { .welcome-cols { grid-template-columns: 1fr; } }
+.welcome-col { min-width: 0; }
+.welcome-of { margin: 0 0 var(--gap-tight) 8px; font-size: var(--t-label); color: var(--fg-faint); }
+.welcome-row { min-height: 48px; padding: 8px 10px; gap: 11px; align-items: flex-start; }
+.welcome-row .welcome-glyph { margin-top: 1px; }
+.welcome-row.quiet .welcome-title { color: var(--fg-muted); }
+.welcome-glyph {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--r-plate);
+  background: hsl(var(--role, var(--role-slate)) / var(--wash-2));
+  color: var(--fg);
+  flex-shrink: 0;
+}
+.welcome-glyph.plain { background: var(--surface); color: var(--fg-muted); }
+.welcome-what { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; padding-top: 2px; }
+.welcome-title { font-size: var(--t-body); color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.welcome-sub { font-size: var(--t-label); line-height: 1.45; color: var(--fg-faint); }
 .tpl-images { --role: var(--role-green); }
 .tpl-film   { --role: var(--role-blue); }
 .tpl-manga  { --role: var(--role-orange); }
 .tpl-book   { --role: var(--role-violet); }
-.tpl-glyph {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  margin-bottom: 6px;
-  border-radius: 10px;
-  background: hsl(var(--role) / var(--wash-2));
-  box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade);
-  color: var(--fg);
-}
-.tpl-name { font-size: var(--t-body); font-weight: var(--w-declare); color: var(--fg); }
-.tpl-note { font-size: var(--t-label); line-height: 1.45; color: var(--fg-muted); }
 
 /* ⌘K: a console at the top, the input as its head, the hits as a list */
 .pal-veil { align-items: start; padding-top: 12vh; }

@@ -35,6 +35,42 @@ export interface DocState {
 }
 
 const LAST = "doodle.lastPath";
+const SEEN = "doodle.recent.v1";
+
+/** the graphs this machine has opened, newest first — a path and the name
+ *  it went by, so the welcome can offer them without touching the disk */
+export interface Seen {
+  path: string;
+  name: string;
+  at: number;
+}
+
+export function recent(): Seen[] {
+  try {
+    const raw = localStorage.getItem(SEEN);
+    return raw ? (JSON.parse(raw) as Seen[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function remember(path: string, name: string) {
+  try {
+    const next = [{ path, name, at: Date.now() }, ...recent().filter((r) => r.path !== path)].slice(0, 8);
+    localStorage.setItem(SEEN, JSON.stringify(next));
+  } catch {
+    /* a private window; nothing to remember into */
+  }
+}
+
+/** one the disk no longer has */
+export function forget(path: string) {
+  try {
+    localStorage.setItem(SEEN, JSON.stringify(recent().filter((r) => r.path !== path)));
+  } catch {
+    /* fine */
+  }
+}
 
 export const doc = createStore<DocState>({ path: null, name: "Untitled", dirty: false, save: "idle", bible: EMPTY_BIBLE });
 
@@ -139,6 +175,7 @@ export async function save(): Promise<boolean> {
   doc.set((x) => ({ ...x, path, name: nameOf(path) }));
   try {
     localStorage.setItem(LAST, path);
+    remember(path, nameOf(path));
   } catch {
     /* fine */
   }
@@ -210,6 +247,7 @@ export async function saveAs() {
   doc.set((d) => ({ ...d, path, name: nameOf(path) }));
   try {
     localStorage.setItem(LAST, path);
+    remember(path, nameOf(path));
   } catch {
     /* fine */
   }
@@ -249,6 +287,7 @@ export async function openFrom(path: string): Promise<boolean> {
     await restoreJobs(path);
     try {
       localStorage.setItem(LAST, path);
+    remember(path, nameOf(path));
     } catch {
       /* fine */
     }

@@ -51,15 +51,33 @@ export const actions: Record<string, () => void> = {
   "view.theme": toggleTheme,
 };
 
+/** The menu bar's listener belongs to the window, not to a component.
+ *  React's lifecycle — and a long run of hot patches over it — must never
+ *  be able to leave the platform's own menu talking to nobody, which is
+ *  exactly what happened once. It is attached once, kept on `window` so a
+ *  replaced module can take back the old one first, and never removed. */
+const KEPT = "__doodleMenu";
+type Kept = { off?: () => void };
+
 export function listenToMenu() {
   if (!inTauri) return devKeys();
-  const off = listen<string>("menu", (e) => {
+  const w = window as unknown as Record<string, Kept | undefined>;
+  const kept: Kept = w[KEPT] ?? {};
+  w[KEPT] = kept;
+  kept.off?.(); // a hot patch left one behind; it goes before ours arrives
+  kept.off = undefined;
+  let gone = false;
+  void listen<string>("menu", (e) => {
     const act = actions[e.payload];
     if (act) act();
     else console.info("[menu]", e.payload);
+  }).then((off) => {
+    if (gone) off();
+    else kept.off = off;
   });
   return () => {
-    off.then((f) => f());
+    // the component may come and go; the listener stays
+    gone = false;
   };
 }
 

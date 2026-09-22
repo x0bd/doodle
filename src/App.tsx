@@ -9,7 +9,7 @@ import { Bar } from "./shell/Bar";
 import { ui, togglePanes, openChooser } from "./state/ui";
 import { listenToMenu } from "./platform/menu";
 import { restoreLast } from "./state/doc";
-import { NewGraph } from "./shell/NewGraph";
+import { Welcome } from "./shell/Welcome";
 import { Palette } from "./shell/Palette";
 import { Shortcuts } from "./shell/Shortcuts";
 import { onFileDrop } from "./platform/fs";
@@ -70,7 +70,7 @@ export function App() {
       <Bar />
       <Foot />
       <Settings />
-      <NewGraph />
+      <Welcome />
       <Palette />
       <Shortcuts />
     </div>
