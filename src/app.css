@@ -24,36 +24,38 @@
 
   /* ── THE ROLES. Doodle's amendment to doctrine 8: not one signal but a
         set, one hue per kind of thing, the way a cutting room colours its
-        roles. Each is a GROUND — a wash on a head, a dot, a wire — never
-        type. Muted enough to sit on both grounds; declared as h s l so
-        every use picks its own strength. ── */
-  --role-slate:  215 18% 52%;
-  --role-blue:   212 62% 56%;
-  --role-sand:    42 60% 52%;
-  --role-orange:  24 72% 56%;
-  --role-rose:   346 58% 60%;
-  --role-violet: 268 52% 62%;
-  --role-teal:   174 48% 44%;
-  --role-indigo: 236 52% 62%;
-  --role-green:  146 44% 46%;
+        roles. Each is a GROUND — a wash on a head, a dot, a tile — never
+        type. In the signal's own register: Braun's dusty greys, blues,
+        olives and clays — chroma kept low so the amber is the one thing
+        that is bright; strength comes from the wash, not the hue.
+        Declared as h s l so every use picks its own strength. ── */
+  --role-slate:  215 12% 50%;
+  --role-blue:   211 34% 50%;
+  --role-sand:    40 38% 48%;
+  --role-orange:  20 46% 52%;
+  --role-rose:   352 34% 54%;
+  --role-violet: 266 24% 56%;
+  --role-teal:   172 26% 42%;
+  --role-indigo: 234 28% 56%;
+  --role-green:  140 22% 44%;
 
   /* how strong a wash is on this ground, and how strong a wire */
-  --wash: 0.16;
-  --wash-2: 0.28;
+  --wash: 0.22;
+  --wash-2: 0.36;
   --wire: 0.7;
 }
 .dark {
-  --role-slate:  215 16% 62%;
-  --role-blue:   212 70% 66%;
-  --role-sand:    42 66% 62%;
-  --role-orange:  24 78% 64%;
-  --role-rose:   346 64% 68%;
-  --role-violet: 268 60% 72%;
-  --role-teal:   174 52% 54%;
-  --role-indigo: 236 60% 72%;
-  --role-green:  146 48% 56%;
-  --wash: 0.2;
-  --wash-2: 0.34;
+  --role-slate:  215 12% 62%;
+  --role-blue:   211 38% 64%;
+  --role-sand:    40 42% 60%;
+  --role-orange:  20 50% 64%;
+  --role-rose:   352 38% 66%;
+  --role-violet: 266 28% 68%;
+  --role-teal:   172 28% 56%;
+  --role-indigo: 234 32% 68%;
+  --role-green:  140 24% 56%;
+  --wash: 0.24;
+  --wash-2: 0.4;
   --wire: 0.75;
 }
 
@@ -333,7 +335,6 @@ html, body, #root { height: 100%; }
 .reduce-motion .draft.thinking .lbl { animation: none; }
 
 /* the ask bar */
-.bar.ask .bar-acts .pill-sm { margin-right: 4px; }
 
 /* ─── Far out: the map ──────────────────────────────────────────────────────
    Below 0.4 a card is its title. Bodies and port words go; the title
@@ -844,30 +845,35 @@ html, body, #root { height: 100%; }
 }
 
 /* ─── The prompt bar ────────────────────────────────────────────────────────
-   A plate floating at the foot of the field. What the graph is asked, and
-   the actions that take it there. */
+   One plate at the foot of the field: whose words these are and where they
+   go, the words, then a row — quiet keys on the left, the note, and the
+   one amber key that runs. Nothing is cut into it. */
 .bar {
   position: absolute;
   left: 50%;
-  bottom: 24px;
+  bottom: 22px;
   transform: translateX(-50%);
-  width: min(520px, calc(100% - 200px));
+  width: min(560px, calc(100% - 420px));
   z-index: 5;
   border-radius: var(--r-card);
-  padding: 5px;
+  padding: 12px 14px 10px;
   display: grid;
-  gap: 4px;
+  gap: 6px;
 }
-.bar-ask {
-  padding: 8px 11px 7px;
-  border-radius: var(--r-plate);
+.bar-from {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  letter-spacing: var(--tr-micro);
+  text-transform: uppercase;
+  color: var(--fg-faint);
 }
-.bar-ask .lbl { display: block; margin-bottom: 3px; font-size: 10px; }
-.bar-ask p {
-  font-size: var(--t-label);
-  line-height: 1.4;
-  color: var(--fg-muted);
-}
+.bar-from .dot { width: 6px; height: 6px; border-radius: var(--r-pill); background: hsl(var(--role)); flex-shrink: 0; }
+.bar-from .to { color: var(--fg-faint); opacity: 0.7; }
+.bar-from b { font-weight: var(--w-mid); color: var(--fg-muted); }
 .bar-text {
   display: block;
   width: 100%;
@@ -875,18 +881,40 @@ html, body, #root { height: 100%; }
   resize: none;
   outline: none;
   font-family: var(--font-ui);
-  font-size: var(--t-label);
-  line-height: 1.4;
-  color: var(--fg-muted);
+  font-size: var(--t-body);
+  line-height: 1.5;
+  color: var(--fg);
   cursor: text;
+  max-height: 168px;
 }
-.bar-text:focus { color: var(--fg); }
 .bar-text::placeholder { color: var(--fg-faint); }
-.bar-none { font-size: var(--t-label); color: var(--fg-faint); }
-.bar-acts { display: flex; align-items: center; gap: 0; padding: 0 1px 1px; }
-.bar-note { margin-left: auto; padding-right: 8px; font-size: var(--t-micro); color: var(--fg-faint); }
-.bar-acts .pill-icon { width: 30px; height: 30px; }
-.bar-acts .gap { width: 8px; }
+.bar-none { font-size: var(--t-label); line-height: 1.5; color: var(--fg-faint); }
+.bar-acts { display: flex; align-items: center; gap: 2px; margin: 2px -6px -2px; }
+.bar-acts .pill-icon { width: 28px; height: 28px; color: var(--fg-faint); }
+@media (hover: hover) and (pointer: fine) { .bar-acts .pill-icon:hover { color: var(--fg); } }
+.bar-acts .pill-icon.on { color: var(--fg); }
+.bar-acts .gap { flex: 1; }
+.bar-note { padding-right: 10px; font-size: var(--t-micro); color: var(--fg-faint); }
+.bar.ask .bar-acts .pill-sm { margin-right: 4px; }
+/* the key: the signal, round, the play — the same GO as the queue */
+.bar-go {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: var(--r-pill);
+  background: var(--signal);
+  color: var(--signal-ink);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 -1px 0 rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.14), var(--lift);
+  transition: box-shadow var(--press) var(--ease), transform var(--press) var(--ease), filter var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+@media (hover: hover) and (pointer: fine) { .bar-go:hover { background: var(--signal); color: var(--signal-ink); filter: brightness(1.05); } }
+.bar-go:active { transform: translateY(1px); box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.14); }
+.bar-go:focus-visible { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--ink); }
+.bar-go[disabled] { opacity: 0.35; }
+/* while it runs, the key is the stop */
+.bar-go.stop { background: var(--surface-raised); color: var(--fg); box-shadow: 0 0 0 1px var(--rim-edge), var(--lift); }
 
 /* ─── The settings sheet ────────────────────────────────────────────────────
    A console over a veil of the page, a rail of sections down its left. */
