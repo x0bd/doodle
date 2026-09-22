@@ -1,6 +1,7 @@
 import { Icon, PlusIcon, MinusIcon, FitIcon, EyeIcon, LinkIcon } from "../icons";
 import Avatar from "boring-avatars";
-import { openSettings, ui, toggleLens } from "../state/ui";
+import { openSettings, ui, toggleLens, toggleMap } from "../state/ui";
+import { Minimap } from "./Minimap";
 import { graph, childrenOf } from "../state/graph";
 import { nav, reading } from "../state/nav";
 import { jobs, current, latest } from "../state/jobs";
@@ -21,6 +22,7 @@ export function Foot() {
   const read = ui.use((u) => u.read);
   const writing = reading(focus, read);
   const lens = ui.use((u) => u.lens);
+  const map = ui.use((u) => u.map);
   const j = jobs.use();
   const running = current(j);
   const last = latest(j);
@@ -50,11 +52,13 @@ export function Foot() {
         </div>
       </div>
 
+      {!writing && map && <Minimap />}
+
       {!writing && <div className="cluster card">
         <button className="pill-icon" aria-label="Fit to view" title="Fit — ⌘0" onClick={fitAll}>
           <Icon icon={FitIcon} size={14} strokeWidth={2} />
         </button>
-        <button className="pill-icon" aria-label="Reveal">
+        <button className={`pill-icon${map ? " on" : ""}`} aria-label="The map" aria-pressed={map} title="The map — this level whole (M)" onClick={toggleMap}>
           <Icon icon={EyeIcon} size={15} strokeWidth={2} />
         </button>
         <button className={`pill-icon${lens ? " on" : ""}`} aria-label="Lens" aria-pressed={lens} title="Lens — only what the selection touches stays lit (hold L)" onClick={toggleLens}>

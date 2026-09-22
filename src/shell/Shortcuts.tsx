@@ -11,7 +11,7 @@ const GROUPS: { name: string; keys: [string, string][] }[] = [
       ["⌘0 · ⌘1", "Fit · actual size"],
       ["Drag on empty · ⇧", "Select many · add"],
       ["Double-click empty · right-click", "Add here · the menu"],
-      ["L held", "The lens"],
+      ["L held · M", "The lens · the map"],
     ],
   },
   {

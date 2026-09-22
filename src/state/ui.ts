@@ -24,13 +24,15 @@ export interface UiState {
   ask: boolean;
   /** a place read as one column instead of a field — never remembered */
   read: boolean;
+  /** the map, in the corner of the field */
+  map: boolean;
   /** who draws and who writes when Queue is pressed */
   drawWith: string;
   writeWith: string;
 }
 
 const KEY = "doodle.ui.v1";
-const base: UiState = { navigator: true, inspector: true, theme: "dark", motion: "full", settings: false, chooser: false, palette: false, lens: false, shortcuts: false, bar: true, ask: false, read: false, drawWith: "mock", writeWith: "mock" };
+const base: UiState = { navigator: true, inspector: true, theme: "dark", motion: "full", settings: false, chooser: false, palette: false, lens: false, shortcuts: false, bar: true, ask: false, read: false, map: false, drawWith: "mock", writeWith: "mock" };
 
 function load(): UiState {
   try {
@@ -95,3 +97,4 @@ export const toggleBar = () => ui.set((s) => ({ ...s, bar: !s.bar }));
 /** reading puts the bar away; the field brings it back */
 export const toggleRead = () => ui.set((s) => ({ ...s, read: !s.read, bar: s.read }));
 export const setRead = (read: boolean) => ui.set((s) => ({ ...s, read, bar: !read }));
+export const toggleMap = () => ui.set((s) => ({ ...s, map: !s.map }));

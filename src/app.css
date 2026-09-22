@@ -1267,6 +1267,35 @@ html, body, #root { height: 100%; }
 }
 .readout .k { margin-right: 5px; opacity: 0.6; }
 
+/* ─── The map ───────────────────────────────────────────────────────────────
+   This level seen whole, in the corner above the cluster: every card its
+   role's wash, and the window's own view a slab of tint you can take hold
+   of. Nothing is drawn here either. */
+.minimap {
+  position: absolute;
+  right: 18px;
+  bottom: 66px;
+  z-index: 5;
+  border-radius: var(--r-card);
+  overflow: hidden;
+  cursor: crosshair;
+  animation: in var(--fast) var(--ease) both;
+}
+.minimap-node {
+  position: absolute;
+  border-radius: 2px;
+  background: hsl(var(--role) / 0.5);
+}
+.minimap-node.on { background: hsl(var(--lit)); }
+.minimap-view {
+  position: absolute;
+  border-radius: 3px;
+  background: var(--tint-2);
+  box-shadow: inset 0 0 0 1px var(--rim-edge);
+  pointer-events: none;
+  transition: none;
+}
+
 .cluster {
   position: absolute;
   right: 18px;
