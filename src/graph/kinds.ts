@@ -82,7 +82,7 @@ export const KINDS: Record<NodeKind, KindDef> = {
       { id: "character", name: "character", type: "text" },
     ],
     outputs: [{ id: "image", name: "image", type: "image" }],
-    size: { w: 260, h: 338 },
+    size: { w: 296, h: 338 },
     data: { seed: 12345, control: "Fixed", steps: 30, strength: 8, sampler: "dpm++ 2M", width: 1024, height: 1024, count: 1 },
     groups: [
       {
@@ -180,7 +180,7 @@ export const KINDS: Record<NodeKind, KindDef> = {
     note: "One frame of the scene, with its camera",
     inputs: [],
     outputs: [{ id: "text", name: "brief", type: "text" }],
-    size: { w: 240, h: 156 },
+    size: { w: 264, h: 156 },
     data: { description: "", shotSize: "MS", lensMm: 35, movement: "static", durationMs: 3000 },
     groups: [
       {

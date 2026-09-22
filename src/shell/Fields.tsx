@@ -12,7 +12,7 @@ export function FieldRow({ node, field }: { node: GraphNode; field: Field }) {
     return (
       <div className="group-row col">
         <div className="group-name">{field.label}</div>
-        <input className="inp" value={String(v ?? "")} onChange={(e) => set(e.target.value)} spellCheck={false} />
+        <input className="inp" value={String(v ?? "")} placeholder={field.label.toLowerCase()} onChange={(e) => set(e.target.value)} spellCheck={false} />
       </div>
     );
   }
@@ -25,6 +25,7 @@ export function FieldRow({ node, field }: { node: GraphNode; field: Field }) {
           className="inp"
           rows={field.rows ?? 4}
           value={String(v ?? "")}
+          placeholder={field.label.toLowerCase()}
           onChange={(e) => set(e.target.value)}
           spellCheck={false}
         />

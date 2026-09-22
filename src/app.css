@@ -471,9 +471,9 @@ html, body, #root { height: 100%; }
   position: absolute;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 0 10px 10px;
-  border-radius: 14px;
+  gap: 0;
+  padding: 0 14px 14px;
+  border-radius: var(--r-card);
   cursor: default;
   background: var(--surface-raised);
   box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), var(--lift);
@@ -493,11 +493,11 @@ html, body, #root { height: 100%; }
   position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
   height: 30px;
-  margin: 0 -10px 4px;
-  padding: 0 12px 0 14px;
-  border-radius: 14px 14px 0 0;
+  margin: 0 -14px var(--gap-tight);
+  padding: 0 14px;
+  border-radius: var(--r-card) var(--r-card) 0 0;
   background: hsl(var(--role) / var(--wash));
   flex-shrink: 0;
 }
@@ -587,15 +587,15 @@ html, body, #root { height: 100%; }
 .wire-hit { cursor: default; }
 
 /* the input rows */
-.ins { display: flex; flex-direction: column; margin: 0 -10px; padding: 0 10px 0 0; flex-shrink: 0; }
+.ins { display: flex; flex-direction: column; margin: 0 -14px; padding: 0 14px 0 0; flex-shrink: 0; }
 .in-row {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
-  height: 24px;
-  padding-left: 18px;
-  font-size: var(--t-micro);
+  gap: var(--gap-tight);
+  height: 26px;
+  padding-left: 16px;
+  font-size: var(--t-label);
   color: var(--fg-faint);
 }
 .in-row.on { color: var(--fg-muted); }
@@ -610,13 +610,13 @@ html, body, #root { height: 100%; }
   color: var(--fg);
   font-weight: var(--w-mid);
 }
-.ins + .node-body { margin-top: 2px; }
+.ins + .node-body { margin-top: var(--gap-tight); }
 
 /* the bodies, by kind */
 .node-select { width: 100%; justify-content: space-between; cursor: default; }
 .node-select .list-word { text-align: left; }
 .node-text {
-  min-height: 84px;
+  min-height: 96px;
   display: block;
   width: 100%;
   height: 100%;
@@ -632,109 +632,114 @@ html, body, #root { height: 100%; }
 }
 .node-text:focus { color: var(--fg); }
 .node-text::placeholder { color: var(--fg-faint); }
-/* ─── The card's own settings ───────────────────────────────────────────────
-   The fields the kind declares, set on the card. The same controls the
-   inspector uses, drawn FLAT here — no raised keys, no cut-in wells, no
-   plates within the card: a line for a track, a word for a key, the
-   value at the end of its row. Weight comes from the type, not from
-   relief. */
-.node-form { display: flex; flex-direction: column; padding: 1px 0 3px; }
+/* ─── What a card says ──────────────────────────────────────────────────────
+   Nothing is drawn: no row plates, no dividers, no rule under a group's
+   name. A group is announced by a word with air above it, and every row
+   is a label in Inter against its value — a figure in mono, a word in
+   Inter. The controls keep their capsule and wear the tint when chosen,
+   and that is the whole of the colour on a card besides its dot. */
+.node-form { display: flex; flex-direction: column; }
 .node-part { display: flex; flex-direction: column; }
-/* a section of the panel: a hairline with its name set on it */
+.node-part + .node-part { margin-top: var(--gap-near); }
+/* a group's name: a word, with the gap doing the grouping */
 .node-rule {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 7px 8px 3px;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  padding: 0 2px;
+  margin: 0 0 2px;
+  font-size: var(--t-micro);
   color: var(--fg-faint);
 }
-.node-rule::before, .node-rule::after { content: ""; flex: 1; height: 1px; background: var(--rim-edge); }
-.node-rule span { flex-shrink: 0; }
-.node-part:first-child .node-rule { margin-top: 2px; }
+.node-part:first-child .node-rule { margin-top: 0; }
 
 .node-form .group-row {
   min-height: 26px;
-  padding: 1px 8px;
-  gap: 8px;
+  padding: 0 2px;
+  gap: 4px var(--gap-tight);
+  flex-wrap: wrap;
   background: none;
   box-shadow: none;
 }
-.node-form .group-name { font-size: var(--t-micro); color: var(--fg-muted); white-space: nowrap; }
-.node-form .group-ctl { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
-.node-form .group-row.col { align-items: stretch; gap: 2px; padding: 5px 8px 6px; }
-/* a field written into, not set: its name in the panel's own small caps */
-.node-form .group-row.col .group-name {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--fg-faint);
-}
+/* a control that will not fit beside its name takes the line under it,
+   set against the far edge — the void opens where the name was */
+.node-form .group-what { flex: 1 1 auto; }
+.node-form .group-ctl { margin-left: auto; }
+.node-form .group-name { font-size: var(--t-label); color: var(--fg-muted); white-space: nowrap; }
+.node-form .group-ctl { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.node-form .px { font-size: var(--t-label); color: var(--fg); }
+/* something written into is a slot cut into the card */
+.node-form .group-row.col { flex-direction: column; align-items: stretch; gap: 3px; padding: 4px 2px 2px; }
+.node-form .group-row.col .group-name { font-size: var(--t-micro); color: var(--fg-faint); }
 .node-form .group-row.col .inp {
-  background: none;
-  box-shadow: none;
-  padding: 0;
-  font-size: var(--t-micro);
-  line-height: 1.45;
-  color: var(--fg-muted);
+  width: 100%;
+  padding: 7px 9px;
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  box-shadow: inset 0 1px 1px var(--rim-in);
+  font-size: var(--t-label);
+  line-height: 1.5;
+  color: var(--fg);
   resize: none;
 }
-.node-form .group-row.col .inp:focus { color: var(--fg); }
-.node-form .px { font-size: var(--t-micro); color: var(--fg); }
+.node-form .inp::placeholder { color: var(--fg-faint); }
 
-/* a key: the word itself, the chosen one lit by a tint */
-.node-form .seg { background: none; box-shadow: none; padding: 0; gap: 1px; }
+/* a key: the word, and the chosen one in the tint it is owed */
+.node-form .seg { background: none; box-shadow: none; padding: 0; gap: 2px; }
 .node-form .seg-btn {
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: var(--r-ctl);
+  font-size: var(--t-micro);
   font-weight: var(--w-report);
   color: var(--fg-faint);
   box-shadow: none;
 }
-.node-form .seg-btn.on { background: var(--tint); color: var(--fg); box-shadow: none; }
-@media (hover: hover) and (pointer: fine) { .node-form .seg-btn:hover { color: var(--fg); } }
+.node-form .seg-btn.on { background: var(--tint-2); color: var(--fg); font-weight: var(--w-mid); box-shadow: none; }
+@media (hover: hover) and (pointer: fine) { .node-form .seg-btn:hover { background: var(--tint); color: var(--fg); } }
 
-/* a chooser: the word and its chevron, nothing else */
+/* a chooser: its word and the chevron, a capsule of tint under the pointer */
 .node-form .pill.select {
-  height: 20px;
-  padding: 0 4px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: var(--r-ctl);
   background: none;
   box-shadow: none;
   color: var(--fg);
-  font-size: var(--t-micro);
-  gap: 3px;
+  font-size: var(--t-label);
+  gap: 4px;
 }
 @media (hover: hover) and (pointer: fine) { .node-form .pill.select:hover { background: var(--tint); box-shadow: none; } }
-.node-form .pill-icon.sm { width: 18px; height: 18px; color: var(--fg-faint); }
+.node-form .pill-icon.sm { width: 20px; height: 20px; color: var(--fg-faint); background: none; box-shadow: none; }
+@media (hover: hover) and (pointer: fine) { .node-form .pill-icon.sm:hover { background: var(--tint); color: var(--fg); } }
 
-/* a track: a line the value fills in the role's own light */
+/* a track: a capsule slot with the value filled in the role's own light */
 .node-form .slide { gap: 9px; }
-.node-form .slide input[type="range"] { width: 62px; height: 12px; }
+.node-form .slide input[type="range"] { width: 68px; height: 14px; }
 .node-form .slide input[type="range"]::-webkit-slider-runnable-track {
-  height: 2px;
-  box-shadow: none;
-  background: linear-gradient(to right, hsl(var(--lit, var(--role-slate))) var(--at, 50%), var(--rim-edge) var(--at, 50%));
+  height: 4px;
+  border-radius: var(--r-ctl);
+  background: linear-gradient(to right, hsl(var(--lit, var(--role-slate))) var(--at, 50%), var(--bg) var(--at, 50%));
+  box-shadow: inset 0 1px 1px var(--rim-in);
 }
 .node-form .slide input[type="range"]::-webkit-slider-thumb {
-  width: 9px;
-  height: 9px;
-  margin-top: -3.5px;
+  width: 10px;
+  height: 10px;
+  margin-top: -3px;
   background: hsl(var(--lit, var(--role-slate)));
   box-shadow: none;
 }
 @media (hover: hover) and (pointer: fine) { .node-form .slide input[type="range"]:hover::-webkit-slider-thumb { box-shadow: 0 0 0 4px hsl(var(--lit) / 0.18); } }
-.node-form .slide-fig { min-width: 34px; padding: 0; background: none; box-shadow: none; color: var(--fg); text-align: right; }
+.node-form .slide-fig {
+  min-width: 30px;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--fg);
+  text-align: right;
+}
 
 /* the bloom: what a generator produced, the take ringed */
-.bloom { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 3px 8px 6px; }
+.bloom { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 2px 0 0; }
 .bloom-take {
   aspect-ratio: 1;
-  border-radius: var(--r-sm);
+  border-radius: var(--r-plate);
   overflow: hidden;
   background: var(--surface);
   box-shadow: inset 0 1px 2px var(--rim-in);
@@ -750,7 +755,7 @@ html, body, #root { height: 100%; }
 
 /* character: a reference beside a name and a line */
 .node-char { display: flex; gap: 8px; }
-.node-ref { width: 72px; flex-shrink: 0; border-radius: var(--r-plate); overflow: hidden; }
+.node-ref { width: 64px; height: 64px; flex-shrink: 0; border-radius: var(--r-plate); overflow: hidden; }
 .node-char-what { flex: 1; min-width: 0; padding: 2px 2px 0 0; }
 .node-char-name { font-size: var(--t-label); font-weight: var(--w-mid); color: var(--fg); }
 .node-char-desc {
@@ -768,7 +773,7 @@ html, body, #root { height: 100%; }
 .node-desc {
   flex: 1;
   min-height: 0;
-  padding: 2px 4px 6px;
+  padding: 2px 2px 6px;
   font-size: var(--t-micro);
   line-height: 1.45;
   color: var(--fg-muted);

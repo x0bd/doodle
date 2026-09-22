@@ -202,11 +202,7 @@ function Body({ node }: { node: GraphNode }) {
       return (
         <div className="node-body node-form">
           <Form node={node} bare />
-          {outs.length > 0 && (
-            <div className="node-rule" aria-hidden>
-              <span>Takes</span>
-            </div>
-          )}
+          {outs.length > 0 && <div className="node-rule">Takes</div>}
           {outs.length > 0 && (
             <div className="bloom" role="radiogroup" aria-label="Candidates">
               {outs.slice(-4).map((ref, i) => {
@@ -338,7 +334,7 @@ function Form({ node, bare }: { node: GraphNode; bare?: boolean }) {
   const groups = KINDS[node.kind].groups;
   const form = groups.map((g, i) => (
     <div key={g.name} className="node-part">
-      {(groups.length > 1 || i > 0 || node.kind === "generate") && <div className="node-rule" aria-hidden><span>{g.name}</span></div>}
+      {(groups.length > 1 || i > 0 || node.kind === "generate") && <div className="node-rule">{g.name}</div>}
       {g.fields.map((f) => (
         <FieldRow key={f.key} node={node} field={f} />
       ))}
