@@ -107,14 +107,20 @@ export const TEMPLATES: Template[] = [
   {
     id: "book",
     name: "Book",
-    note: "A brief, a voice and a cast, written into a page.",
+    note: "A cast and a voice; chapters of pages. Zoom in to write.",
     build() {
       const nodes = [
         makeNode("character", 60, 40, { id: "c1", title: "Mara", data: { name: "Mara", description: "A lighthouse keeper's daughter who has never seen the mainland and reads every wreck's cargo manifest." } }),
         makeNode("style", 60, 290, { id: "s1", title: "Voice", data: { description: "Close third person, present tense, short sentences, weather in every paragraph.", palette: "", lighting: "" } }),
-        makeNode("prompt", 360, 40, { id: "p1", title: "Brief", data: { text: "Chapter one. The morning a ship comes in without a crew." } }),
-        makeNode("write", 680, 100, { id: "w1" }),
-        makeNode("page", 1020, 40, { id: "pg1" }),
+        makeNode("chapter", 400, 40, { id: "ch1", title: "One", data: { summary: "The morning a ship comes in without a crew." } }),
+        makeNode("chapter", 720, 40, { id: "ch2", title: "Two", data: { summary: "What the manifest says, and what it does not." } }),
+        // inside One: the brief, the writer, and the pages it writes into
+        makeNode("prompt", 60, 60, { id: "p1", title: "Brief", parent: "ch1", data: { text: "Chapter one. The morning a ship comes in without a crew. Mara sees it first from the gallery; the light is still turning." } }),
+        makeNode("write", 60, 300, { id: "w1", parent: "ch1" }),
+        makeNode("page", 400, 40, { id: "pg1", title: "Page 1", parent: "ch1", data: { text: "The ship is there at first light, the way a word is there when you wake with it. No sail set. No one at the rail.\n\nMara counts the gulls on the yard and stops at eleven." } }),
+        makeNode("page", 760, 40, { id: "pg2", title: "Page 2", parent: "ch1" }),
+        // inside Two: a page to begin
+        makeNode("page", 60, 40, { id: "pg3", title: "Page 1", parent: "ch2" }),
       ];
       const edges = [
         wire(["p1", "text"], ["w1", "brief"]),

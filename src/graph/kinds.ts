@@ -4,7 +4,13 @@
  * the inspector edits. The canvas and the inspector both read from here;
  * neither knows a kind by name.
  */
-export type NodeKind = "model" | "prompt" | "generate" | "preview" | "character" | "style" | "write" | "page" | "note" | "shot";
+export type NodeKind = "model" | "prompt" | "generate" | "preview" | "character" | "style" | "write" | "page" | "note" | "shot" | "chapter";
+
+/** the kinds that are written in — entered, they are a document; zoomed
+ *  into on the field, they open */
+export const WRITTEN = new Set<NodeKind>(["page", "chapter", "prompt", "note"]);
+/** the kinds that are a place — entered, they are a field of what they hold */
+export const PLACES = new Set<NodeKind>(["chapter"]);
 export type PortType = "model" | "text" | "image";
 
 export interface Port {
@@ -198,12 +204,22 @@ export const KINDS: Record<NodeKind, KindDef> = {
   page: {
     kind: "page",
     title: "Page",
-    note: "What was written",
+    note: "A sheet — written on, or written into",
     inputs: [{ id: "text", name: "text", type: "text" }],
-    outputs: [],
-    size: { w: 300, h: 352 },
+    outputs: [{ id: "text", name: "text", type: "text" }],
+    size: { w: 320, h: 400 },
     data: { text: "" },
     groups: [],
+  },
+  chapter: {
+    kind: "chapter",
+    title: "Chapter",
+    note: "Pages, in order. Enter it and they are the field.",
+    inputs: [],
+    outputs: [{ id: "text", name: "text", type: "text" }],
+    size: { w: 280, h: 236 },
+    data: { summary: "" },
+    groups: [{ name: "Chapter", fields: [{ key: "summary", label: "In a line", type: "text", rows: 3 }] }],
   },
 };
 

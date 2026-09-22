@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import {
-  Icon, PlusIcon, CheckIcon, CloseIcon, ImageIcon, ModelIcon, TextIcon, GenerateIcon, CharacterIcon, StyleIcon, WriteIcon, PageIcon, NoteIcon, ShotIcon, ChevronRightIcon,
+  Icon, PlusIcon, CheckIcon, CloseIcon, ImageIcon, ModelIcon, TextIcon, GenerateIcon, CharacterIcon, StyleIcon, WriteIcon, PageIcon, ChapterIcon, NoteIcon, ShotIcon, ChevronRightIcon,
   type IconSvgElement,
 } from "../icons";
 import { shots, proposalsFor, keepShot, keepAll, dropShot, dismiss } from "../state/shots";
@@ -17,7 +17,7 @@ import { useState } from "react";
 
 export const GLYPH: Record<NodeKind, IconSvgElement> = {
   model: ModelIcon, prompt: TextIcon, generate: GenerateIcon, preview: ImageIcon,
-  character: CharacterIcon, style: StyleIcon, write: WriteIcon, page: PageIcon, note: NoteIcon, shot: ShotIcon,
+  character: CharacterIcon, style: StyleIcon, write: WriteIcon, page: PageIcon, note: NoteIcon, shot: ShotIcon, chapter: ChapterIcon,
 };
 
 const ASK_LABEL = { expand: "Expanded", continue: "Continued", rewrite: "Rewritten", ask: "Answered" } as const;

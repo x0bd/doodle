@@ -4,7 +4,7 @@ import {
   graph, clearSelection, select, toggleSelect, moveNodes, raise, intersects, deleteSelected,
   connectNow, canConnect, disconnectNow, edgeInto, moveInto, portOf, addNode, makeNode, connect, type PortRef,
 } from "../state/graph";
-import { KINDS, type NodeKind } from "../graph/kinds";
+import { KINDS, PLACES, WRITTEN, type NodeKind } from "../graph/kinds";
 import { Icon, CloseIcon } from "../icons";
 import { GLYPH } from "./Doc";
 import { ContextMenu, type Menu } from "./ContextMenu";
@@ -54,6 +54,23 @@ function nearestInput(x: number, y: number, from: PortRef, reach = 40): PortRef 
   return best?.ref ?? null;
 }
 
+/** zoom in past this over a written thing and you are inside it */
+const ENTER_AT = 2.2;
+/** zoom out past this inside something and you rise out of it */
+const LEAVE_AT = 0.18;
+
+/** one level per gesture: after a crossing the wheel settles before it can cross again */
+let crossedAt = 0;
+const settled = () => Date.now() - crossedAt > 600;
+
+/** up one level with the thing just left framed — so a zoom out keeps
+ *  going: the page, then its sheet among its siblings, then the book */
+function riseFramed() {
+  crossedAt = Date.now();
+  rise();
+  requestAnimationFrame(fitAll); // the risen-from node is the selection; fitAll frames it
+}
+
 /** The field: the world layer under the chrome, and every way of moving on it. */
 export function Canvas() {
   const cam = camera.use();
@@ -68,7 +85,9 @@ export function Canvas() {
       ? ({ "--ox": `${arrival.x}px`, "--oy": `${arrival.y}px` } as React.CSSProperties)
       : undefined;
   const arriveClass = arriveStyle ? ` arrive-${arrival!.dir}` : "";
-  const writing = !!focus;
+  // entered, a written thing is a document; a place (a chapter) is a field of what it holds
+  const focused = focus ? g.nodes[focus] : undefined;
+  const writing = !!focused && !PLACES.has(focused.kind);
   const ref = useRef<HTMLDivElement>(null);
   const drag = useRef<Drag | null>(null);
   const [marquee, setMarquee] = useState<Rect | null>(null);
@@ -106,15 +125,47 @@ export function Canvas() {
     return set;
   }, [lensOn, g.selection, g.edges]);
 
-  // the wheel: a trackpad pans, a pinch (ctrlKey) or ⌘-wheel zooms about the pointer
+  // the wheel: a trackpad pans, a pinch (ctrlKey) or ⌘-wheel zooms about the
+  // pointer. Zoom is also how you cross a level: in past ENTER_AT over a
+  // written thing and you are inside it; out past LEAVE_AT with a focus and
+  // you rise, the thing you left framed so the motion reads as continuous.
   useEffect(() => {
     const el = ref.current!;
-    if (writing) return; // a page scrolls; the wheel is the platform's
+    if (writing) {
+      // a page scrolls; the wheel is the platform's — but a pinch out
+      // (or ⌘-wheel down) past a threshold rises out of it
+      let out = 0;
+      const onWheel = (e: WheelEvent) => {
+        if (!(e.ctrlKey || e.metaKey)) return;
+        e.preventDefault();
+        out = e.deltaY > 0 ? out + e.deltaY : 0;
+        if (out > 160 && settled()) {
+          out = 0;
+          riseFramed();
+        }
+      };
+      el.addEventListener("wheel", onWheel, { passive: false });
+      return () => el.removeEventListener("wheel", onWheel);
+    }
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       if (e.ctrlKey || e.metaKey) {
         const factor = Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.002));
-        zoomAt({ x: e.clientX, y: e.clientY }, camera.get().zoom * factor);
+        const next = camera.get().zoom * factor;
+        if (factor > 1 && next > ENTER_AT && settled()) {
+          const under = (document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null)?.closest<HTMLElement>("[data-node]")?.dataset.node;
+          const n = under ? graph.get().nodes[under] : undefined;
+          if (n && WRITTEN.has(n.kind)) {
+            crossedAt = Date.now();
+            enter(n.id, () => requestAnimationFrame(fitAll), { x: e.clientX, y: e.clientY });
+            return;
+          }
+        }
+        if (factor < 1 && next < LEAVE_AT && nav.get().focus && settled()) {
+          riseFramed();
+          return;
+        }
+        zoomAt({ x: e.clientX, y: e.clientY }, next);
       } else {
         panBy(-e.deltaX, -e.deltaY);
       }

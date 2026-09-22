@@ -16,6 +16,15 @@ export function Navigator() {
   const here = childrenOf(g, focus);
   const path = trail();
   const add = () => {
+    const parent = focus ? g.nodes[focus] : undefined;
+    if (parent?.kind === "chapter") {
+      // a chapter reads left to right: the next page after the last
+      const pages = here.map((id) => g.nodes[id]).filter((n) => n.kind === "page");
+      const last = pages.reduce<typeof pages[number] | undefined>((m, n) => (!m || n.x > m.x ? n : m), undefined);
+      const x = last ? last.x + last.w + 40 : 60;
+      addNode(makeNode("page", Math.round(x), last ? last.y : 60, { parent: focus, title: `Page ${pages.length + 1}` }));
+      return;
+    }
     // a new note in the middle of the view, in this workspace
     const c = camera.get();
     const x = (window.innerWidth / 2 - c.x) / c.zoom - 110;

@@ -4,7 +4,7 @@
  * journal entry so it can be undone like anything else.
  */
 import { createStore } from "./store";
-import { graph, type GraphNode } from "./graph";
+import { graph, childrenOf, type GraphNode } from "./graph";
 import { commit } from "./history";
 import { pick } from "../providers/registry";
 import { doc, bibleText } from "./doc";
@@ -66,6 +66,11 @@ function describe(n: GraphNode | undefined): string {
   if (n.kind === "character") return [d.name, d.description].filter(Boolean).join(": ");
   if (n.kind === "style") return [d.description, d.palette && `palette: ${d.palette}`, d.lighting && `lighting: ${d.lighting}`].filter(Boolean).join(", ");
   if (n.kind === "shot") return [expandMentions(String(d.description ?? "")), `${d.shotSize} shot`, `${d.lensMm}mm`, `${d.movement}`].filter(Boolean).join(", ");
+  if (n.kind === "chapter") {
+    const g = graph.get();
+    const pages = childrenOf(g, n.id).map((id) => g.nodes[id]).filter((p) => p.kind === "page" && p.status !== "rejected").sort((a, b) => a.seq - b.seq);
+    return pages.map((p) => expandMentions(String(p.data.text ?? ""))).filter(Boolean).join("\n\n");
+  }
   return expandMentions(String(d.text ?? ""));
 }
 

@@ -2,7 +2,7 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import { Icon, ChevronDownIcon, ChevronRightIcon } from "../icons";
 import { urlFor, assets } from "../state/assets";
 import { KINDS, NODE_ROWS } from "../graph/kinds";
-import { graph, inputs, outputs, updateData, childCount, takeOutput, type GraphNode, type PortRef } from "../state/graph";
+import { graph, inputs, outputs, updateData, childCount, childrenOf, takeOutput, type GraphNode, type PortRef } from "../state/graph";
 import { jobs, jobFor } from "../state/jobs";
 
 export interface NodeHandlers {
@@ -231,12 +231,62 @@ function Body({ node }: { node: GraphNode }) {
         </div>
       );
     case "page":
-      return (
-        <div className="node-body well node-page">
-          {node.data.text ? <p className="node-page-text selectable">{String(node.data.text)}</p> : <p className="node-page-empty">Nothing written yet</p>}
-        </div>
-      );
+      return <PageBody node={node} />;
+    case "chapter":
+      return <ChapterBody node={node} />;
   }
+}
+
+const countWords = (t: string) => (t.trim() ? t.trim().split(/\s+/).length : 0);
+const fmtCount = (n: number) => n.toLocaleString("en-US");
+
+/** A page on the field is a sheet: the words themselves, written on in
+ *  place, and how many there are. Nothing else — the sheet is the invitation. */
+function PageBody({ node }: { node: GraphNode }) {
+  const text = String(node.data.text ?? "");
+  const words = countWords(text);
+  return (
+    <div className="node-body node-sheet">
+      <textarea
+        className="sheet-text selectable"
+        value={text}
+        placeholder="Start writing…"
+        onChange={(e) => updateData(node.id, { text: e.target.value })}
+        onPointerDown={(e) => e.stopPropagation()}
+        spellCheck
+      />
+      <div className="sheet-foot px">{words ? `${fmtCount(words)} words` : ""}</div>
+    </div>
+  );
+}
+
+/** A chapter on the field: its pages as a small stack, in order, and the
+ *  count. Enter it and the pages are the field. */
+function ChapterBody({ node }: { node: GraphNode }) {
+  const g = graph.use();
+  const pages = childrenOf(g, node.id).map((id) => g.nodes[id]).filter((n) => n.kind === "page").sort((a, b) => a.seq - b.seq);
+  const words = pages.reduce((n, p) => n + countWords(String(p.data.text ?? "")), 0);
+  const summary = String(node.data.summary ?? "");
+  return (
+    <div className="node-body node-stack">
+      {summary && <p className="stack-line selectable">{summary}</p>}
+      {pages.length ? (
+        <div className="stack">
+          {pages.slice(0, 3).map((p, i) => (
+            <div key={p.id} className="stack-sheet" style={{ "--i": i } as React.CSSProperties}>
+              <b>{p.title}</b>
+              <span>{String(p.data.text ?? "").trim().split("\n")[0] || "—"}</span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="stack-none">No pages yet. Enter it to begin one.</div>
+      )}
+      <div className="sheet-foot px">
+        {pages.length ? `${pages.length} ${pages.length === 1 ? "page" : "pages"}${words ? ` · ${fmtCount(words)} words` : ""}` : ""}
+      </div>
+    </div>
+  );
 }
 
 const fmt = (v: string | number | undefined) => (typeof v === "number" ? (Number.isInteger(v) ? String(v) : v.toFixed(1)) : String(v ?? ""));

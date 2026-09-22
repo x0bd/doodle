@@ -40,6 +40,7 @@ export {
   PaintBrush01Icon as StyleIcon,
   PenTool03Icon as WriteIcon,
   File01Icon as PageIcon,
+  BookOpen01Icon as ChapterIcon,
   StickyNote01Icon as NoteIcon,
   ArrowUp01Icon as UpIcon,
   Camera01Icon as ShotIcon,

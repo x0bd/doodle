@@ -70,6 +70,7 @@
 .k-write     { --role: var(--role-indigo); }
 .k-preview   { --role: var(--role-green); }
 .k-page      { --role: var(--role-green); }
+.k-chapter   { --role: var(--role-green); }
 /* what flows through a wire */
 .t-model { --flow: var(--role-slate); }
 .t-text  { --flow: var(--role-blue); }
@@ -556,10 +557,76 @@ html, body, #root { height: 100%; }
   overflow: hidden;
 }
 .node-desc { padding: 2px 4px 6px; font-size: var(--t-micro); line-height: 1.45; color: var(--fg-muted); }
-/* page: what was written, set to read */
-.node-page { padding: 12px 14px; overflow: auto; }
-.node-page-text { font-size: var(--t-label); line-height: 1.55; color: var(--fg); white-space: pre-wrap; }
-.node-page-empty { font-size: var(--t-label); color: var(--fg-faint); }
+/* ─── Paper ─────────────────────────────────────────────────────────────────
+   A page and a chapter are sheets, not cards: a warmer, brighter ground
+   than the field's objects, a hairline edge like a cut sheet, no wash on
+   the head. The words are the whole face of it, at a reading size, and
+   you write on it where it lies — the way an editor is nothing but the
+   page. */
+:root { --paper: #fcfbf7; --paper-ink: #1a1a18; --paper-edge: rgba(14, 14, 13, 0.16); }
+.dark { --paper: #232321; --paper-ink: #ecebe6; --paper-edge: rgba(242, 242, 240, 0.12); }
+.node.k-page, .node.k-chapter {
+  background: var(--paper);
+  border-radius: 6px;
+  box-shadow: 0 0 0 1px var(--paper-edge), 0 1px 2px rgba(14, 14, 13, 0.06), 0 8px 24px rgba(14, 14, 13, 0.08);
+}
+@media (hover: hover) and (pointer: fine) {
+  .node.k-page:hover, .node.k-chapter:hover { box-shadow: 0 0 0 1px var(--paper-edge), 0 2px 4px rgba(14, 14, 13, 0.08), 0 14px 36px rgba(14, 14, 13, 0.12); }
+}
+.node.k-page.sel, .node.k-chapter.sel, .node.k-page.sel:hover, .node.k-chapter.sel:hover { box-shadow: 0 0 0 1px var(--paper-edge), 0 0 0 3px var(--bg), 0 0 0 5px var(--ink), 0 14px 36px rgba(14, 14, 13, 0.12); }
+.node.k-page .node-head, .node.k-chapter .node-head { background: transparent; border-radius: 6px 6px 0 0; padding-left: 16px; padding-right: 12px; }
+.node.k-page .node-name, .node.k-chapter .node-name { font-size: 14px; font-weight: var(--w-mid); letter-spacing: -0.01em; color: var(--paper-ink); }
+.node.k-page .node-dot, .node.k-chapter .node-dot { width: 6px; height: 6px; box-shadow: none; opacity: 0.8; }
+.node.k-page .ins, .node.k-chapter .ins { padding-left: 4px; }
+.node.k-page .in-row, .node.k-chapter .in-row { opacity: 0.75; }
+.node-sheet {
+  display: flex;
+  flex-direction: column;
+  padding: 2px 8px 0;
+}
+.sheet-text {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  background: none;
+  resize: none;
+  outline: none;
+  font-family: var(--font-ui);
+  font-size: 13.5px;
+  line-height: 1.7;
+  letter-spacing: -0.003em;
+  color: var(--paper-ink);
+  cursor: text;
+  overflow: auto;
+}
+.sheet-text::placeholder { color: var(--fg-faint); font-style: italic; }
+.sheet-foot {
+  height: 18px;
+  padding: 4px 0 0;
+  color: var(--fg-faint);
+  text-align: right;
+}
+/* the map keeps a sheet a sheet */
+.lod-map .node.k-page .node-name, .lod-map .node.k-chapter .node-name { font-size: 22px; }
+
+/* the chapter: pages as a small stack, each a sheet on the sheet */
+.node-stack { display: flex; flex-direction: column; gap: 8px; padding: 0 8px; }
+.stack-line { font-size: var(--t-label); line-height: 1.5; color: var(--fg-muted); }
+.stack { flex: 1; min-height: 0; position: relative; display: flex; flex-direction: column; gap: 6px; }
+.stack-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 7px 10px 8px;
+  border-radius: 4px;
+  background: var(--surface-raised);
+  box-shadow: 0 0 0 1px var(--paper-edge), 0 1px 2px rgba(14, 14, 13, 0.05);
+  margin-left: calc(var(--i) * 6px);
+  margin-right: calc((2 - var(--i)) * 6px);
+}
+.stack-sheet b { font-size: var(--t-label); font-weight: var(--w-mid); color: var(--paper-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stack-sheet span { font-size: var(--t-micro); line-height: 1.4; color: var(--fg-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stack-none { flex: 1; font-size: var(--t-label); font-style: italic; color: var(--fg-faint); }
 
 /* the open key on a card: there under the pointer, gone otherwise */
 .node-open { width: 22px; height: 22px; margin-left: 2px; opacity: 0; transition: opacity var(--fast) var(--ease), background var(--fast) var(--ease), color var(--fast) var(--ease); }

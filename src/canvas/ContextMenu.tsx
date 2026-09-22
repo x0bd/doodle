@@ -15,7 +15,7 @@ export interface Menu {
   node?: string;
 }
 
-const ADDABLE: NodeKind[] = ["prompt", "note", "character", "style", "shot", "generate", "preview", "write", "page", "model"];
+const ADDABLE: NodeKind[] = ["page", "chapter", "prompt", "note", "character", "style", "shot", "generate", "preview", "write", "model"];
 const STATES: { id: Canon; word: string }[] = [
   { id: "canon", word: "Canon" },
   { id: "draft", word: "Draft" },
