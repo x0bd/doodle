@@ -19,6 +19,7 @@ const GROUPS: { name: string; keys: [string, string][] }[] = [
     keys: [
       ["⏎ · double-click", "Open as a page"],
       ["⎋", "Let go · rise"],
+      ["⇧⌘[ · ⇧⌘]", "Previous · next of its kind"],
       ["Arrows · ⇧ arrows", "Nudge · by ten"],
       ["⌘D · ⌫", "Duplicate · delete"],
       ["⌥-drop on a card", "Move inside it"],

@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import {
-  Icon, PlusIcon, CheckIcon, CloseIcon, ImageIcon, ModelIcon, TextIcon, GenerateIcon, CharacterIcon, StyleIcon, WriteIcon, PageIcon, ChapterIcon, NoteIcon, ShotIcon, ChevronRightIcon,
+  Icon, PlusIcon, CheckIcon, CloseIcon, ImageIcon, ModelIcon, TextIcon, GenerateIcon, CharacterIcon, StyleIcon, WriteIcon, PageIcon, ChapterIcon, NoteIcon, ShotIcon, ChevronRightIcon, ChevronLeftIcon,
   type IconSvgElement,
 } from "../icons";
 import { shots, proposalsFor, keepShot, keepAll, dropShot, dismiss } from "../state/shots";
@@ -8,7 +8,8 @@ import { KINDS, type NodeKind } from "../graph/kinds";
 import { graph, updateData, rename, childrenOf, makeNode, addNode, takeOutput, type GraphNode } from "../state/graph";
 import { drafts, draftsFor, accept, reject, cancel } from "../state/drafts";
 import { urlFor, assets } from "../state/assets";
-import { enter } from "../state/nav";
+import { enter, step, sibling, siblings } from "../state/nav";
+import { fitAll } from "./view";
 import { doc } from "../state/doc";
 import { jobs, enqueue, jobFor, RUNNABLE } from "../state/jobs";
 import { FieldRow } from "../shell/Fields";
@@ -70,6 +71,7 @@ export function Doc({ id }: { id: string }) {
         </header>
 
         <Body node={node} />
+        {node.kind === "page" && <Turn node={node} />}
 
         {mine.map((d) => (
             <section key={d.id} className={`draft ${d.state}`} aria-live="polite">
@@ -190,6 +192,45 @@ export function Doc({ id }: { id: string }) {
         </footer>
       </article>
     </div>
+  );
+}
+
+/** The turn of a page: the one before, the one after — or a new one, when
+ *  this is the last. The invitation to keep going. */
+function Turn({ node }: { node: GraphNode }) {
+  const g = graph.use();
+  const prev = sibling(-1);
+  const next = sibling(1);
+  const n = siblings().length;
+  const go = (dir: 1 | -1) => step(dir, () => requestAnimationFrame(fitAll));
+  const newPage = () => {
+    const pages = childrenOf(g, node.parent).map((id) => g.nodes[id]).filter((p) => p.kind === "page");
+    const last = pages.reduce<GraphNode | undefined>((m, p) => (!m || p.x > m.x ? p : m), undefined);
+    const page = makeNode("page", last ? last.x + last.w + 40 : 60, last ? last.y : 60, { parent: node.parent, title: `Page ${pages.length + 1}` });
+    addNode(page);
+    enter(page.id, () => requestAnimationFrame(fitAll));
+  };
+  return (
+    <nav className="paper-turn" aria-label="Pages">
+      {prev ? (
+        <button className="turn" onClick={() => go(-1)}>
+          <Icon icon={ChevronLeftIcon} size={12} strokeWidth={2.2} />
+          {g.nodes[prev].title}
+        </button>
+      ) : <span />}
+      <span className="turn-n px">{n > 1 ? `${siblings().indexOf(node.id) + 1} of ${n}` : ""}</span>
+      {next ? (
+        <button className="turn" onClick={() => go(1)}>
+          {g.nodes[next].title}
+          <Icon icon={ChevronRightIcon} size={12} strokeWidth={2.2} />
+        </button>
+      ) : (
+        <button className="turn" onClick={newPage} title="A new page after this one">
+          <Icon icon={PlusIcon} size={12} strokeWidth={2.4} />
+          New page
+        </button>
+      )}
+    </nav>
   );
 }
 

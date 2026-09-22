@@ -217,6 +217,22 @@ html, body, #root { height: 100%; }
 
 /* sections: a name, a note, an action; then the thing */
 /* .sec and .sec-head are the system's — space and a label, never a rule */
+/* the turn of the page: under the words, quiet until the pointer is near */
+.paper-turn { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 28px; min-height: 28px; }
+.turn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border-radius: var(--r-ctl);
+  font-size: var(--t-label);
+  color: var(--fg-faint);
+  transition: color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+@media (hover: hover) and (pointer: fine) { .turn:hover { color: var(--fg); background: var(--tint); } }
+.turn:focus-visible { background: var(--ink); color: var(--bg); }
+.turn-n { color: var(--fg-faint); }
+/* what waits below the words */
 .paper-below { margin-top: 48px; display: flex; flex-direction: column; gap: 6px; }
 .paper-below .sec { margin-top: 0; padding: 6px 0; }
 .paper-below .sec-head { min-height: 28px; margin-bottom: 0; gap: 8px; }
@@ -686,6 +702,17 @@ html, body, #root { height: 100%; }
 .wire:hover .wire-line, .wire.sel .wire-line { stroke: var(--signal); }
 .wire.sel .wire-line { stroke-width: 2.5; }
 .wire-line.live { stroke: var(--signal); stroke-dasharray: 4 4; }
+/* a wire that crosses a level: dashed where it goes on beyond what is
+   here, and named where it comes in from beyond */
+.wire.deep .wire-line { stroke-dasharray: 5 4; }
+.wire-from {
+  fill: hsl(var(--signal-hsl) / 0.85);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
 
 /* ─── The title line ────────────────────────────────────────────────────── */
 .head {

@@ -12,7 +12,7 @@ import {
 import { ui, togglePanes } from "../state/ui";
 import { doc } from "../state/doc";
 import { jobs, enqueue, clearQueue, pending, current } from "../state/jobs";
-import { nav, trail, riseTo } from "../state/nav";
+import { nav, trail, riseTo, sibling, step } from "../state/nav";
 import { graph } from "../state/graph";
 import { fitAll } from "../canvas/view";
 import { QueueMenu } from "./QueueMenu";
@@ -35,6 +35,10 @@ export function Head() {
   const drawer = providers.find((p) => p.descriptor.id === drawWith)?.descriptor.name ?? "Mock";
   const go = (id: string | null) =>
     riseTo(id, () => requestAnimationFrame(fitAll), { x: window.innerWidth / 2, y: window.innerHeight / 2 });
+  // sideways: the previous and next of the same kind beside the entered one
+  const prev = path.length ? sibling(-1) : null;
+  const next = path.length ? sibling(1) : null;
+  const side = (dir: 1 | -1) => step(dir, () => requestAnimationFrame(fitAll));
   const status = d.save === "saving" ? "Saving…" : d.save === "failed" ? "Save failed" : d.path ? (d.dirty ? "Edited" : "Saved") : d.dirty ? "Unsaved" : "";
   return (
     <header className="head" data-tauri-drag-region>
@@ -43,7 +47,7 @@ export function Head() {
       <div className="spacer" data-tauri-drag-region />
 
       <div className="doc">
-        <button className="pill-icon" aria-label="Previous document">
+        <button className="pill-icon" aria-label="Previous" title={prev ? `${nodes[prev].title} — ⌘⇧[` : undefined} disabled={!prev} onClick={() => side(-1)}>
           <Icon icon={ChevronLeftIcon} size={14} strokeWidth={2} />
         </button>
         <button className={`pill doc-tab${path.length ? " crumb" : ""}`} title={d.path ?? "Not saved yet"} onClick={() => path.length && go(null)}>
@@ -63,7 +67,7 @@ export function Head() {
             </button>
           </span>
         ))}
-        <button className="pill-icon" aria-label="Next document">
+        <button className="pill-icon" aria-label="Next" title={next ? `${nodes[next].title} — ⌘⇧]` : undefined} disabled={!next} onClick={() => side(1)}>
           <Icon icon={ChevronRightIcon} size={14} strokeWidth={2} />
         </button>
       </div>

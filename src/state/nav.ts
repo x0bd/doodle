@@ -89,3 +89,35 @@ export function resetNav(views: Record<string, Camera> = {}) {
   nav.set({ focus: null, views, arrival: null });
   if (views.root) camera.set(views.root);
 }
+
+/** the entered node's siblings — the same parent, in creation order, the same kind first */
+export function siblings(): string[] {
+  const g = graph.get();
+  const f = nav.get().focus;
+  if (!f || !g.nodes[f]) return [];
+  const me = g.nodes[f];
+  return g.order
+    .filter((id) => g.nodes[id].parent === me.parent && g.nodes[id].kind === me.kind)
+    .sort((a, b) => g.nodes[a].seq - g.nodes[b].seq);
+}
+
+/** the next or previous sibling of the entered node, or null at the ends */
+export function sibling(dir: 1 | -1): string | null {
+  const f = nav.get().focus;
+  const s = siblings();
+  const i = s.indexOf(f!);
+  if (i < 0) return null;
+  return s[i + dir] ?? null;
+}
+
+/** step sideways: leave this one, enter its neighbour, as one move */
+export function step(dir: 1 | -1, onArrive?: () => void) {
+  const to = sibling(dir);
+  if (!to) return;
+  park();
+  clearSelection();
+  nav.set((n) => ({ ...n, focus: to, arrival: null }));
+  const saved = nav.get().views[key(to)];
+  if (saved) camera.set(saved);
+  else onArrive?.();
+}
