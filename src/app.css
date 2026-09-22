@@ -505,7 +505,16 @@ html, body, #root { height: 100%; }
 /* progress is the role, full, along the foot of the head */
 .node-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: hsl(var(--role) / 0.25); overflow: hidden; }
 .node-progress-bar { height: 100%; background: hsl(var(--role)); transition: width 60ms linear; }
+/* the body takes what the card's content needs; the kinds that would
+   otherwise collapse say how much room they want, once, here */
 .node-body { flex: 1; min-height: 0; border-radius: var(--r-plate); overflow: hidden; }
+.k-prompt .node-body, .k-note .node-body { min-height: 96px; }
+.k-preview .node-body { min-height: 200px; }
+.k-preview .node-body:has(.node-img) { min-height: 0; }
+.k-preview .node-img { height: auto; aspect-ratio: 1; }
+.k-shot .node-body { min-height: 64px; }
+.node.leaf .node-sheet { min-height: 300px; }
+.node.leaf.k-chapter .node-stack { min-height: 150px; }
 .node-img { display: block; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
 
 /* the ports. The output is one dot on the head's right edge. Inputs are
@@ -579,6 +588,7 @@ html, body, #root { height: 100%; }
 .node-select { width: 100%; justify-content: space-between; cursor: default; }
 .node-select .list-word { text-align: left; }
 .node-text {
+  min-height: 84px;
   display: block;
   width: 100%;
   height: 100%;
@@ -767,6 +777,23 @@ html, body, #root { height: 100%; }
 .stack-sheet b { font-size: var(--t-label); font-weight: var(--w-mid); color: var(--paper-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .stack-sheet span { font-size: var(--t-micro); line-height: 1.4; color: var(--fg-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .stack-none { flex: 1; font-size: var(--t-label); font-style: italic; color: var(--fg-faint); }
+
+/* the card's right edge: a grip, there under the pointer */
+.node-grip {
+  position: absolute;
+  top: 30px;
+  right: -3px;
+  bottom: 6px;
+  width: 8px;
+  border-radius: var(--r-pill);
+  background: transparent;
+  cursor: ew-resize;
+  opacity: 0;
+  transition: opacity var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+.node:hover .node-grip { opacity: 1; background: var(--tint); }
+.node-grip:hover, .node-grip:active { background: var(--tint-2); opacity: 1; }
+.node-grip:focus-visible { opacity: 1; background: var(--ink); }
 
 /* the open key on a card: there under the pointer, gone otherwise */
 .node-open { width: 22px; height: 22px; margin-left: 2px; opacity: 0; transition: opacity var(--fast) var(--ease), background var(--fast) var(--ease), color var(--fast) var(--ease); }

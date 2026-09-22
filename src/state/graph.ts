@@ -356,6 +356,28 @@ export function layOnPages(pageId: string, text: string, from?: string) {
   });
 }
 
+/** A card's height is whatever its content needs. The engine measures the
+ *  card the browser laid out and keeps it on the node, so bounds, fits,
+ *  marquees and drops all agree with what is on screen. It is a fact
+ *  about the layout, not an edit: no journal entry, and the document is
+ *  not dirtied by it. */
+export function measure(id: string, h: number) {
+  const n = graph.get().nodes[id];
+  if (!n || Math.abs(n.h - h) < 0.5) return;
+  graph.set((g) => (g.nodes[id] ? { ...g, nodes: { ...g.nodes, [id]: { ...g.nodes[id], h } } } : g));
+}
+
+/** How wide a card is, set by hand. A document fact, so it is journalled
+ *  — one entry for a drag, coalesced by the card it is about. */
+export function setWidth(id: string, w: number) {
+  const next = Math.round(Math.max(200, Math.min(760, w)));
+  commit(
+    "Width",
+    () => graph.set((g) => (g.nodes[id] && g.nodes[id].w !== next ? { ...g, nodes: { ...g.nodes, [id]: { ...g.nodes[id], w: next } } } : g)),
+    `w:${id}`,
+  );
+}
+
 export const selectAll = () => graph.set((g) => ({ ...g, selection: [...g.order], edgeSelection: [] }));
 
 /** Remove whatever is selected — nodes take their wires with them. */

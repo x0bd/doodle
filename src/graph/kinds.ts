@@ -117,7 +117,7 @@ export const KINDS: Record<NodeKind, KindDef> = {
     note: "Someone in the world — reused, never retyped",
     inputs: [],
     outputs: [{ id: "text", name: "description", type: "text" }],
-    size: { w: 240, h: 206 },
+    size: { w: 240, h: 190 },
     data: { name: "", description: "" },
     groups: [
       {
@@ -135,7 +135,7 @@ export const KINDS: Record<NodeKind, KindDef> = {
     note: "How everything looks",
     inputs: [],
     outputs: [{ id: "text", name: "description", type: "text" }],
-    size: { w: 240, h: 166 },
+    size: { w: 240, h: 150 },
     data: { description: "", palette: "", lighting: "" },
     groups: [
       {
@@ -158,7 +158,7 @@ export const KINDS: Record<NodeKind, KindDef> = {
       { id: "style", name: "style", type: "text" },
     ],
     outputs: [{ id: "text", name: "text", type: "text" }],
-    size: { w: 240, h: 192 },
+    size: { w: 240, h: 150 },
     data: { model: "Default", length: "Scene" },
     groups: [
       {

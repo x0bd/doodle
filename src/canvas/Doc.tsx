@@ -185,9 +185,9 @@ export function Doc({ id }: { id: string }) {
           <Section name="Media" note={images.length ? undefined : "Drop an image anywhere on this page."}>
             {images.length > 0 && (
               <div className="media">
-                {images.map((ref) => {
+                {images.map((ref, i) => {
                   const url = urlFor(ref);
-                  return <div key={ref} className="media-img well">{url && <img src={url} alt="" draggable={false} />}</div>;
+                  return <div key={`${i}:${ref}`} className="media-img well">{url && <img src={url} alt="" draggable={false} />}</div>;
                 })}
               </div>
             )}
@@ -392,11 +392,11 @@ function Body({ node }: { node: GraphNode }) {
           {outs.length > 0 && (
             <Section name="Takes" note="What came out. The ringed one goes on.">
               <div className="contact" role="radiogroup" aria-label="Takes">
-                {outs.slice(-8).map((ref) => {
+                {outs.slice(-8).map((ref, i) => {
                   const url = urlFor(ref);
                   const on = node.asset === ref;
                   return (
-                    <button key={ref} className={`contact-take${on ? " on" : ""}`} role="radio" aria-checked={on} onClick={() => !on && takeOutput(node.id, ref)}>
+                    <button key={`${i}:${ref}`} className={`contact-take${on ? " on" : ""}`} role="radio" aria-checked={on} onClick={() => !on && takeOutput(node.id, ref)}>
                       {url && <img src={url} alt="" draggable={false} />}
                     </button>
                   );

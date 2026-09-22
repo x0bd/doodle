@@ -1,8 +1,9 @@
-import type { PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
 import { Icon, ChevronDownIcon, ChevronRightIcon } from "../icons";
 import { urlFor, assets } from "../state/assets";
 import { KINDS, NODE_ROWS } from "../graph/kinds";
-import { graph, inputs, outputs, updateData, childCount, childrenOf, takeOutput, type GraphNode, type PortRef } from "../state/graph";
+import { graph, inputs, outputs, updateData, childCount, childrenOf, measure, setWidth, takeOutput, type GraphNode, type PortRef } from "../state/graph";
+import { camera } from "./camera";
 import { jobs, jobFor, partialFor } from "../state/jobs";
 
 export interface NodeHandlers {
@@ -37,14 +38,21 @@ export function Node({ node, selected, into, dim, handlers }: { node: GraphNode;
   const sheet = node.kind === "page" || node.kind === "chapter";
   const fedBy = sheet && ins[0] ? source({ node: node.id, port: ins[0].id }) : undefined;
 
+  // the card is as tall as what it holds; the engine is told what that is
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => measure(node.id, el.offsetHeight));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [node.id]);
+
   return (
     <div
       className={`node card k-${node.kind} st-${node.status}${selected ? " sel" : ""}${running ? " running" : ""}${into ? " into" : ""}${dim ? " dim" : ""}${sheet ? " leaf" : ""}`}
-      style={
-        node.kind === "generate" && node.outputs?.length
-          ? { left: node.x, top: node.y, width: node.w, minHeight: node.h }
-          : { left: node.x, top: node.y, width: node.w, height: node.h }
-      }
+      ref={box}
+      style={{ left: node.x, top: node.y, width: node.w }}
       data-node={node.id}
       onPointerDown={(e) => handlers.onPointerDown(e, node)}
       role="group"
@@ -136,6 +144,30 @@ export function Node({ node, selected, into, dim, handlers }: { node: GraphNode;
       )}
 
       <Body node={node} />
+
+      {/* the card's edge: drag it and the card is as wide as you want it */}
+      <button
+        className="node-grip"
+        tabIndex={-1}
+        aria-label="Width"
+        title="Drag to set the width"
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          const from = e.clientX;
+          const was = node.w;
+          const move = (ev: PointerEvent) => setWidth(node.id, was + (ev.clientX - from) / camera.get().zoom);
+          const up = () => {
+            window.removeEventListener("pointermove", move);
+            window.removeEventListener("pointerup", up);
+            window.removeEventListener("pointercancel", up);
+          };
+          window.addEventListener("pointermove", move);
+          window.addEventListener("pointerup", up);
+          window.addEventListener("pointercancel", up);
+        }}
+        onDoubleClick={(e) => (e.stopPropagation(), setWidth(node.id, KINDS[node.kind].size.w))}
+      />
     </div>
   );
 }
@@ -176,12 +208,12 @@ function Body({ node }: { node: GraphNode }) {
           )}
           {outs.length > 0 && (
             <div className="bloom" role="radiogroup" aria-label="Candidates">
-              {outs.slice(-4).map((ref) => {
+              {outs.slice(-4).map((ref, i) => {
                 const url = urlFor(ref);
                 const on = node.asset === ref;
                 return (
                   <button
-                    key={ref}
+                    key={`${i}:${ref}`}
                     className={`bloom-take${on ? " on" : ""}`}
                     role="radio"
                     aria-checked={on}
