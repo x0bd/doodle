@@ -223,18 +223,19 @@ export const KINDS: Record<NodeKind, KindDef> = {
   },
 };
 
-/** the rows the in-node fields show, per kind — label and the key to read */
-export const NODE_ROWS: Partial<Record<NodeKind, { label: string; key: string }[]>> = {
+/** the rows the in-node fields show, per kind — label, the key to read,
+ *  and the panel section it opens, if it opens one */
+export const NODE_ROWS: Partial<Record<NodeKind, { label: string; key: string; under?: string }[]>> = {
   write: [
-    { label: "Model", key: "model" },
+    { label: "Model", key: "model", under: "Writing" },
     { label: "Length", key: "length" },
   ],
   style: [
-    { label: "Palette", key: "palette" },
+    { label: "Palette", key: "palette", under: "The look" },
     { label: "Lighting", key: "lighting" },
   ],
   generate: [
-    { label: "Randomness", key: "seed" },
+    { label: "Randomness", key: "seed", under: "Sampling" },
     { label: "Control mode", key: "control" },
     { label: "Quality steps", key: "steps" },
     { label: "Prompt strength", key: "strength" },

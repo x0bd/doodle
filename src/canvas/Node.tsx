@@ -168,12 +168,12 @@ function Body({ node }: { node: GraphNode }) {
       const outs = node.outputs ?? [];
       return (
         <div className="node-body node-rows">
-          {(NODE_ROWS.generate ?? []).map((r) => (
-            <div key={r.key} className="node-row">
-              <span className="node-row-k">{r.label}</span>
-              <span className="node-row-v px">{fmt(node.data[r.key])}</span>
+          <Rows node={node} rows={NODE_ROWS.generate ?? []} mono />
+          {outs.length > 0 && (
+            <div className="node-rule" aria-hidden>
+              <span>Takes</span>
             </div>
-          ))}
+          )}
           {outs.length > 0 && (
             <div className="bloom" role="radiogroup" aria-label="Candidates">
               {outs.slice(-4).map((ref) => {
@@ -220,23 +220,13 @@ function Body({ node }: { node: GraphNode }) {
       return (
         <div className="node-body node-rows">
           <div className="node-desc">{String(node.data.description || "No description yet")}</div>
-          {(NODE_ROWS.style ?? []).filter((r) => node.data[r.key]).map((r) => (
-            <div key={r.key} className="node-row">
-              <span className="node-row-k">{r.label}</span>
-              <span className="node-row-v">{String(node.data[r.key])}</span>
-            </div>
-          ))}
+          <Rows node={node} rows={(NODE_ROWS.style ?? []).filter((r) => node.data[r.key])} />
         </div>
       );
     case "write":
       return (
         <div className="node-body node-rows">
-          {(NODE_ROWS.write ?? []).map((r) => (
-            <div key={r.key} className="node-row">
-              <span className="node-row-k">{r.label}</span>
-              <span className="node-row-v">{String(node.data[r.key])}</span>
-            </div>
-          ))}
+          <Rows node={node} rows={NODE_ROWS.write ?? []} />
         </div>
       );
     case "shot":
@@ -319,6 +309,29 @@ function ChapterBody({ node }: { node: GraphNode }) {
         {pages.length ? `${pages.length} ${pages.length === 1 ? "page" : "pages"}${words ? ` · ${fmtCount(words)} words` : ""}` : ""}
       </div>
     </div>
+  );
+}
+
+/** The rows of a card, under the panel sections they belong to — a
+ *  hairline with the section's name centred on it, the way a front
+ *  panel names a group of controls. */
+function Rows({ node, rows, mono }: { node: GraphNode; rows: { label: string; key: string; under?: string }[]; mono?: boolean }) {
+  return (
+    <>
+      {rows.map((r) => (
+        <div key={r.key} className="node-part">
+          {r.under && (
+            <div className="node-rule" aria-hidden>
+              <span>{r.under}</span>
+            </div>
+          )}
+          <div className="node-row">
+            <span className="node-row-k">{r.label}</span>
+            <span className={`node-row-v${mono ? " px" : ""}`}>{mono ? fmt(node.data[r.key]) : String(node.data[r.key] ?? "")}</span>
+          </div>
+        </div>
+      ))}
+    </>
   );
 }
 

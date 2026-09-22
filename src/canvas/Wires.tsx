@@ -2,6 +2,7 @@ import type { Point } from "./camera";
 import { HEAD_H, portPos, wirePath } from "./layout";
 import { graph, selectEdge, disconnect, portOf, type GraphNode, type GraphState, type PortRef } from "../state/graph";
 import { nav } from "../state/nav";
+import { jobs, current } from "../state/jobs";
 
 /** where an end of a wire lands at this level: on its port when the node
  *  is here; on the band of the card it is inside when it is deeper; or
@@ -28,6 +29,8 @@ function resolve(g: GraphState, focus: string | null, node: GraphNode, ref: Port
 export function Wires({ live, liveType, lit }: { live: { a: Point; b: Point } | null; liveType?: string; lit: Set<string> | null }) {
   const g = graph.use();
   const focus = nav.use((n) => n.focus);
+  // the cables feeding whatever is running carry the work down them
+  const running = jobs.use((j) => current(j)?.nodeId);
   const LEAD = 72;
   return (
     <svg className="wires" aria-hidden>
@@ -53,11 +56,14 @@ export function Wires({ live, liveType, lit }: { live: { a: Point; b: Point } | 
         const dim = !!lit && !(lit.has(a.node.id) && lit.has(b.node.id));
         const type = portOf(e.from, "out")?.type ?? "model";
         const deep = a.how !== "port" || b.how !== "port";
+        const live = running === to.id || running === b.node.id;
         return (
-          <g key={e.id} className={`wire t-${type}${sel ? " sel" : ""}${dim ? " dim" : ""}${deep ? " deep" : ""}`}>
+          <g key={e.id} className={`wire t-${type}${sel ? " sel" : ""}${dim ? " dim" : ""}${deep ? " deep" : ""}${live ? " working" : ""}`}>
             <title>{`${from.title} → ${to.title}`}</title>
             <path className="wire-hit" d={d} onPointerDown={(ev) => { ev.stopPropagation(); selectEdge(e.id); }} onDoubleClick={(ev) => { ev.stopPropagation(); disconnect(e.id); }} />
             <path className="wire-line" d={d} />
+            {a.how === "port" && <circle className="wire-plug" cx={a.p.x} cy={a.p.y} r={3.2} />}
+            {b.how === "port" && <circle className="wire-plug" cx={b.p.x} cy={b.p.y} r={3.2} />}
             {label && (
               <text className="wire-from" x={label.at.x} y={label.at.y} textAnchor={label.anchor}>
                 {label.text}
@@ -66,7 +72,13 @@ export function Wires({ live, liveType, lit }: { live: { a: Point; b: Point } | 
           </g>
         );
       })}
-      {live && <path className={`wire-line live t-${liveType ?? "model"}`} d={wirePath(live.a, live.b)} />}
+      {live && (
+        <g className="wire live">
+          <path className={`wire-line live t-${liveType ?? "model"}`} d={wirePath(live.a, live.b)} />
+          <circle className="wire-plug" cx={live.a.x} cy={live.a.y} r={3.2} />
+          <circle className="wire-plug end" cx={live.b.x} cy={live.b.y} r={4.5} />
+        </g>
+      )}
     </svg>
   );
 }

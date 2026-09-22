@@ -30,8 +30,11 @@ export function portPos(node: GraphNode, ref: PortRef, dir: "in" | "out"): Point
   return { x: node.x, y: node.y + ROWS_TOP + i * PORT_ROW + PORT_ROW / 2 };
 }
 
-/** a wire: out of the right edge, into the left, easing both ways */
+/** A wire: out of the right edge, into the left, easing both ways — and
+ *  hanging a little between them, the way a patch lead does. The sag
+ *  grows with the run and stops; on the map it is a straight line. */
 export function wirePath(a: Point, b: Point) {
   const dx = Math.max(48, Math.abs(b.x - a.x) * 0.5);
-  return `M ${a.x} ${a.y} C ${a.x + dx} ${a.y}, ${b.x - dx} ${b.y}, ${b.x} ${b.y}`;
+  const sag = mapMode ? 0 : Math.min(30, Math.hypot(b.x - a.x, b.y - a.y) * 0.11);
+  return `M ${a.x} ${a.y} C ${a.x + dx} ${a.y + sag}, ${b.x - dx} ${b.y + sag}, ${b.x} ${b.y}`;
 }

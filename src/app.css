@@ -522,18 +522,20 @@ html, body, #root { height: 100%; }
 .port::before { content: ""; position: absolute; inset: -6px; }
 .port.out.top { right: -10px; top: 5px; }
 .port.in { left: -10px; top: 2px; }
+/* the jack: a ring cut into the card's edge, the way a patchbay has them.
+   Free, it is dark with a thin collar in what flows through it; patched,
+   the collar takes the signal and the cable's plug is seated in it. */
 .port-dot {
-  width: 9px;
-  height: 9px;
+  width: 11px;
+  height: 11px;
   border-radius: var(--r-pill);
-  background: var(--surface-raised);
-  box-shadow: 0 0 0 1.5px hsl(var(--flow) / 0.6);
+  background: var(--surface);
+  box-shadow: inset 0 1px 1px var(--rim-in), 0 0 0 1.5px hsl(var(--flow) / 0.45);
   transition: background var(--fast) var(--ease), box-shadow var(--fast) var(--ease), transform var(--fast) var(--ease);
 }
-/* connected: the dot fills with the signal, like the wire it holds */
-.port.on .port-dot { background: var(--signal); box-shadow: 0 0 0 1.5px var(--signal); }
+.port.on .port-dot { background: var(--surface); box-shadow: inset 0 1px 1px var(--rim-in), 0 0 0 1.5px hsl(var(--signal-hsl) / 0.9); }
 @media (hover: hover) and (pointer: fine) {
-  .port:hover .port-dot { box-shadow: 0 0 0 1.5px hsl(var(--flow)), 0 0 0 5px hsl(var(--flow) / 0.2); transform: scale(1.3); }
+  .port:hover .port-dot { box-shadow: inset 0 1px 1px var(--rim-in), 0 0 0 1.5px hsl(var(--flow)), 0 0 0 5px hsl(var(--flow) / 0.18); transform: scale(1.2); }
 }
 .port:focus-visible { background: none; box-shadow: none; }
 /* while a wire is out: every input it can land on lights; the rest step back */
@@ -541,8 +543,8 @@ html, body, #root { height: 100%; }
 .wiring .in-row { opacity: 0.35; }
 .wiring-model .in-row:has(.t-model), .wiring-text .in-row:has(.t-text), .wiring-image .in-row:has(.t-image) { opacity: 1; }
 .wiring-model .port.in.t-model .port-dot, .wiring-text .port.in.t-text .port-dot, .wiring-image .port.in.t-image .port-dot {
-  box-shadow: 0 0 0 1.5px hsl(var(--flow)), 0 0 0 5px hsl(var(--flow) / 0.22);
-  transform: scale(1.3);
+  box-shadow: inset 0 1px 1px var(--rim-in), 0 0 0 1.5px hsl(var(--flow)), 0 0 0 6px hsl(var(--flow) / 0.2);
+  transform: scale(1.25);
 }
 .wiring .port.out { opacity: 0.35; }
 .wire-hit { cursor: default; }
@@ -593,6 +595,23 @@ html, body, #root { height: 100%; }
 .node-text:focus { color: var(--fg); }
 .node-text::placeholder { color: var(--fg-faint); }
 .node-rows { display: flex; flex-direction: column; gap: 1px; padding: 2px 0 0; }
+.node-part { display: flex; flex-direction: column; gap: 1px; }
+.node-part + .node-part { margin-top: 0; }
+/* a section of the panel: a hairline with its name set on it */
+.node-rule {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 7px 2px 4px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+}
+.node-rule::before, .node-rule::after { content: ""; flex: 1; height: 1px; background: var(--rim-edge); }
+.node-rule span { flex-shrink: 0; }
+.node-part:first-child .node-rule { margin-top: 2px; }
 .node-row {
   display: flex;
   align-items: center;
@@ -790,6 +809,17 @@ html, body, #root { height: 100%; }
 /* a wire that crosses a level: dashed where it goes on beyond what is
    here, and named where it comes in from beyond */
 .wire.deep .wire-line { stroke-dasharray: 5 4; }
+/* a cable feeding something that is running: the work goes down it */
+.wire.working .wire-line { stroke: var(--signal); stroke-dasharray: 3 7; animation: run 1s linear infinite; }
+.wire.working .wire-plug { fill: var(--signal); }
+@keyframes run { to { stroke-dashoffset: -10; } }
+.reduce-motion .wire.working .wire-line { animation: none; stroke-dasharray: none; }
+/* the plug: the cable's end, seated in the jack */
+.wire-plug { fill: var(--signal); stroke: var(--bg); stroke-width: 1.25; pointer-events: none; transition: fill var(--fast) var(--ease); }
+.wire.deep .wire-plug { fill: hsl(var(--signal-hsl) / 0.75); }
+.wire.dim .wire-plug { opacity: 0.12; }
+.wire-plug.end { fill: var(--signal); stroke: var(--bg); stroke-width: 1.5; }
+.lod-map .wire-plug { r: 5; }
 .wire-from {
   fill: hsl(var(--signal-hsl) / 0.85);
   font-family: var(--font-mono);
