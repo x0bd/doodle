@@ -1,4 +1,5 @@
-import { Icon, SettingsIcon, PlusIcon, MinusIcon, FitIcon, EyeIcon, LinkIcon } from "../icons";
+import { Icon, PlusIcon, MinusIcon, FitIcon, EyeIcon, LinkIcon } from "../icons";
+import Avatar from "boring-avatars";
 import { openSettings, ui, toggleLens } from "../state/ui";
 import { graph, childrenOf } from "../state/graph";
 import { nav } from "../state/nav";
@@ -6,7 +7,12 @@ import { jobs, current, latest } from "../state/jobs";
 import { useEffect, useState } from "react";
 import { camera, fitAll, zoomIn, zoomOut } from "../canvas/view";
 
-/** The foot of the field: settings and the readouts on the left, the view
+/** Who is working: a placeholder mark until a picture is set. Bauhaus in
+ *  the shop's own colours — charcoal, paper, the signal, a slate. */
+const WHO = "Tinodaishe";
+const MARK = ["#1c1c1b", "#f2f2f0", "#f4a41a", "#6b7a8a", "#c9c4b4"];
+
+/** The foot of the field: you and the readouts on the left, the view
  *  cluster on the right. */
 export function Foot() {
   const zoom = camera.use((c) => c.zoom);
@@ -33,8 +39,8 @@ export function Foot() {
   return (
     <>
       <div className="foot-l">
-        <button className="pill-icon" aria-label="Settings" title="Settings — ⌘," onClick={openSettings}>
-          <Icon icon={SettingsIcon} size={15} strokeWidth={2} />
+        <button className="pill-icon who" aria-label="Settings" title="You — settings, ⌘," onClick={openSettings}>
+          <Avatar name={WHO} variant="bauhaus" size={26} colors={MARK} />
         </button>
         <div className="readout" aria-hidden>
           <span><span className="k">T</span>{elapsed.toFixed(2)}s</span>

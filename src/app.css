@@ -6,10 +6,12 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  /* the signal: electric yellow — the one thing that says GO. It is a
-     ground (doctrine 8) and keeps its value in both modes; ink on it is
-     always dark. 15.5:1 against #0e0e0d. */
-  --signal: #f4ec1a;
+  /* the signal: an orange-yellow — Braun's amber, the one key on the
+     calculator that says GO. It is a ground (doctrine 8) and keeps its
+     value in both modes; ink on it is always dark. As h s l so a wire can
+     take it at a strength. 9.4:1 against #0e0e0d. */
+  --signal-hsl: 39 90% 51%;
+  --signal: hsl(var(--signal-hsl));
   --signal-ink: #0e0e0d;
 
   /* the field's dot: fainter than the hatch, it is a grid to place by, not a
@@ -35,10 +37,10 @@
   --role-indigo: 236 52% 62%;
   --role-green:  146 44% 46%;
 
-  /* how strong a wash and a wire are on this ground */
+  /* how strong a wash is on this ground, and how strong a wire */
   --wash: 0.16;
   --wash-2: 0.28;
-  --wire: 0.55;
+  --wire: 0.7;
 }
 .dark {
   --role-slate:  215 16% 62%;
@@ -52,7 +54,7 @@
   --role-green:  146 48% 56%;
   --wash: 0.2;
   --wash-2: 0.34;
-  --wire: 0.6;
+  --wire: 0.75;
 }
 
 /* what each kind wears */
@@ -445,8 +447,8 @@ html, body, #root { height: 100%; }
   box-shadow: 0 0 0 1.5px hsl(var(--flow) / 0.6);
   transition: background var(--fast) var(--ease), box-shadow var(--fast) var(--ease), transform var(--fast) var(--ease);
 }
-/* connected: the dot fills with what flows through it, like its wire */
-.port.on .port-dot { background: hsl(var(--flow)); box-shadow: 0 0 0 1.5px hsl(var(--flow)); }
+/* connected: the dot fills with the signal, like the wire it holds */
+.port.on .port-dot { background: var(--signal); box-shadow: 0 0 0 1.5px var(--signal); }
 @media (hover: hover) and (pointer: fine) {
   .port:hover .port-dot { box-shadow: 0 0 0 1.5px hsl(var(--flow)), 0 0 0 5px hsl(var(--flow) / 0.2); transform: scale(1.3); }
 }
@@ -588,13 +590,14 @@ html, body, #root { height: 100%; }
 .offer .list-head { display: flex; align-items: center; justify-content: space-between; }
 .offer-x { width: 20px; height: 20px; }
 
-/* the wires */
+/* the wires — in the signal, since a wire is the promise of a run */
 .wires { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; pointer-events: none; }
 .wire-hit { fill: none; stroke: transparent; stroke-width: 14; pointer-events: stroke; cursor: default; }
-.wire-line { fill: none; stroke: hsl(var(--flow, var(--role-slate)) / var(--wire)); stroke-width: 1.75; pointer-events: none; transition: stroke var(--fast) var(--ease), stroke-width var(--fast) var(--ease); }
-.wire:hover .wire-line, .wire.sel .wire-line { stroke: hsl(var(--flow, var(--role-slate))); }
+/* every wire is the signal: what is connected is what will run */
+.wire-line { fill: none; stroke: hsl(var(--signal-hsl) / var(--wire)); stroke-width: 1.75; pointer-events: none; transition: stroke var(--fast) var(--ease), stroke-width var(--fast) var(--ease); }
+.wire:hover .wire-line, .wire.sel .wire-line { stroke: var(--signal); }
 .wire.sel .wire-line { stroke-width: 2.5; }
-.wire-line.live { stroke: hsl(var(--flow, var(--role-slate))); stroke-dasharray: 4 4; }
+.wire-line.live { stroke: var(--signal); stroke-dasharray: 4 4; }
 
 /* ─── The title line ────────────────────────────────────────────────────── */
 .head {
@@ -792,6 +795,21 @@ html, body, #root { height: 100%; }
   align-items: center;
   gap: 10px;
 }
+/* you: the mark is the whole key, a round picture that is also the way in
+   to settings; the ring is the card's own edge */
+.pill-icon.who {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: var(--r-pill);
+  overflow: hidden;
+  background: var(--surface-raised);
+  box-shadow: 0 0 0 1px var(--rim-edge), var(--lift);
+}
+.pill-icon.who svg { display: block; width: 26px; height: 26px; border-radius: var(--r-pill); }
+@media (hover: hover) and (pointer: fine) { .pill-icon.who:hover { background: var(--surface-raised); box-shadow: 0 0 0 1px var(--rim-edge), 0 0 0 4px var(--tint), var(--lift); } }
+.pill-icon.who:focus-visible { background: var(--surface-raised); box-shadow: 0 0 0 2px var(--ink); }
+.pill-icon.who:active { transform: translateY(1px); box-shadow: 0 0 0 1px var(--rim-edge); }
 .readout {
   display: flex;
   gap: 14px;

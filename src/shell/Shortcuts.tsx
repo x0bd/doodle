@@ -37,6 +37,7 @@ const GROUPS: { name: string; keys: [string, string][] }[] = [
   {
     name: "The work",
     keys: [
+      ["⏎ in the bar · /", "Run, bar away · bar back"],
       ["⌘⏎ · ⌘.", "Run · stop"],
       ["⌘K", "Search"],
       ["⌘Z · ⇧⌘Z", "Undo · redo"],

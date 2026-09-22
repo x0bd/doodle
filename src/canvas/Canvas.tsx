@@ -11,7 +11,7 @@ import { ContextMenu, type Menu } from "./ContextMenu";
 import { begin as journalBegin, end as journalEnd, commit, type Snapshot } from "../state/history";
 import { Node, type NodeHandlers } from "./Node";
 import { nav, enter, rise, clearArrival } from "../state/nav";
-import { ui } from "../state/ui";
+import { ui, showBar } from "../state/ui";
 import { childrenOf } from "../state/graph";
 import { fitAll } from "./view";
 import { Wires } from "./Wires";
@@ -136,6 +136,10 @@ export function Canvas() {
         setSpace(true);
       } else if (e.key === "l" && !e.metaKey && !e.ctrlKey && !e.repeat) {
         setLHeld(true);
+      } else if (e.key === "/" && !e.metaKey && !e.ctrlKey) {
+        // the prompt bar, back at the foot with its text ready
+        e.preventDefault();
+        showBar();
       } else if (e.key === "Escape") {
         // with a selection, let go; with none, rise out of this workspace
         const s = graph.get();

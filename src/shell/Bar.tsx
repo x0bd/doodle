@@ -1,22 +1,32 @@
-import { Icon, HistoryIcon, SaveIcon, ModelIcon, ImageIcon, GenerateIcon, SettingsIcon } from "../icons";
+import { Icon, HistoryIcon, SaveIcon, ModelIcon, ImageIcon, GenerateIcon } from "../icons";
 import { save } from "../state/doc";
 import { graph, updateData } from "../state/graph";
 import { jobs, enqueue, generators, current, latest, mainPort } from "../state/jobs";
-import { openSettings } from "../state/ui";
+import { ui, hideBar } from "../state/ui";
 import { nav } from "../state/nav";
 import { propose } from "../state/drafts";
 import { proposeShots } from "../state/shots";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { History } from "./History";
 
 /** The prompt bar at the foot of the field: the positive prompt of the
- *  first generator, and the run. */
+ *  first generator, and the run. Enter starts the run and puts the bar
+ *  away; / brings it back with the text ready to edit. */
 export function Bar() {
   const g = graph.use();
   const j = jobs.use();
   const focus = nav.use((n) => n.focus);
+  const shown = ui.use((u) => u.bar);
   const [ask, setAsk] = useState("");
   const [hist, setHist] = useState(false);
+  const text = useRef<HTMLTextAreaElement>(null);
+  // brought back by a key: the text is ready to edit, the caret at its end
+  useEffect(() => {
+    if (!shown || !text.current) return;
+    const el = text.current;
+    el.focus();
+    el.setSelectionRange(el.value.length, el.value.length);
+  }, [shown]);
   const entered = focus ? g.nodes[focus] : undefined;
   if (entered) {
     const prose = entered.kind === "prompt" || entered.kind === "note" || entered.kind === "page";
@@ -56,6 +66,7 @@ export function Bar() {
       </div>
     );
   }
+  if (!shown) return null;
   const gen = generators()[0];
   const edge = gen && Object.values(g.edges).find((e) => e.to.node === gen.id && e.to.port === mainPort(gen));
   const promptNode = edge ? g.nodes[edge.from.node] : undefined;
@@ -76,16 +87,23 @@ export function Bar() {
         <span className="lbl">Prompt</span>
         {promptNode ? (
           <textarea
+            ref={text}
             className="bar-text"
             rows={2}
             value={String(promptNode.data.text ?? "")}
-            placeholder="What you want to get"
+            placeholder="What you want to get — Enter runs it"
             spellCheck={false}
             onChange={(e) => updateData(promptNode.id, { text: e.target.value })}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+              // Enter runs and the bar steps out of the way; shift-Enter breaks a line
+              if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
+                if (!String(promptNode.data.text ?? "").trim()) return;
                 enqueue();
+                e.currentTarget.blur();
+                hideBar();
+              } else if (e.key === "Escape") {
+                e.currentTarget.blur();
               }
             }}
           />
@@ -107,11 +125,8 @@ export function Bar() {
           <Icon icon={ImageIcon} size={15} strokeWidth={2} />
         </button>
         <div className="gap" />
-        <button className="pill-icon" aria-label="Generate" title="Generate — ⌘↩" onClick={() => enqueue()}>
+        <button className="pill-icon" aria-label="Generate" title="Generate — ⏎" onClick={() => enqueue()}>
           <Icon icon={GenerateIcon} size={15} strokeWidth={2} />
-        </button>
-        <button className="pill-icon" aria-label="Settings" onClick={openSettings}>
-          <Icon icon={SettingsIcon} size={15} strokeWidth={2} />
         </button>
         {note && <span className="bar-note px">{note}</span>}
       </div>
