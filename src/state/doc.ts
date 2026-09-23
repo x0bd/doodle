@@ -10,13 +10,15 @@ import { camera, type Camera } from "../canvas/camera";
 import { history, reset as resetHistory, commit, undo } from "./history";
 import { nav, resetNav } from "./nav";
 import { restoreJobs, forgetJobs } from "./jobs";
-import { inTauri, recoveryAppend, recoveryRead, recoveryClear, takeOpened, setRecentMenu, loadGraph, pickOpenDir, pickOpenFile, pickSaveDir, pickSaveFile, saveGraph, graphExists, writeAsset, duplicateGraph, revealPath, writeText, exportArchive, importArchive, confirmAsk } from "../platform/fs";
+import { inTauri, askThree, recoveryAppend, recoveryRead, recoveryClear, takeOpened, setRecentMenu, loadGraph, pickOpenDir, pickOpenFile, pickSaveDir, pickSaveFile, saveGraph, graphExists, writeAsset, duplicateGraph, revealPath, writeText, exportArchive, importArchive, confirmAsk } from "../platform/fs";
 import { templateById, type TemplateId } from "../graph/templates";
 import { PLACES } from "../graph/kinds";
 import { prov, resetProv, rekey, type Prov } from "./prov";
 import { asMarkdown } from "./reading";
 import { delta, replay, type Tracked } from "./recovery";
 import { say, hush } from "./notice";
+import { keepDaily, loadVersions, versions } from "./versions";
+const versionsDir = () => versions.get().dir;
 
 export type SaveState = "idle" | "saving" | "saved" | "failed";
 
@@ -211,6 +213,7 @@ export async function save(): Promise<boolean> {
   if (!path) return false;
   flushLog(); // an untitled graph's last lines go to its own log before it has a home
   doc.set((x) => ({ ...x, path, name: nameOf(path) }));
+  if (versionsDir() !== path) void loadVersions(path);
   try {
     localStorage.setItem(LAST, path);
     remember(path, nameOf(path));
@@ -298,6 +301,7 @@ export async function saveAs() {
   if (!path) return;
   flushLog();
   doc.set((d) => ({ ...d, path, name: nameOf(path) }));
+  if (versionsDir() !== path) void loadVersions(path);
   try {
     localStorage.setItem(LAST, path);
     remember(path, nameOf(path));
@@ -381,9 +385,16 @@ function leaveLog() {
   untitledLog = false;
 }
 
+/** what the file held after its last save (or as it opened) — what a
+ *  daily version keeps of whatever this save changes */
+let lastSaved: Tracked | null = null;
+
 /** the file now holds `saved`: its log starts again from there */
 function savedOver(path: string, saved: Tracked) {
   if (!inTauri) return;
+  const before = lastSaved;
+  lastSaved = saved;
+  if (before) void keepDaily(path, before, saved);
   queue(() => recoveryClear(path));
   if (untitledLog) queue(() => recoveryClear(null));
   untitledLog = false;
@@ -393,6 +404,8 @@ function savedOver(path: string, saved: Tracked) {
 
 /** a graph with no file under it: its log begins with the whole of it */
 function logUntitled() {
+  lastSaved = null;
+  void loadVersions(null);
   if (!inTauri) return;
   base = tracked();
   untitledLog = true;
@@ -410,6 +423,8 @@ const ago = (t: number) => {
  *  last save, back — one journal entry, so ⌘Z takes it away again. */
 async function recoverInto(path: string) {
   base = tracked();
+  lastSaved = base;
+  void loadVersions(path);
   const text = await recoveryRead(path).catch(() => null);
   const r = text ? replay(base, text) : null;
   if (!r) {
@@ -422,18 +437,37 @@ async function recoverInto(path: string) {
   say(`Recovered what was changed after the last save — the last of it ${ago(r.at)}.`, { label: "Undo", run: undo });
 }
 
+/** Whether what is open may be put away for something else. A project
+ *  saves itself on the way out; a graph that was never saved and has been
+ *  worked on is asked about, as the platform asks. */
+export async function mayLeave(): Promise<boolean> {
+  const d = doc.get();
+  if (d.path || !d.dirty || !Object.keys(graph.get().nodes).length) return true;
+  const a = await askThree(`Keep “${d.name}”? It has never been saved.`, "Doodle", "Save…", "Don't Save");
+  if (a === "cancel") return false;
+  if (a === "yes") return save();
+  return true;
+}
+
+/** A never-saved graph's log, if it holds work — without opening it */
+async function untitledWaiting() {
+  if (!inTauri) return null;
+  const text = await recoveryRead(null).catch(() => null);
+  return text ? replay(null, text) : null;
+}
+
 /** On launch: a graph that was never saved and was being worked on when
  *  Doodle stopped, back as it was. Says whether there was one. */
 export async function recoverUntitled(): Promise<boolean> {
-  if (!inTauri) return false;
-  const text = await recoveryRead(null).catch(() => null);
-  const r = text ? replay(null, text) : null;
+  const r = await untitledWaiting();
   if (!r) return false;
   const s = r.state;
   load({ format: "doodle-graph", version: 1, name: s.name, nodes: s.nodes, order: s.order, edges: s.edges, camera: camera.get(), bible: s.bible, provenance: s.provenance }, null);
   doc.set((d) => ({ ...d, dirty: true }));
   base = tracked(); // the log goes on from where it stopped
   untitledLog = true;
+  lastSaved = null;
+  void loadVersions(null);
   say(`“${s.name}” was never saved; here it is as it was ${ago(r.at)}.`, { label: "Save…", run: () => void save() });
   return true;
 }
@@ -461,6 +495,7 @@ function load(file: FileGraph, path: string | null) {
 }
 
 export async function openFrom(path: string): Promise<boolean> {
+  if (doc.get().path !== path && !(await mayLeave())) return false;
   try {
     const raw = await loadGraph(path);
     const file = JSON.parse(raw) as FileGraph;
@@ -515,7 +550,20 @@ export function newGraph(template: TemplateId = "images") {
  *  on; else the last graph. Says whether anything opened. */
 let launched: Promise<boolean> | undefined;
 export function launch(): Promise<boolean> {
-  return (launched ??= openHandedOver().then(async (handed) => handed || (await recoverUntitled()) || restoreLast()));
+  return (launched ??= openHandedOver().then(async (handed) => {
+    if (!handed) return (await recoverUntitled()) || restoreLast();
+    // the Finder's choice wins, but unsaved work is never hidden
+    const kept = await untitledWaiting();
+    if (kept) say(`“${kept.state.name}”, which was never saved, is kept.`, { label: "Open it", run: () => void openUntitled() });
+    return true;
+  }));
+}
+
+/** the kept never-saved graph, in place of what is open */
+async function openUntitled() {
+  if (!(await mayLeave())) return;
+  leaveLog();
+  await recoverUntitled();
 }
 
 /** On launch: the last graph if it is still there, else the template. Tells

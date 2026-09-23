@@ -3,9 +3,9 @@
  * filesystem itself; it asks, and it is told.
  */
 import { invoke } from "@tauri-apps/api/core";
-import { open, save, ask } from "@tauri-apps/plugin-dialog";
+import { open, save, ask, message } from "@tauri-apps/plugin-dialog";
 
-export const inTauri = "__TAURI_INTERNALS__" in window;
+export const inTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
 export const saveGraph = (dir: string, json: string) => invoke<void>("save_graph", { dir, json });
 export const loadGraph = (dir: string) => invoke<string>("load_graph", { dir });
@@ -34,6 +34,11 @@ export const writeAsset = (dir: string, dataUrl: string) => invoke<ImportedAsset
 export const recoveryAppend = (dir: string | null, lines: string) => invoke<void>("recovery_append", { dir, lines });
 export const recoveryRead = (dir: string | null) => invoke<string | null>("recovery_read", { dir });
 export const recoveryClear = (dir: string | null) => invoke<void>("recovery_clear", { dir });
+
+/** Versions (`versions.rs`): one file each inside the project, and a list. */
+export const versionSave = (dir: string, id: string, meta: string, body: string) => invoke<void>("version_save", { dir, id, meta, body });
+export const versionIndex = (dir: string) => invoke<string>("version_index", { dir });
+export const versionRead = (dir: string, id: string) => invoke<string>("version_read", { dir, id });
 
 /** Files dropped on the window, as paths — the platform hands them over. */
 export async function onFileDrop(handler: (paths: string[], at: { x: number; y: number }) => void) {
@@ -96,4 +101,12 @@ export const setRecentMenu = (names: string[]) => (inTauri ? invoke<void>("set_r
 export async function confirmAsk(message: string, title = "Doodle", ok = "OK"): Promise<boolean> {
   if (!inTauri) return window.confirm(message);
   return ask(message, { title, kind: "warning", okLabel: ok, cancelLabel: "Cancel" });
+}
+
+/** A three-way question as the platform's own sheet — Save / Don't Save /
+ *  Cancel. In a browser, OK means the first, Cancel the last. */
+export async function askThree(text: string, title: string, yes: string, no: string): Promise<"yes" | "no" | "cancel"> {
+  if (!inTauri) return window.confirm(text) ? "yes" : "cancel";
+  const r = String(await message(text, { title, kind: "warning", buttons: { yes, no, cancel: "Cancel" } }));
+  return r === "Yes" || r === yes ? "yes" : r === "No" || r === no ? "no" : "cancel";
 }

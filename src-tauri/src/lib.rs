@@ -5,6 +5,7 @@ mod mcp;
 mod menu;
 mod opened;
 mod recovery;
+mod versions;
 mod thumbs;
 
 use tauri::Emitter;
@@ -31,6 +32,9 @@ pub fn run() {
             recovery::recovery_append,
             recovery::recovery_read,
             recovery::recovery_clear,
+            versions::version_save,
+            versions::version_index,
+            versions::version_read,
             commands::write_text,
             commands::ollama_where,
             archive::export_archive,

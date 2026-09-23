@@ -13,6 +13,7 @@ import { deleteSelected, duplicateSelected, selectAll } from "../state/graph";
 import { clearQueue, enqueue } from "../state/jobs";
 import { inTauri } from "./fs";
 import { editorUndo, editorRedo } from "../writer/Editor";
+import { keepVersionHere, openVersions } from "../state/versions";
 
 const typing = () => {
   const el = document.activeElement as HTMLElement | null;
@@ -30,6 +31,8 @@ export const actions: Record<string, () => void> = {
   "file.unarchive": () => void importArchiveFile(),
   "file.duplicate": () => void duplicate(),
   "file.reveal": () => void reveal(),
+  "file.keep-version": () => void keepVersionHere(),
+  "file.versions": () => openVersions(),
   "view.search": openPalette,
   "view.prev": () => step(-1, () => requestAnimationFrame(fitAll)),
   "view.next": () => step(1, () => requestAnimationFrame(fitAll)),
@@ -59,31 +62,31 @@ export const actions: Record<string, () => void> = {
  *  exactly what happened once. It is attached once, kept on `window` so a
  *  replaced module can take back the old one first, and never removed. */
 const KEPT = "__doodleMenu";
-type Kept = { off?: () => void };
+type Kept = { ready?: Promise<() => void> };
 
 export function listenToMenu() {
   if (!inTauri) return devKeys();
   const w = window as unknown as Record<string, Kept | undefined>;
   const kept: Kept = w[KEPT] ?? {};
   w[KEPT] = kept;
-  kept.off?.(); // a hot patch left one behind; it goes before ours arrives
-  kept.off = undefined;
-  let gone = false;
-  void listen<string>("menu", (e) => {
-    const act = actions[e.payload];
-    const n = /^recent\.(\d+)$/.exec(e.payload);
-    if (act) act();
-    else if (n) void openRecent(Number(n[1]));
-    else if (e.payload === "recent.clear") clearRecent();
-    else console.info("[menu]", e.payload);
-  }).then((off) => {
-    if (gone) off();
-    else kept.off = off;
-  });
-  return () => {
-    // the component may come and go; the listener stays
-    gone = false;
-  };
+  // one listener, ever: the one before is gone before this one arrives, even
+  // when a second mount starts before the first has finished listening (as
+  // React's development mount does) — two ran every menu item twice, and a
+  // question asked on the way (Save changes?) was asked twice
+  const before = kept.ready;
+  kept.ready = (async () => {
+    if (before) (await before)();
+    return listen<string>("menu", (e) => {
+      const act = actions[e.payload];
+      const n = /^recent\.(\d+)$/.exec(e.payload);
+      if (act) act();
+      else if (n) void openRecent(Number(n[1]));
+      else if (e.payload === "recent.clear") clearRecent();
+      else console.info("[menu]", e.payload);
+    });
+  })();
+  // the component may come and go; the listener stays
+  return () => {};
 }
 
 /** In a browser there is no menu bar, so the accelerators are keys here. */

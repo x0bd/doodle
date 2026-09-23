@@ -15,6 +15,7 @@ import { Welcome } from "./shell/Welcome";
 import { Palette } from "./shell/Palette";
 import { Shortcuts } from "./shell/Shortcuts";
 import { Notice } from "./shell/Notice";
+import { Versions } from "./shell/Versions";
 import { onFileDrop, onOpened } from "./platform/fs";
 import { attachFiles, attachTo } from "./state/assets";
 import { nav, reading } from "./state/nav";
@@ -88,6 +89,7 @@ export function App() {
       <Welcome />
       <Palette />
       <Shortcuts />
+      <Versions />
       <Notice />
     </div>
   );

@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { Icon, CloseIcon, BookIcon, MangaIcon, FilmIcon, ImageIcon, GraphIcon, type IconSvgElement } from "../icons";
 import { TEMPLATES, type TemplateId } from "../graph/templates";
 import { ui, closeChooser } from "../state/ui";
-import { doc, newGraph, openDialog, openFrom, recent, forget, type Seen } from "../state/doc";
+import { newGraph, openDialog, openFrom, recent, forget, mayLeave, type Seen } from "../state/doc";
 import { graph } from "../state/graph";
 import { fitAll } from "../canvas/view";
-import { confirmAsk, graphExists, inTauri } from "../platform/fs";
+import { graphExists, inTauri } from "../platform/fs";
 
 const GLYPH: Record<TemplateId, IconSvgElement> = { images: ImageIcon, film: FilmIcon, manga: MangaIcon, book: BookIcon };
 
@@ -28,7 +28,6 @@ const under = (path: string) => path.split("/").slice(-2, -1)[0] ?? "";
 export function Welcome() {
   const open = ui.use((s) => s.chooser);
   const empty = graph.use((g) => g.order.length === 0);
-  const dirty = doc.use((d) => d.dirty);
   const [seen, setSeen] = useState<Seen[]>([]);
 
   useEffect(() => {
@@ -49,11 +48,8 @@ export function Welcome() {
 
   if (!open) return null;
 
-  /** starting something new, when there is unsaved work on the table */
-  const ask = async () => {
-    if (!dirty || empty) return true;
-    return confirmAsk("Start a new graph? Unsaved changes will be lost.", "New graph", "Start new");
-  };
+  /** starting something new: a graph never saved is asked about first */
+  const ask = mayLeave;
 
   const pick = async (id: TemplateId) => {
     if (!(await ask())) return;

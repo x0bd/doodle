@@ -218,7 +218,9 @@ html, body, #root { height: 100%; }
    distance, never a rule: a title is larger with air above it, a quote is
    set in and quieter. Marks are weight, slant and a struck line. */
 .writer { position: relative; }
-.pm { outline: none; white-space: pre-wrap; overflow-wrap: break-word; cursor: text; font-variant-ligatures: common-ligatures; }
+/* prose is not figures: proportional numbers — and with the body's tabular
+   ones WebKit drops a space that opens a new run after a full stop */
+.pm { outline: none; white-space: pre-wrap; overflow-wrap: break-word; cursor: text; font-variant-ligatures: common-ligatures; font-variant-numeric: normal; }
 .pm :where(p, h1, h2, h3, blockquote) { margin: 0; }
 .pm > * + * { margin-top: 0.85em; }
 .pm h1 { font-size: 1.62em; font-weight: var(--w-declare); letter-spacing: -0.022em; line-height: 1.25; }
@@ -365,7 +367,7 @@ html, body, #root { height: 100%; }
   box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), 0 0 0 1px var(--rim-edge), var(--lift-2);
   z-index: 6;
 }
-.prose-read { font-size: 17px; line-height: 1.65; color: var(--fg); white-space: pre-wrap; }
+.prose-read { font-size: 17px; line-height: 1.65; color: var(--fg); white-space: pre-wrap; font-variant-numeric: normal; }
 
 /* sections: a name, a note, an action; then the thing */
 /* .sec and .sec-head are the system's — space and a label, never a rule */
@@ -530,7 +532,7 @@ html, body, #root { height: 100%; }
 .draft-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 26px; }
 .draft-acts { display: inline-flex; align-items: center; gap: 4px; }
 .draft-acts .pill-sm { --rim-gap: var(--surface); }
-.draft-text { margin-top: 8px; font-size: 16px; line-height: 1.6; color: var(--fg-muted); white-space: pre-wrap; }
+.draft-text { margin-top: 8px; font-size: 16px; line-height: 1.6; color: var(--fg-muted); white-space: pre-wrap; font-variant-numeric: normal; }
 .draft.thinking .lbl { animation: pulse 1.2s var(--ease-in-out) infinite alternate; }
 /* words arriving: a caret of the ground blinks at the end */
 .draft-text.writing::after { content: ""; display: inline-block; width: 2px; height: 1em; margin-left: 2px; vertical-align: -0.15em; background: var(--fg-muted); animation: pulse 0.9s steps(2) infinite; }
@@ -1949,3 +1951,38 @@ html, body, #root { height: 100%; }
 .notice-text { flex: 1; min-width: 0; line-height: 1.4; }
 .notice .pill { flex: none; }
 .notice-x { flex: none; width: 24px; height: 24px; }
+
+/* ── versions: the list down the left, the chosen one read against now ── */
+.vsheet { width: min(860px, 100%); height: min(580px, 88dvh); }
+.vrail { width: 212px; }
+.vlist { flex: 1; min-height: 0; overflow-y: auto; }
+.vrow { flex-direction: column; align-items: flex-start; gap: 1px; min-height: 44px; padding: 6px 10px; }
+.vrow-when { font-size: var(--t-label); color: var(--fg); }
+.vrow-why { font-size: var(--t-micro); color: var(--fg-faint); }
+.vnone { padding: 4px 10px; }
+.vkeep { align-self: flex-start; margin-left: 6px; }
+.vbody { display: flex; flex-direction: column; gap: 12px; }
+.vhead { display: flex; align-items: flex-start; gap: 16px; }
+.vhead .group-note { flex: 1; max-width: none; margin: 0; }
+.vhead .pill { flex: none; }
+.vempty { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.vdiff {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--surface);
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--fg-muted);
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  font-variant-numeric: normal; /* prose, not figures (see .pm) */
+  user-select: text;
+  -webkit-user-select: text;
+}
+/* what restoring brings back wears the tint; what it takes out is struck */
+.v-back { background: var(--tint-2); color: var(--fg); border-radius: 3px; padding: 0 1px; }
+.v-since { color: var(--fg-faint); text-decoration: line-through; text-decoration-thickness: 1px; }
+.vkey { margin: 0; }
