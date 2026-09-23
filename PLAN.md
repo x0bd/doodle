@@ -149,7 +149,7 @@ The point: from here on, Doodle is opened from Applications, and it never loses 
 | M1.7 ✅ | **First run**: welcome that explains providers, detects them, and opens a sample book | A fresh Mac user reaches writing in < 60 s. |
 | M1.8 ✅ | **Diagnostics**: local log files (rotated, no text content, no tokens), *Reveal logs*, a redacted diagnostics bundle | A friend can send a bundle that contains no words of their book. |
 | M1.9 ✅ | **Scale benchmark** (decision C2): generate a 120k-word, 30-chapter book with 400 images; measure open, save, search, memory | Open < 1 s, save < 50 ms, canvas at 60 fps at the book level; else migrate storage before M2. |
-| M1.10 | **Test harness and releases**: vitest for state (graph ops, anchors, pagination, import), Rust tests, a Playwright smoke against the dev server with mocked `invoke`; GitHub Actions on macOS builds the ad-hoc-signed `.dmg` on every version tag and **publishes it as a GitHub Release** (D2) | CI green; tagging `v0.x.y` produces a Release with a `.dmg` that installs on a second Mac by following the README. |
+| M1.10 ◐ | **Test harness and releases**: vitest for state (graph ops, anchors, pagination, import), Rust tests, a Playwright smoke against the dev server with mocked `invoke`; GitHub Actions on macOS builds the ad-hoc-signed `.dmg` on every version tag and **publishes it as a GitHub Release** (D2) | CI green; tagging `v0.x.y` produces a Release with a `.dmg` that installs on a second Mac by following the README. |
 
 ### M2 — The manuscript (writing a book, properly) — *L*
 

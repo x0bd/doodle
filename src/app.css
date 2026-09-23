@@ -1874,7 +1874,8 @@ html, body, #root { height: 100%; }
 
 /* ⌘K: a console at the top, the input as its head, the hits as a list */
 .pal-veil { align-items: start; padding-top: 12vh; }
-.pal { width: min(640px, 100%); max-height: min(520px, 76vh); display: flex; flex-direction: column; }
+/* positioned, or the veil behind it (absolute) paints over it and eats every click on a result */
+.pal { position: relative; width: min(640px, 100%); max-height: min(520px, 76vh); display: flex; flex-direction: column; }
 .pal-in { display: flex; align-items: center; gap: 12px; padding: 14px 18px 12px; color: var(--fg-faint); }
 .pal-input {
   flex: 1;

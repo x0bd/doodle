@@ -27,3 +27,6 @@ jobs:
       - run: pnpm test
       - run: cargo test
         working-directory: src-tauri
+      # the app in WebKit, as a first run uses it (e2e/)
+      - run: npx playwright install webkit
+      - run: pnpm e2e

@@ -11,7 +11,8 @@
     "tauri": "tauri",
     "test": "vitest run",
     "version:set": "node scripts/version.mjs",
-    "release": "tauri build"
+    "release": "tauri build",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@hugeicons/core-free-icons": "^4.3.3",
@@ -32,6 +33,7 @@
     "react-dom": "^19.3.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@tauri-apps/cli": "^2",
     "@types/node": "^26.6.2",
     "@types/react": "^19",

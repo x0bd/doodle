@@ -92,7 +92,7 @@ scripts/bench-book.mjs the M1.9 benchmark book
 public/fixtures/black-bear.png
 ```
 
-`pnpm test` — the writer's round trips (vitest). `cd src-tauri && cargo test` — six: the archive's three, the thumbnails' three. Rules kept: no `border:` anywhere (paper's edge is a `box-shadow` hairline) (`grep -rn "border[a-z-]*:" src/ | grep -v border-radius | grep -v "border: 0"` → nothing); `pnpm check` clean; ink for the selection ring only; the signal for the play, the wires and connected dots only; roles are grounds; hover is the tint; keys never animate.
+`pnpm e2e` — the smoke (Playwright, **WebKit**, `e2e/*.e2e.ts`, against the dev server, no Tauri): a first run reaches writing (the sample → a chapter → a page → typing), and a never-saved graph's Versions and Settings › Providers. It found that ⌘K's panel was not positioned, so the veil behind it took every click on a result (the keyboard still worked). Playwright's WebKit does not reproduce macOS 26's dropped space (the tabular-numbers bug) — the system WebKit harness does. `pnpm test` — the writer's round trips (vitest). `cd src-tauri && cargo test` — six: the archive's three, the thumbnails' three. Rules kept: no `border:` anywhere (paper's edge is a `box-shadow` hairline) (`grep -rn "border[a-z-]*:" src/ | grep -v border-radius | grep -v "border: 0"` → nothing); `pnpm check` clean; ink for the selection ring only; the signal for the play, the wires and connected dots only; roles are grounds; hover is the tint; keys never animate.
 
 ## Working
 
