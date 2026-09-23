@@ -10,7 +10,7 @@ import { camera, type Camera } from "../canvas/camera";
 import { history, reset as resetHistory } from "./history";
 import { nav, resetNav } from "./nav";
 import { restoreJobs, forgetJobs } from "./jobs";
-import { inTauri, loadGraph, pickOpenDir, pickOpenFile, pickSaveDir, pickSaveFile, saveGraph, graphExists, writeAsset, duplicateGraph, revealPath, writeText, exportArchive, importArchive, confirmAsk } from "../platform/fs";
+import { inTauri, takeOpened, setRecentMenu, loadGraph, pickOpenDir, pickOpenFile, pickSaveDir, pickSaveFile, saveGraph, graphExists, writeAsset, duplicateGraph, revealPath, writeText, exportArchive, importArchive, confirmAsk } from "../platform/fs";
 import { templateById, type TemplateId } from "../graph/templates";
 import { PLACES } from "../graph/kinds";
 import { prov, resetProv, rekey, type Prov } from "./prov";
@@ -62,6 +62,7 @@ function remember(path: string, name: string) {
   } catch {
     /* a private window; nothing to remember into */
   }
+  recentMenu();
 }
 
 /** one the disk no longer has */
@@ -71,6 +72,31 @@ export function forget(path: string) {
   } catch {
     /* fine */
   }
+  recentMenu();
+}
+
+/** the same list on the platform's File › Open Recent */
+export function recentMenu() {
+  void setRecentMenu(recent().map((r) => r.name)).catch(() => {});
+}
+
+export async function openRecent(n: number) {
+  const r = recent()[n];
+  if (!r) return;
+  if (await graphExists(r.path)) await openFrom(r.path);
+  else {
+    forget(r.path);
+    await confirmAsk(`“${r.name}” is no longer where it was. It has been taken off the list.`, "Open Recent", "Alright");
+  }
+}
+
+export function clearRecent() {
+  try {
+    localStorage.setItem(SEEN, "[]");
+  } catch {
+    /* fine */
+  }
+  recentMenu();
 }
 
 export const doc = createStore<DocState>({ path: null, name: "Untitled", dirty: false, save: "idle", bible: EMPTY_BIBLE });
@@ -228,7 +254,21 @@ export async function exportArchiveFile() {
 export async function importArchiveFile() {
   if (!inTauri) return;
   const from = await pickOpenFile("doodlebox", "Open archive");
-  if (!from) return;
+  if (from) await importArchiveFrom(from);
+}
+
+/** A project or an archive the Finder handed over — the last of them, as
+ *  there is one window. Says whether there was one. */
+export async function openHandedOver(): Promise<boolean> {
+  const paths = await takeOpened().catch(() => [] as string[]);
+  const path = paths.at(-1);
+  if (!path) return false;
+  if (path.endsWith(".doodlebox")) await importArchiveFrom(path);
+  else if (!(await openFrom(path))) await confirmAsk(`“${nameOf(path)}” could not be opened. ${doc.get().error ?? ""}`.trim(), "Open", "Alright");
+  return true;
+}
+
+async function importArchiveFrom(from: string) {
   const name = from.split("/").pop()?.replace(/\.doodlebox$/, "") ?? "Imported";
   const dir = await pickSaveDir(name);
   if (!dir) return;

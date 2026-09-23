@@ -9,11 +9,11 @@ import { Bar } from "./shell/Bar";
 import { ui, togglePanes, openChooser } from "./state/ui";
 import { listenToMenu } from "./platform/menu";
 import { listenForAgent } from "./agent/tools";
-import { restoreLast } from "./state/doc";
+import { restoreLast, openHandedOver, recentMenu } from "./state/doc";
 import { Welcome } from "./shell/Welcome";
 import { Palette } from "./shell/Palette";
 import { Shortcuts } from "./shell/Shortcuts";
-import { onFileDrop } from "./platform/fs";
+import { onFileDrop, onOpened } from "./platform/fs";
 import { attachFiles, attachTo } from "./state/assets";
 import { nav, reading } from "./state/nav";
 
@@ -24,16 +24,26 @@ export function App() {
   const writing = reading(focus, read);
   useEffect(listenToMenu, []);
   useEffect(listenForAgent, []);
-  // the last graph if it is still there — with its view — else the template, framed
+  // what the Finder opened Doodle with; else the last graph if it is still
+  // there — with its view — else the templates
   useEffect(() => {
     let live = true;
-    restoreLast().then((restored) => {
-      if (!live) return;
-      if (!restored) openChooser();
-    });
+    recentMenu();
+    openHandedOver()
+      .then((handed) => handed || restoreLast())
+      .then((restored) => {
+        if (!live) return;
+        if (!restored) openChooser();
+      });
     return () => {
       live = false;
     };
+  }, []);
+  // and whatever the Finder hands over while it runs
+  useEffect(() => {
+    let off: (() => void) | undefined;
+    onOpened(() => void openHandedOver()).then((f) => (off = f));
+    return () => off?.();
   }, []);
   // images dropped on the window: onto the node under them, or onto the page being written
   useEffect(() => {

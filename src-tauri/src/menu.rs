@@ -2,7 +2,7 @@
 //! with Doodle's own items reporting by id ("file.new", "view.zoom-in"…).
 
 use tauri::menu::{Menu, MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};
-use tauri::{App, Wry};
+use tauri::{App, Manager, Wry};
 
 pub fn build(app: &App) -> tauri::Result<Menu<Wry>> {
     let item = |id: &str, label: &str, key: Option<&str>| {
@@ -28,9 +28,16 @@ pub fn build(app: &App) -> tauri::Result<Menu<Wry>> {
         .quit()
         .build()?;
 
+    // filled by the page (`opened::set_recent`) with what this machine has opened
+    let recent = SubmenuBuilder::with_id(app, "file.recent", "Open Recent")
+        .item(&MenuItemBuilder::with_id("recent.clear", "Clear Menu").enabled(false).build(app)?)
+        .build()?;
+    app.manage(crate::opened::Recent(recent.clone()));
+
     let file = SubmenuBuilder::new(app, "File")
         .item(&item("file.new", "New Graph", Some("CmdOrCtrl+N"))?)
         .item(&item("file.open", "Open…", Some("CmdOrCtrl+O"))?)
+        .item(&recent)
         .separator()
         .item(&item("file.save", "Save", Some("CmdOrCtrl+S"))?)
         .item(&item("file.save-as", "Save As…", Some("CmdOrCtrl+Shift+S"))?)

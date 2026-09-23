@@ -244,3 +244,20 @@ pub fn write_asset(dir: String, data_url: String) -> Result<ImportedAsset, Strin
     }
     Ok(ImportedAsset { rel, name: format!("{hash}.{ext}"), bytes: bytes.len() as u64 })
 }
+
+/// Where Ollama is installed, if it is — the app or the command — so the
+/// Providers screen can tell "not installed" from "not running". An app
+/// opened from the Finder has no shell PATH; these are the places it lives.
+#[tauri::command]
+pub fn ollama_where() -> Option<String> {
+    let home = std::env::var_os("HOME").map(PathBuf::from).unwrap_or_default();
+    [
+        PathBuf::from("/Applications/Ollama.app"),
+        home.join("Applications/Ollama.app"),
+        PathBuf::from("/opt/homebrew/bin/ollama"),
+        PathBuf::from("/usr/local/bin/ollama"),
+    ]
+    .into_iter()
+    .find(|p| p.exists())
+    .map(|p| p.display().to_string())
+}

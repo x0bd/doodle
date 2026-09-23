@@ -25,6 +25,11 @@ export async function statusOf(p: Provider): Promise<ProviderStatus> {
   return value;
 }
 
+/** ask everyone again, now — something was installed, opened or signed into */
+export function lookAgain() {
+  status.clear();
+}
+
 /** The provider for a capability — the preferred one if it is available,
  *  else the mock — and whether that was a fallback. */
 export async function pick(cap: Capability, prefer?: string): Promise<{ provider: Provider; fellBack: boolean }> {

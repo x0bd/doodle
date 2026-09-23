@@ -64,11 +64,25 @@ export async function pickSaveDir(name: string): Promise<string | null> {
   return p.endsWith(".doodle") ? p : `${p}.doodle`;
 }
 
-/** Ask for an existing `.doodle` folder. */
+/** Ask for an existing project. A `.doodle` folder is a package the
+ *  platform shows as one file (the bundle declares the type), so it is
+ *  chosen as a file. */
 export async function pickOpenDir(): Promise<string | null> {
-  const p = await open({ directory: true, multiple: false, title: "Open graph" });
+  const p = await open({ multiple: false, title: "Open", filters: [{ name: "Doodle project", extensions: ["doodle"] }] });
   return typeof p === "string" ? p : null;
 }
+
+/** What the Finder handed over (a project double-clicked, an archive on the
+ *  Dock icon) since last asked — and a word when more arrives. */
+export const takeOpened = () => (inTauri ? invoke<string[]>("take_opened") : Promise.resolve([]));
+export async function onOpened(handler: () => void) {
+  if (!inTauri) return () => {};
+  const { listen } = await import("@tauri-apps/api/event");
+  return listen("opened", handler);
+}
+
+/** File › Open Recent, by name, newest first. */
+export const setRecentMenu = (names: string[]) => (inTauri ? invoke<void>("set_recent", { names }) : Promise.resolve());
 
 /** A yes-or-no put to the user as the platform's own sheet. The web view
  *  has no working `confirm` — it answers no at once — so this is the one

@@ -1723,6 +1723,26 @@ html, body, #root { height: 100%; }
 .grp:first-child { margin-top: 0; }
 .under { margin-top: 10px; padding-left: 4px; }
 
+/* Providers: what was found, and the line to type when it was not */
+.prov { align-items: flex-start; }
+.prov .chip { margin-top: 1px; flex: none; }
+.prov-fix {
+  display: inline-block;
+  margin: 6px 0 2px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--tint-2);
+  font-size: var(--t-label);
+  color: var(--fg);
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+}
+.prov-where { margin-top: 4px; font-size: var(--t-micro); color: var(--fg-faint); overflow-wrap: anywhere; user-select: text; -webkit-user-select: text; }
+.prov-foot { display: flex; align-items: flex-start; gap: 16px; }
+.prov-foot .under { flex: 1; }
+.prov-foot .pill { margin-top: 8px; flex: none; }
+
 /* the three windows: a picture of each mode, drawn in its own tokens */
 .modes { display: flex; gap: 12px; }
 .mode {

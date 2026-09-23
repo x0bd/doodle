@@ -1,0 +1,48 @@
+# A version tag (v0.2.0) builds Doodle for Apple Silicon, ad-hoc signed —
+# no Apple Developer account (PLAN.md D2) — and puts the .dmg on a draft
+# GitHub Release, to be read over and published by hand.
+name: Release
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: pnpm install --frozen-lockfile
+      # the tag is the version: package.json (which the bundle reads) and Cargo.toml
+      - run: node scripts/version.mjs "$GITHUB_REF_NAME"
+      - run: pnpm check && pnpm test
+      - run: cargo test
+        working-directory: src-tauri
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: Doodle ${{ github.ref_name }}
+          releaseDraft: true
+          prerelease: true
+          args: --bundles app,dmg
+          releaseBody: |
+            **Install:** open the `.dmg`, drag Doodle to Applications.
+
+            **First open only:** this build is not notarized by Apple, so macOS stops it the first time. Open it once, then go to *System Settings → Privacy & Security*, scroll to *"Doodle" was blocked*, and choose **Open Anyway**. Or, in Terminal: `xattr -dr com.apple.quarantine /Applications/Doodle.app`.
+
+            Apple Silicon Macs, macOS 13 or later.

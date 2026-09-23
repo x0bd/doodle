@@ -129,7 +129,7 @@ export function Welcome() {
                 <span className="welcome-glyph plain" />
                 <span className="welcome-what">
                   <span className="welcome-title">Open a graph…</span>
-                  <span className="welcome-sub">A folder that ends in .doodle</span>
+                  <span className="welcome-sub">A Doodle project, or double-click one in the Finder</span>
                 </span>
               </button>
             </div>

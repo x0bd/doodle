@@ -3,11 +3,15 @@
  * answers `text.generate` (prompt rewriting, later) and reports itself
  * available when the local server answers. Shaped now; used later.
  */
+import { invoke } from "@tauri-apps/api/core";
+import { inTauri } from "../platform/fs";
 import type { Provider, TextRequest } from "./types";
 
 const BASE = "http://localhost:11434";
 
 let installed: string[] = [];
+/** whether the server answered the last time it was asked */
+let answered = false;
 /** families that write prose; OCR and embedding models do not */
 const WRITERS = /^(llama|gemma|qwen|mistral|mixtral|phi|deepseek|command|granite|smollm|tinyllama)/i;
 const writers = () => installed.filter((m) => WRITERS.test(m));
@@ -29,12 +33,24 @@ function body(req: TextRequest) {
   return { model, prompt: req.prompt, system: req.system, stream: false, ...(req.schema ? { format: req.schema } : {}), ...(images.length ? { images } : {}) };
 }
 
+/** what the Providers screen says: whether it answered, and what it holds */
+export const ollamaFound = () => ({
+  answered,
+  models: installed.map((name) => ({ name, writes: WRITERS.test(name), sees: SEES.test(name) })),
+});
+
+/** where it is installed, if it is — "not running" and "not here" are
+ *  different sentences */
+export const ollamaWhere = () => (inTauri ? invoke<string | null>("ollama_where") : Promise.resolve(null));
+
 export const ollama: Provider = {
   descriptor: { id: "ollama", name: "Ollama", capabilities: ["text.generate"] },
   async status() {
     try {
+      answered = false;
       const r = await fetch(`${BASE}/api/tags`, { signal: AbortSignal.timeout(1500) });
       if (!r.ok) return "unavailable";
+      answered = true;
       const data = (await r.json()) as { models?: { name: string }[] };
       installed = (data.models ?? []).map((m) => m.name);
       // up, but with nothing that writes — the mock is the better answer

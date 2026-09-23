@@ -63,25 +63,34 @@ fn version_of(p: &Path) -> Option<(u64, u64, u64, bool)> {
 /// version of Codex"), so the first one found is not good enough: every
 /// candidate is asked its version and the highest wins — a release over a
 /// prerelease of the same number. `DOODLE_CODEX` still wins outright.
-/// Found once per launch.
+/// Found once per launch, and again whenever the Providers screen looks.
 pub fn find() -> Option<PathBuf> {
-    static FOUND: std::sync::OnceLock<Option<PathBuf>> = std::sync::OnceLock::new();
-    FOUND
-        .get_or_init(|| {
-            if let Ok(p) = std::env::var("DOODLE_CODEX") {
-                let p = PathBuf::from(p);
-                if p.is_file() {
-                    return Some(p);
-                }
-            }
-            candidates()
-                .into_iter()
-                .filter(|p| p.is_file() && !is_script(p))
-                .filter_map(|p| version_of(&p).map(|v| (v, p)))
-                .max_by(|a, b| a.0.cmp(&b.0))
-                .map(|(_, p)| p)
-        })
-        .clone()
+    let mut found = FOUND.lock().unwrap();
+    found.get_or_insert_with(scan).clone()
+}
+
+static FOUND: std::sync::Mutex<Option<Option<PathBuf>>> = std::sync::Mutex::new(None);
+
+/// look again: something may have been installed, updated or moved
+fn rescan() -> Option<PathBuf> {
+    let p = scan();
+    *FOUND.lock().unwrap() = Some(p.clone());
+    p
+}
+
+fn scan() -> Option<PathBuf> {
+    if let Ok(p) = std::env::var("DOODLE_CODEX") {
+        let p = PathBuf::from(p);
+        if p.is_file() {
+            return Some(p);
+        }
+    }
+    candidates()
+        .into_iter()
+        .filter(|p| p.is_file() && !is_script(p))
+        .filter_map(|p| version_of(&p).map(|v| (v, p)))
+        .max_by(|a, b| a.0.cmp(&b.0))
+        .map(|(_, p)| p)
 }
 
 /// Which way the CLI is signed in, from the shape of its auth file only —
@@ -95,7 +104,7 @@ fn auth_mode() -> Option<String> {
 
 #[tauri::command]
 pub fn codex_status() -> CodexStatus {
-    let path = find();
+    let path = rescan();
     let version = path.as_ref().and_then(|p| {
         Command::new(p).arg("--version").output().ok().and_then(|o| {
             let s = String::from_utf8_lossy(&o.stdout).trim().to_string();

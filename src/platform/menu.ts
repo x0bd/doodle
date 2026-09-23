@@ -7,7 +7,7 @@ import { listen } from "@tauri-apps/api/event";
 import { openChooser, openPalette, openSettings, openShortcuts, toggleInspector, toggleNavigator, togglePanes, toggleTheme } from "../state/ui";
 import { fitAll, zoomActual, zoomIn, zoomOut } from "../canvas/view";
 import { step } from "../state/nav";
-import { openDialog, save, saveAs, duplicate, reveal, exportText, exportArchiveFile, importArchiveFile } from "../state/doc";
+import { openDialog, save, saveAs, duplicate, reveal, exportText, exportArchiveFile, importArchiveFile, openRecent, clearRecent } from "../state/doc";
 import { redo, undo } from "../state/history";
 import { deleteSelected, duplicateSelected, selectAll } from "../state/graph";
 import { clearQueue, enqueue } from "../state/jobs";
@@ -71,7 +71,10 @@ export function listenToMenu() {
   let gone = false;
   void listen<string>("menu", (e) => {
     const act = actions[e.payload];
+    const n = /^recent\.(\d+)$/.exec(e.payload);
     if (act) act();
+    else if (n) void openRecent(Number(n[1]));
+    else if (e.payload === "recent.clear") clearRecent();
     else console.info("[menu]", e.payload);
   }).then((off) => {
     if (gone) off();

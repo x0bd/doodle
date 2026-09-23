@@ -3,6 +3,7 @@ mod codex;
 mod commands;
 mod mcp;
 mod menu;
+mod opened;
 mod thumbs;
 
 use tauri::Emitter;
@@ -24,7 +25,10 @@ pub fn run() {
             commands::write_asset,
             thumbs::read_thumb,
             mcp::mcp_reply,
+            opened::take_opened,
+            opened::set_recent,
             commands::write_text,
+            commands::ollama_where,
             archive::export_archive,
             archive::import_archive,
             codex::codex_status,
@@ -46,6 +50,15 @@ pub fn run() {
             });
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running doodle");
+        .build(tauri::generate_context!())
+        .expect("error while building doodle")
+        .run(|app, event| {
+            // a project or an archive opened from the Finder
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Opened { urls } = event {
+                opened::arrived(app, urls.iter().filter_map(|u| u.to_file_path().ok()).collect());
+            }
+            #[cfg(not(target_os = "macos"))]
+            let _ = (app, event);
+        });
 }
