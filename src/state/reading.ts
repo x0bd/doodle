@@ -39,7 +39,7 @@ export function sections(g: GraphState, id: string | null): Section[] {
   return out;
 }
 
-export const countWords = (t: string) => (t.trim() ? t.trim().split(/\s+/).length : 0);
+export { countWords } from "../writer/markup";
 
 /** every page under a place, in reading order */
 export const pagesOf = (g: GraphState, id: string | null) => sections(g, id).flatMap((s) => s.pages);

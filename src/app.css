@@ -213,44 +213,135 @@ html, body, #root { height: 100%; }
 .paper-title::placeholder { color: var(--fg-faint); }
 .paper-title:focus { background: var(--tint); }
 
+/* ─── The writer ────────────────────────────────────────────────────────────
+   Prose at a reading size on a measure. Blocks are told apart by size and
+   distance, never a rule: a title is larger with air above it, a quote is
+   set in and quieter. Marks are weight, slant and a struck line. */
+.writer { position: relative; }
+.pm { outline: none; white-space: pre-wrap; overflow-wrap: break-word; cursor: text; font-variant-ligatures: common-ligatures; }
+.pm :where(p, h1, h2, h3, blockquote) { margin: 0; }
+.pm > * + * { margin-top: 0.85em; }
+.pm h1 { font-size: 1.62em; font-weight: var(--w-declare); letter-spacing: -0.022em; line-height: 1.25; }
+.pm h2 { font-size: 1.3em; font-weight: var(--w-declare); letter-spacing: -0.016em; line-height: 1.3; }
+.pm h3 { font-size: 1.06em; font-weight: var(--w-declare); letter-spacing: -0.006em; }
+.pm > * + h1, .pm > * + h2 { margin-top: 1.5em; }
+.pm > * + h3 { margin-top: 1.2em; }
+.pm blockquote { padding-left: 1.4em; color: var(--fg-muted); }
+.pm blockquote > p + p { margin-top: 0.6em; }
+.pm strong { font-weight: var(--w-declare); }
+.pm em { font-style: italic; }
+.pm s { text-decoration-color: var(--fg-faint); }
+/* the empty page says what goes on it */
+.pm .is-empty::before { content: attr(data-placeholder); float: left; height: 0; pointer-events: none; color: var(--fg-faint); font-style: italic; }
+.pm::selection, .pm *::selection { background: hsl(var(--role-blue) / 0.28); }
+
 /* prose: written at a reading size, grows as it goes */
 .prose {
   width: 100%;
   min-height: 200px;
-  padding: 0;
-  background: none;
-  resize: none;
-  outline: none;
   font-family: var(--font-ui);
   font-size: 16.5px;
   line-height: 1.75;
   letter-spacing: -0.004em;
   color: var(--fg);
-  cursor: text;
-  overflow: hidden;
 }
-.prose::placeholder { color: var(--fg-faint); font-style: italic; }
-/* the marks sit under the words in the same metrics: the passages that
-   beats are tied to, lit when the pointer is on their beat */
-.prose-wrap { position: relative; }
-.prose-wrap .prose { position: relative; background: none; z-index: 1; }
-.prose-marks {
+
+/* a screenplay: the page the trade reads — set in mono, its elements placed
+   by their indents, a character's name over what they say */
+.pm.screenplay { font-family: var(--font-mono); font-size: 0.86em; line-height: 1.6; letter-spacing: 0; }
+.prose.screenplay { font-size: 14.5px; }
+.pm.screenplay > * + * { margin-top: 1em; }
+.pm .sp-scene { text-transform: uppercase; font-weight: var(--w-declare); }
+.pm.screenplay > * + .sp-scene { margin-top: 1.8em; }
+.pm .sp-character { margin-left: 37%; text-transform: uppercase; }
+.pm .sp-paren { margin-left: 29%; margin-right: 24%; color: var(--fg-muted); }
+.pm .sp-paren::before { content: "("; }
+.pm .sp-paren::after { content: ")"; }
+.pm .sp-dialogue { margin-left: 17%; margin-right: 16%; }
+.pm .sp-transition { text-align: right; text-transform: uppercase; }
+.pm.screenplay > .sp-character + *, .pm.screenplay > .sp-paren + .sp-dialogue, .pm.screenplay > .sp-dialogue + .sp-paren { margin-top: 0; }
+.pm.screenplay .is-empty::before { font-style: normal; text-transform: none; }
+
+/* the key in the margin: the block the caret is in, and a menu to change it */
+.writer-gutter { position: absolute; right: calc(100% + 18px); width: 120px; display: flex; justify-content: flex-end; z-index: 4; }
+.writer-block {
+  height: 22px;
+  margin-top: 3px;
+  padding: 0 8px;
+  border-radius: var(--r-ctl);
+  font-size: var(--t-micro);
+  font-weight: var(--w-mid);
+  color: var(--fg-faint);
+  white-space: nowrap;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+@media (hover: hover) and (pointer: fine) { .writer-block:hover { background: var(--tint); color: var(--fg); } }
+/* the Outline takes the margin on a narrower window; the key gives it room */
+@media (max-width: 1440px) { .win.nav-on .writer-gutter { display: none; } }
+.writer-menu {
   position: absolute;
-  inset: 0;
-  font-family: var(--font-ui);
-  font-size: 16.5px;
-  line-height: 1.75;
-  letter-spacing: -0.004em;
-  color: transparent;
-  white-space: pre-wrap;
-  overflow-wrap: break-word;
-  pointer-events: none;
-  z-index: 0;
+  top: 28px;
+  right: 0;
+  width: 200px;
+  padding: 6px;
+  border-radius: var(--r-card);
+  box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), 0 0 0 1px var(--rim-edge), var(--lift-2);
+  animation: in var(--fast) var(--ease) both;
 }
+.writer-menu .list-row.on { font-weight: var(--w-mid); background: var(--tint); }
+
+/* the bubble over a selection: the marks, and what the page can make of it */
+.writer-bubble {
+  position: absolute;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--r-ctl);
+  background: var(--surface-raised);
+  box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), 0 0 0 1px var(--rim-edge), var(--lift-2);
+  translate: -50% calc(-100% - 10px);
+  animation: in var(--fast) var(--ease) both;
+  white-space: nowrap;
+  font-size: var(--t-label);
+  line-height: 1;
+}
+.wb-key {
+  width: 28px;
+  height: 26px;
+  border-radius: var(--r-ctl);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--fg-muted);
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+.wb-b { font-weight: 700; }
+.wb-i { font-style: italic; font-family: ui-serif, Georgia, serif; font-size: 14px; }
+.wb-s { text-decoration: line-through; }
+.wb-key.on { background: var(--tint-2); color: var(--fg); }
+@media (hover: hover) and (pointer: fine) { .wb-key:hover { background: var(--tint); color: var(--fg); } }
+.wb-gap { width: 1px; height: 14px; margin: 0 3px; }
+.wb-act {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 10px 0 8px;
+  border-radius: var(--r-ctl);
+  font-size: var(--t-label);
+  font-weight: var(--w-mid);
+  color: var(--fg);
+  background: var(--tint);
+}
+@media (hover: hover) and (pointer: fine) { .wb-act:hover { background: var(--tint-2); } }
+/* a name after @: a token, the way a variable sits in a sentence */
+.mention-token { padding: 0 2px; margin: 0 -1px; border-radius: 4px; background: hsl(var(--role-blue) / 0.14); }
+.writer-mentions { top: auto; margin-top: 0; }
+
+/* the passages beats are tied to, under the words; lit when the pointer is on their beat */
 .tie {
-  background: none;
-  color: transparent;
-  box-shadow: inset 0 -1px 0 hsl(var(--role-sand) / 0.55);
+  box-shadow: inset 0 -1px 0 hsl(var(--role-sand) / 0.6);
   transition: background var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
 }
 .tie.loose { box-shadow: inset 0 -1px 0 hsl(var(--role-sand) / 0.3); }
@@ -262,7 +353,6 @@ html, body, #root { height: 100%; }
 @media (hover: hover) and (pointer: fine) { .beat-tie-act:hover { background: var(--tint); color: var(--fg); } }
 .beat.adrift .beat-tie { color: hsl(var(--role-orange)); }
 .beat.adrift .beat-n { color: hsl(var(--role-orange)); }
-.prose-act { position: absolute; right: 0; bottom: -4px; animation: in var(--fast) var(--ease) both; }
 /* the mentions menu: the graph's names, under the field */
 .mentions {
   position: absolute;
@@ -990,23 +1080,24 @@ html, body, #root { height: 100%; }
   display: flex;
   flex-direction: column;
   padding: 0 20px;
+  overflow: visible;
 }
+.node.leaf.k-page .node-sheet { flex: none; height: 342px; min-height: 0; }
+.node-sheet .writer { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .sheet-text {
   flex: 1;
   min-height: 0;
   width: 100%;
-  background: none;
-  resize: none;
-  outline: none;
   font-family: var(--font-ui);
   font-size: 13.5px;
   line-height: 1.7;
   letter-spacing: -0.003em;
   color: var(--paper-ink);
-  cursor: text;
-  overflow: auto;
+  overflow-y: auto;
+  scrollbar-width: none;
 }
-.sheet-text::placeholder { color: var(--fg-faint); font-style: italic; }
+.sheet-text::-webkit-scrollbar { display: none; }
+.sheet-text.pm > * + * { margin-top: 0.7em; }
 /* words arriving from a writer: shown, not yet kept */
 .sheet-text.arriving, .prose.arriving { color: var(--fg-muted); }
 /* the foot: the count, and the folio where a page keeps its number */
@@ -1792,3 +1883,9 @@ html, body, #root { height: 100%; }
 }
 .about-name { font-size: var(--t-lead); font-weight: var(--w-declare); color: var(--fg); }
 .about-v { font-size: var(--t-label); font-weight: var(--w-mid); color: var(--fg-faint); margin-left: 4px; }
+
+/* the form a document is written in: prose or a screenplay, beside its meta */
+.paper-form { margin-left: 8px; padding: 2px; gap: 0; background: var(--tint); box-shadow: none; font-family: var(--font-ui); text-transform: none; letter-spacing: 0; }
+.paper-form .seg-btn { height: 20px; padding: 0 9px; font-size: var(--t-micro); box-shadow: none; }
+.paper-form .seg-btn.on { background: var(--surface-raised); box-shadow: 0 0.5px 1px rgba(14, 14, 13, 0.14), 0 1px 3px rgba(14, 14, 13, 0.08); }
+.dark .paper-form .seg-btn.on { background: rgba(242, 242, 240, 0.16); box-shadow: none; }

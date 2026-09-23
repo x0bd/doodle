@@ -8,6 +8,7 @@ import type { GraphNode, GraphState } from "./graph";
 import { childrenOf, graph } from "./graph";
 import { commit } from "./history";
 import { createStore } from "./store";
+import { plain, formOf } from "../writer/markup";
 
 export interface Anchor {
   /** whose words these are */
@@ -109,7 +110,9 @@ export interface Tied {
 /** the children of this node that are tied to its words, in the order
  *  they appear in them; the adrift ones last, in their own order */
 export function tiedTo(g: GraphState, id: string): Tied[] {
-  const text = String(g.nodes[id]?.data.text ?? "");
+  // the words as read — markup away — since that is what was selected
+  const n0 = g.nodes[id];
+  const text = n0 ? plain(String(n0.data.text ?? ""), formOf(n0.data)) : "";
   const out: Tied[] = [];
   for (const c of childrenOf(g, id)) {
     const n = g.nodes[c];

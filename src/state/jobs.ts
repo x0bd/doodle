@@ -11,6 +11,7 @@ import { doc, bibleText } from "./doc";
 import { writeAsset, saveRecord, loadRecord, inTauri } from "../platform/fs";
 import { ui } from "./ui";
 import { expandMentions } from "../canvas/mentions";
+import { plain, formOf } from "../writer/markup";
 import { record, inputsOf } from "./prov";
 import type { ImageRequest, Progress, TextRequest } from "../providers/types";
 
@@ -62,8 +63,11 @@ function fed(node: GraphNode, port: string): GraphNode | undefined {
   return e ? g.nodes[e.from.node] : undefined;
 }
 
-/** what a character or style contributes to a prompt, in words */
-function describe(n: GraphNode | undefined): string {
+/** what a character or style contributes to a prompt, in words. A writer
+ *  reads the words as written — Markdown, Fountain — and an image model
+ *  reads them `bare`, the markup read away. */
+function describe(n: GraphNode | undefined, bare = false): string {
+  const words = (t: string, of: GraphNode) => (bare ? plain(expandMentions(t), formOf(of.data)) : expandMentions(t));
   if (!n || n.status === "rejected") return "";
   const d = n.data;
   if (n.kind === "character" || n.kind === "location") return [d.name, d.description].filter(Boolean).join(": ");
@@ -72,14 +76,14 @@ function describe(n: GraphNode | undefined): string {
   if (n.kind === "chapter") {
     const g = graph.get();
     const pages = childrenOf(g, n.id).map((id) => g.nodes[id]).filter((p) => p.kind === "page" && p.status !== "rejected").sort((a, b) => a.seq - b.seq);
-    return pages.map((p) => expandMentions(String(p.data.text ?? ""))).filter(Boolean).join("\n\n");
+    return pages.map((p) => words(String(p.data.text ?? ""), p)).filter(Boolean).join("\n\n");
   }
-  return expandMentions(String(d.text ?? ""));
+  return words(String(d.text ?? ""), n);
 }
 
 /** everything given to a node by hand, in the order it was given */
-function given(n: GraphNode): string[] {
-  return (n.extras ?? []).map((p) => describe(fed(n, p.id))).filter(Boolean);
+function given(n: GraphNode, bare = false): string[] {
+  return (n.extras ?? []).map((p) => describe(fed(n, p.id), bare)).filter(Boolean);
 }
 
 /** The prompt compiler, in its smallest form: the scene, then who is in
@@ -90,10 +94,10 @@ export function requestFor(gen: GraphNode): ImageRequest {
   const neg = fed(gen, "negative");
   const d = gen.data;
   const seed = d.control === "Random" ? Math.floor(Math.random() * 1_000_000) : Number(d.seed);
-  const prompt = [describe(pos), describe(fed(gen, "character")), describe(fed(gen, "style")), ...given(gen), bibleText().replace(/\n/g, ". ")].filter(Boolean).join(". ");
+  const prompt = [describe(pos, true), describe(fed(gen, "character"), true), describe(fed(gen, "style"), true), ...given(gen, true), bibleText().replace(/\n/g, ". ")].filter(Boolean).join(". ");
   return {
     prompt,
-    negative: String(neg?.data.text ?? ""),
+    negative: neg ? plain(String(neg.data.text ?? ""), formOf(neg.data)) : "",
     model: String(model?.data.model ?? "Mock"),
     seed,
     steps: Number(d.steps),

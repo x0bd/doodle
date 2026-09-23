@@ -6,6 +6,8 @@ import { FieldRow } from "../shell/Fields";
 import { graph, inputs, outputs, updateData, childCount, childrenOf, measure, setWidth, takeOutput, type GraphNode, type PortRef } from "../state/graph";
 import { camera } from "./camera";
 import { jobs, jobFor, partialFor } from "../state/jobs";
+import { Editor } from "../writer/Editor";
+import { plain, formOf, countWords } from "../writer/markup";
 
 export interface NodeHandlers {
   onPointerDown: (e: ReactPointerEvent, node: GraphNode) => void;
@@ -307,7 +309,6 @@ const initials = (name: string) =>
     .map((w) => w[0].toUpperCase())
     .join("");
 
-const countWords = (t: string) => (t.trim() ? t.trim().split(/\s+/).length : 0);
 const fmtCount = (n: number) => n.toLocaleString("en-US");
 
 /** A page on the field is a sheet: the words themselves, written on in
@@ -325,17 +326,17 @@ function PageBody({ node }: { node: GraphNode }) {
   // a writer at work shows its words here as they come; they are not the page yet
   const partial = partialFor(j, node.id);
   const text = partial ?? String(node.data.text ?? "");
-  const words = countWords(text);
+  const form = formOf(node.data);
+  const words = countWords(text, form);
   return (
     <div className="node-body node-sheet">
-      <textarea
-        className={`sheet-text selectable${partial !== undefined ? " arriving" : ""}`}
+      <Editor
         value={text}
-        placeholder="Start writing…"
+        form={form}
+        onChange={(v) => updateData(node.id, { text: v })}
         readOnly={partial !== undefined}
-        onChange={(e) => updateData(node.id, { text: e.target.value })}
-        onPointerDown={(e) => e.stopPropagation()}
-        spellCheck
+        className={`sheet-text selectable${partial !== undefined ? " arriving" : ""}${form === "screenplay" ? " screenplay" : ""}`}
+        placeholder={form === "screenplay" ? "INT. SOMEWHERE — NIGHT" : "Start writing…"}
       />
       <div className="sheet-foot px">
         <span>{partial !== undefined ? "writing…" : words ? `${fmtCount(words)} words` : ""}</span>
@@ -352,7 +353,7 @@ const SHOWN = 5;
 function ChapterBody({ node }: { node: GraphNode }) {
   const g = graph.use();
   const pages = childrenOf(g, node.id).map((id) => g.nodes[id]).filter((n) => n.kind === "page").sort((a, b) => a.seq - b.seq);
-  const words = pages.reduce((n, p) => n + countWords(String(p.data.text ?? "")), 0);
+  const words = pages.reduce((n, p) => n + countWords(String(p.data.text ?? ""), formOf(p.data)), 0);
   const summary = String(node.data.summary ?? "");
   return (
     <div className="node-body node-stack">
@@ -365,7 +366,7 @@ function ChapterBody({ node }: { node: GraphNode }) {
             <li key={p.id} className="toc-row">
               <span className="toc-what">
                 <b>{p.title}</b>
-                <span>{String(p.data.text ?? "").trim().split("\n")[0] || "Not begun"}</span>
+                <span>{plain(String(p.data.text ?? ""), formOf(p.data)).trim().split("\n")[0] || "Not begun"}</span>
               </span>
               <span className="toc-n px">{i + 1}</span>
             </li>

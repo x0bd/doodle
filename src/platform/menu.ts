@@ -12,6 +12,7 @@ import { redo, undo } from "../state/history";
 import { deleteSelected, duplicateSelected, selectAll } from "../state/graph";
 import { clearQueue, enqueue } from "../state/jobs";
 import { inTauri } from "./fs";
+import { editorUndo, editorRedo } from "../writer/Editor";
 
 const typing = () => {
   const el = document.activeElement as HTMLElement | null;
@@ -34,8 +35,9 @@ export const actions: Record<string, () => void> = {
   "view.next": () => step(1, () => requestAnimationFrame(fitAll)),
   "help.shortcuts": openShortcuts,
   // inside a field the platform's own text undo applies; on the field, the journal's
-  "edit.undo": () => (typing() ? document.execCommand("undo") : undo()),
-  "edit.redo": () => (typing() ? document.execCommand("redo") : redo()),
+  // a writer has its own history; any other field the platform's text undo
+  "edit.undo": () => editorUndo() || (typing() ? document.execCommand("undo") : undo()),
+  "edit.redo": () => editorRedo() || (typing() ? document.execCommand("redo") : redo()),
   "edit.duplicate": () => !typing() && duplicateSelected(),
   "edit.delete": () => !typing() && deleteSelected(),
   "edit.select-all": () => (typing() ? document.execCommand("selectAll") : selectAll()),

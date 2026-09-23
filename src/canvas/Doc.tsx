@@ -14,12 +14,20 @@ import { fitAll } from "./view";
 import { doc } from "../state/doc";
 import { jobs, enqueue, jobFor, partialFor, RUNNABLE } from "../state/jobs";
 import { FieldRow } from "../shell/Fields";
-import { useMentions } from "./mentions";
-import { useState } from "react";
+import { mentionables } from "./mentions";
+import { useState, useMemo } from "react";
+import { Editor, type Picked, type Tie } from "../writer/Editor";
+import { formOf, countWords } from "../writer/markup";
 
 export const GLYPH: Record<NodeKind, IconSvgElement> = {
   model: ModelIcon, prompt: TextIcon, generate: GenerateIcon, preview: ImageIcon,
   character: CharacterIcon, location: LocationIcon, style: StyleIcon, write: WriteIcon, page: PageIcon, note: NoteIcon, shot: ShotIcon, chapter: ChapterIcon,
+};
+
+/** how long a screenplay runs: a page a minute, some 180 words a page */
+const runtime = (words: number) => {
+  const s = Math.round((words / 180) * 60);
+  return s < 60 ? `≈ ${Math.max(5, Math.round(s / 5) * 5)} s` : `≈ ${Math.round(s / 60)} min`;
 };
 
 const ASK_LABEL = { expand: "Expanded", continue: "Continued", rewrite: "Rewritten", ask: "Answered" } as const;
@@ -45,7 +53,9 @@ export function Doc({ id }: { id: string }) {
   const job = RUNNABLE.has(node.kind) ? jobFor(j, id) : undefined;
   const ties = tiedTo(g, id);
   const written = String(node.data[proseKey(node.kind)] ?? "");
-  const words = written.trim() ? written.trim().split(/\s+/).length : 0;
+  const form = formOf(node.data);
+  const words = countWords(written, form);
+  const writes = proseKey(node.kind) === "text";
 
   const addNote = () => addNode(makeNode("note", 60 + kids.length * 260, 60, { parent: id, title: node.kind === "prompt" ? `Beat ${kids.length + 1}` : "Note" }));
 
@@ -60,9 +70,19 @@ export function Doc({ id }: { id: string }) {
             <span>in {parent}</span>
             {node.status !== "canon" && <><span className="sep">·</span><span>{node.status}</span></>}
             {words > 0 && <><span className="sep">·</span><span>{words.toLocaleString("en-US")} words</span></>}
+            {form === "screenplay" && words > 0 && <><span className="sep">·</span><span title="A screenplay page runs about a minute">{runtime(words)}</span></>}
             {kids.length > 0 && <><span className="sep">·</span><span>{kids.length} inside</span></>}
             {images.length > 0 && <><span className="sep">·</span><span>{images.length} {images.length === 1 ? "image" : "images"}</span></>}
             {job && <><span className="sep">·</span><span>{job.state === "running" ? `running ${job.note ?? ""}` : job.state}</span></>}
+            {writes && (
+              <span className="seg paper-form" role="radiogroup" aria-label="Form">
+                {(["prose", "screenplay"] as const).map((f) => (
+                  <button key={f} className={`seg-btn${form === f ? " on" : ""}`} role="radio" aria-checked={form === f} onClick={() => updateData(id, { form: f })}>
+                    {f === "prose" ? "Prose" : "Screenplay"}
+                  </button>
+                ))}
+              </span>
+            )}
             {RUNNABLE.has(node.kind) && (
               <button className="pill pill-sm paper-run" onClick={() => enqueue([id])} title="Run this one — ⌘↩">
                 Run
@@ -477,111 +497,79 @@ function Body({ node }: { node: GraphNode }) {
 }
 
 export function Prose({ node, field = "text", focus = true }: { node: GraphNode; field?: string; focus?: boolean }) {
-  const ref = useRef<HTMLTextAreaElement>(null);
   const j = jobs.use();
   const g = graph.use();
   const partial = node.kind === "page" ? partialFor(j, node.id) : undefined;
   const value = partial ?? String(node.data[field] ?? "");
+  const form = field === "text" ? formOf(node.data) : "prose";
   const set = (v: string) => updateData(node.id, { [field]: v });
-  const m = useMentions(ref, value, set, GLYPH);
-  const [sel, setSel] = useState<{ text: string; at: number } | null>(null);
+  const [sel, setSel] = useState<Picked | null>(null);
   const lit = held.use((h) => h.beat);
   const tying = held.use((h) => h.tying);
   // the passages that beats are tied to, where they are in the words now
-  const ties = field === "text" ? tiedTo(g, node.id) : [];
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    el.style.height = "0";
-    el.style.height = `${Math.max(120, el.scrollHeight)}px`;
-  }, [value]);
-  const read = () => {
-    const el = ref.current;
-    if (!el) return;
-    const has = el.selectionStart !== el.selectionEnd;
-    setSel(has ? { text: value.slice(el.selectionStart, el.selectionEnd).trim(), at: el.selectionStart } : null);
-    m.onSelect();
-  };
-  const beatFromSelection = () => {
-    if (!sel) return;
+  const found = (field === "text" ? tiedTo(g, node.id) : []).filter((t) => t.found);
+  const tieKey = found.map((t) => `${t.node.id}:${t.found!.start}:${t.found!.end}:${t.found!.loose}`).join("|");
+  const ties = useMemo<Tie[]>(
+    () => found.map((t) => ({ id: t.node.id, start: t.found!.start, end: t.found!.end, loose: t.found!.loose })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [tieKey],
+  );
+  const nameKey = mentionables().map((n) => n.title).join("\u0000");
+  const names = useMemo(() => (nameKey ? nameKey.split("\u0000") : []), [nameKey]);
+  const beatFrom = (p: Picked) => {
     const n = childrenOf(graph.get(), node.id).length;
-    const title = sel.text.split(/[.!?\n]/)[0].slice(0, 40).trim() || `Beat ${n + 1}`;
+    const title = p.text.split(/[.!?\n]/)[0].slice(0, 40).trim() || `Beat ${n + 1}`;
     addNode(
       makeNode("note", 60 + n * 260, 60, {
         parent: node.id,
         title,
-        data: { text: sel.text },
-        anchor: { node: node.id, text: sel.text, at: sel.at },
+        data: { text: p.text },
+        anchor: { node: node.id, text: p.text, at: p.at },
       }),
     );
-    setSel(null);
-  };
-  /** tie the beat that asked to whatever is selected now */
-  const tieHere = (id: string) => {
-    if (!sel) return;
-    tie(id, node.id, sel.text, sel.at);
     setSel(null);
   };
   // a beat asked to be re-tied: the next passage chosen is its
   useEffect(() => {
     if (tying && sel) {
-      tieHere(tying);
+      tie(tying, node.id, sel.text, sel.at);
       askToTie(null);
+      setSel(null);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tying, sel]);
-  // the page opens with the caret in the words, at the end — nothing to click first
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || !focus) return;
-    el.focus({ preventScroll: true });
-    el.setSelectionRange(el.value.length, el.value.length);
-  }, [node.id, focus]);
+  }, [tying, sel, node.id]);
   return (
-    <div className="prose-wrap">
-      {/* under the words, in the same metrics: where each tied passage sits */}
-      <div className="prose-marks" aria-hidden>
-        {marks(value, ties, lit)}
-      </div>
-      <textarea
-        ref={ref}
-        className={`prose selectable${partial !== undefined ? " arriving" : ""}`}
-        readOnly={partial !== undefined}
-        value={value}
-        placeholder={node.kind === "page" ? "Start writing…" : "Write it the way you would say it. @ names a character, a style, a shot. Expand it from the bar when it is enough."}
-        onChange={(e) => (set(e.target.value), requestAnimationFrame(m.afterChange))}
-        onKeyDown={m.onKeyDown}
-        onSelect={read}
-        onBlur={() => setTimeout(() => (m.close(), setSel(null)), 150)}
-        spellCheck
-      />
-      {m.menu}
-      {sel && (
-        <button className="pill pill-sm prose-act" onMouseDown={(e) => e.preventDefault()} onClick={beatFromSelection} title="A beat from the selected words, tied to them">
-          <Icon icon={PlusIcon} size={11} strokeWidth={2.4} />
-          {node.kind === "prompt" ? "Beat from selection" : "Note from selection"}
-        </button>
-      )}
-    </div>
+    <Editor
+      value={value}
+      form={form}
+      onChange={set}
+      readOnly={partial !== undefined}
+      className={`prose selectable${partial !== undefined ? " arriving" : ""}${form === "screenplay" ? " screenplay" : ""}`}
+      placeholder={
+        form === "screenplay"
+          ? "INT. SOMEWHERE — NIGHT"
+          : node.kind === "page"
+            ? "Start writing…"
+            : "Write it the way you would say it. @ names a character, a style, a shot. Expand it from the bar when it is enough."
+      }
+      focusKey={focus ? node.id : false}
+      ties={ties}
+      lit={lit}
+      names={names}
+      mentions={(q) =>
+        mentionables()
+          .filter((n) => n.title.toLowerCase().startsWith(q.toLowerCase()))
+          .map((n) => ({ id: n.id, title: n.title, hint: n.kind, icon: <Icon icon={GLYPH[n.kind]} size={13} strokeWidth={1.8} /> }))
+      }
+      onPick={setSel}
+      gutter
+      bubble={(p) =>
+        field === "text" ? (
+          <button className="wb-act" onClick={() => beatFrom(p)} title="A beat from the selected words, tied to them">
+            <Icon icon={PlusIcon} size={11} strokeWidth={2.4} />
+            {node.kind === "prompt" ? "Beat" : "Note"}
+          </button>
+        ) : null
+      }
+    />
   );
-}
-
-/** the words again, in the same metrics, with the tied passages marked */
-function marks(text: string, ties: Tied[], lit: string | null) {
-  const found = ties.filter((t) => t.found).sort((a, b) => a.found!.start - b.found!.start);
-  const out: ReactNode[] = [];
-  let at = 0;
-  found.forEach((t, i) => {
-    const { start, end, loose } = t.found!;
-    if (start < at) return; // ties that overlap: the first one holds
-    if (start > at) out.push(text.slice(at, start));
-    out.push(
-      <mark key={t.node.id} className={`tie${loose ? " loose" : ""}${lit === t.node.id ? " lit" : ""}`} data-i={i}>
-        {text.slice(start, end)}
-      </mark>,
-    );
-    at = end;
-  });
-  out.push(`${text.slice(at)}\n`);
-  return out;
 }
