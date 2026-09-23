@@ -92,15 +92,17 @@ Long-plan stages, honestly: S0–S4 are done in our own way; **S5 (MVP hardening
 
 ---
 
-## 4. The decisions this plan needs from you (answer before M2)
+## 4. Decisions — **made 2026-09-23**
 
-**D1 — What is the unit of writing in a book: the page or the chapter?** Today a book is chapters of 350-word **page nodes**. That was right for the recursive-canvas idea and wrong for writing a book: a writer revises across page boundaries all the time, and 350-word sheets make every edit near a boundary awkward.
+**Decided:** D1 → the chapter is the manuscript (the recommendation). D2 → **GitHub, no Apple Developer account**: builds are published as GitHub Releases for an easy download. D3 → the recommendation: FLUX.2 klein 4B is the default, every model shows its licence. The reasoning each was chosen from is kept below.
+
+**D1 — The unit of writing in a book (decided: the chapter).** Today a book is chapters of 350-word **page nodes**. That was right for the recursive-canvas idea and wrong for writing a book: a writer revises across page boundaries all the time, and 350-word sheets make every edit near a boundary awkward.
 - **Recommendation: the chapter is the manuscript** — one continuous document per chapter, with scenes as sections inside it (scene breaks / headings). Pages become a **layout**, computed from the words for the field (the sheets you see when you zoom out), for Read mode and for the PDF — never something you write across. Beats, notes, figures and images stay nodes inside the chapter, tied to passages. Existing books migrate by joining their pages (page breaks kept as soft markers until the first edit).
 - Alternative: keep pages as nodes and add a "continuous" editing view that stitches them. More code, more edge cases, the same result.
 
-**D2 — Apple Developer Program ($99/year).** Needed to **notarize** the build so friends can open it without Gatekeeper warnings. Without it, the build still runs on your Mac (ad-hoc signed) and friends can open it with right-click → Open, once. Recommendation: build ad-hoc for M1; enrol before the friends release (M8).
+**D2 — how friends get the app: GitHub Releases (decided).** No Apple Developer Program. CI builds an ad-hoc-signed `.dmg` on every version tag and publishes it as a GitHub Release, with a README install section. The cost of skipping notarization: the first open of a downloaded build is blocked by Gatekeeper; the friend allows it once in *System Settings → Privacy & Security → Open Anyway* (the README shows this with a screenshot; `xattr -dr com.apple.quarantine /Applications/Doodle.app` for the terminal-minded). Updates come through Tauri's updater reading the GitHub Release feed, signed with Doodle's own update key (independent of Apple). A Homebrew tap (`brew install --cask x0bd/tap/doodle`) is an easy extra later. Notarization can still be added if the audience grows past friends.
 
-**D3 — Licences.** FLUX.2 klein **4B is Apache 2.0**; FLUX.2 klein **9B** and **Ideogram 4** are **non-commercial**. Fine for writing your book and showing friends; if the book or Doodle is ever sold, images made with 9B/Ideogram need a commercial licence or regeneration with 4B/ChatGPT. Doodle records the model in every image's provenance, so this is always answerable. Recommendation: default to klein 4B for anything "final", show the licence beside each model.
+**D3 — Licences (decided: the recommendation).** FLUX.2 klein **4B is Apache 2.0**; FLUX.2 klein **9B** and **Ideogram 4** are **non-commercial**. Fine for writing your book and showing friends; if the book or Doodle is ever sold, images made with 9B/Ideogram need a commercial licence or regeneration with 4B/ChatGPT. Doodle records the model in every image's provenance, so this is always answerable. Recommendation: default to klein 4B for anything "final", show the licence beside each model.
 
 ---
 
@@ -147,11 +149,11 @@ The point: from here on, Doodle is opened from Applications, and it never loses 
 | M1.7 | **First run**: welcome that explains providers, detects them, and opens a sample book | A fresh Mac user reaches writing in < 60 s. |
 | M1.8 | **Diagnostics**: local log files (rotated, no text content, no tokens), *Reveal logs*, a redacted diagnostics bundle | A friend can send a bundle that contains no words of their book. |
 | M1.9 | **Scale benchmark** (decision C2): generate a 120k-word, 30-chapter book with 400 images; measure open, save, search, memory | Open < 1 s, save < 50 ms, canvas at 60 fps at the book level; else migrate storage before M2. |
-| M1.10 | **Test harness**: vitest for state (graph ops, anchors, pagination, import), Rust tests, a Playwright smoke against the dev server with mocked `invoke`; GitHub Actions on macOS builds the `.dmg` on every tag | CI green; a tagged commit produces a downloadable build. |
+| M1.10 | **Test harness and releases**: vitest for state (graph ops, anchors, pagination, import), Rust tests, a Playwright smoke against the dev server with mocked `invoke`; GitHub Actions on macOS builds the ad-hoc-signed `.dmg` on every version tag and **publishes it as a GitHub Release** (D2) | CI green; tagging `v0.x.y` produces a Release with a `.dmg` that installs on a second Mac by following the README. |
 
 ### M2 — The manuscript (writing a book, properly) — *L*
 
-Depends on **D1**.
+Built on **D1** (decided: the chapter is the manuscript).
 
 | # | Task | Acceptance |
 |---|---|---|
@@ -222,7 +224,7 @@ Depends on **D1**.
 | M7.2 | **Typeset PDF** via Typst (embedded): book trim sizes, chapter openers, figures, page numbers, a few designed templates | A 300-page PDF in < 20 s that looks like a book. |
 | M7.3 | **`.docx`** export (manuscript format: 12pt, double-spaced option, scene breaks) | Opens in Word and Pages with headings intact. |
 | M7.4 | **Share a project**: archive + a *read-only reader mode* for someone without the providers | A friend opens the archive and reads with pictures. |
-| M7.5 | **Notarized build** (D2): Developer ID signing, notarization, stapling in CI | Opens on a friend's Mac with no warning. |
+| M7.5 | **Friend-ready distribution** (D2): GitHub Releases with the `.dmg`, README install steps including the one-time *Open Anyway*, Tauri updater on the Release feed with its own signing key, release notes per version; optional Homebrew tap | A friend installs from the Release page by following the README alone, and gets the next version through the updater. |
 | M7.6 | **Onboarding and help**: the sample book, a 5-minute tour, shortcuts sheet (exists), providers and privacy page, known limitations | A friend gets from install to a picture of their character without asking me. |
 
 ### M8 — Friends release (private alpha), then launch prep — *M*
@@ -246,6 +248,7 @@ From the long plan and the stray work: **video** (image-to-video from a chosen t
 
 | Risk | Likelihood | What we do |
 |---|---|---|
+| Un-notarized downloads are blocked on first open (D2) | Certain | README step with a screenshot; the Release notes repeat it; notarize later if the audience grows. |
 | D1 migration loses words | Medium | Round-trip fuzz tests on the migration; keep the old pages in `backups/` until the user says otherwise. |
 | mflux churns (new models, API changes) | High | Pin the mflux version in the sidecar environment; upgrade deliberately; the capability declaration isolates the UI. |
 | Memory: FLUX.2 9B + qwen3 14B + the app on 48 GB | Medium | Memory guard in M4.4; unload idle models; prefer klein 4B while Ollama is busy. |
@@ -260,4 +263,4 @@ From the long plan and the stray work: **video** (image-to-video from a chosen t
 
 **M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8**, with two overlaps allowed: M4.1–M4.3 (the image sidecar) can start alongside M2 because they touch different code; M6.1 (Ollama tools) is small and can ride along anywhere.
 
-Start: **M1.1–M1.3** (a build you can open from Applications), then M1.4 (the recovery journal), then the M1.9 benchmark. D1 needs an answer before M2 begins.
+Start: **M1.1–M1.3** (a build you can open from Applications), then M1.4 (the recovery journal), then the M1.9 benchmark and M1.10 (CI publishing to GitHub Releases). D1–D3 are decided (§4).
