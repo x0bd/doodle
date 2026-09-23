@@ -69,7 +69,7 @@ Long-plan stages, honestly: S0–S4 are done in our own way; **S5 (MVP hardening
 | # | The long plan said | What we did | Why |
 |---|---|---|---|
 | C1 | Svelte | React 19 + our own stores | Already built; no reason to rewrite. |
-| C2 | SQLite for the project | JSON in a folder (`graph.json`) | Human-readable, diffable, trivially archived. **Re-evaluated in M1 by benchmark** (task M1.9): a 120k-word book with 400 images must save in < 50 ms and open in < 1 s; if not, move nodes to SQLite or per-node files. |
+| C2 | SQLite for the project | JSON in a folder (`graph.json`) | Human-readable, diffable, trivially archived. **Kept, by benchmark (M1.9, 2026-09-23)**: a 134k-word, 30-chapter book with 400 pictures (1.2 MB `graph.json`) in the release build opens to first paint in 271 ms, saves in 5 ms (serialize 1, write 4), searches in < 1 ms, pans the book level and the far view at 60 fps. Memory: 56 MB app + 423 MB web content — pictures as data URLs; see §7. |
 | C3 | ProseMirror JSON is canonical | **Text is canonical** — Markdown for prose, Fountain for screenplay; ProseMirror reads and writes it | Prompts, export, pagination, anchors all read words; Markdown/Fountain are what a model and an export already read. Guarded by fuzz tests (1,000 docs/form/run). |
 | C4 | Codex App Server "experimental" | ChatGPT via Codex is the main paid provider | It works: streaming, schemas, vision, images, MCP. |
 | C5 | — | **Newest Codex binary wins**; Homebrew cask removed | An older CLI is refused the account's default model ("requires a newer version of Codex"). |
@@ -148,7 +148,7 @@ The point: from here on, Doodle is opened from Applications, and it never loses 
 | M1.6 ✅ | **Integrity**: validate `graph.json` against a schema on open; migrations with a `format` version; orphan-asset scan with a dry run | A corrupted file opens from the newest good backup with a plain sentence saying so. |
 | M1.7 | **First run**: welcome that explains providers, detects them, and opens a sample book | A fresh Mac user reaches writing in < 60 s. |
 | M1.8 | **Diagnostics**: local log files (rotated, no text content, no tokens), *Reveal logs*, a redacted diagnostics bundle | A friend can send a bundle that contains no words of their book. |
-| M1.9 | **Scale benchmark** (decision C2): generate a 120k-word, 30-chapter book with 400 images; measure open, save, search, memory | Open < 1 s, save < 50 ms, canvas at 60 fps at the book level; else migrate storage before M2. |
+| M1.9 ✅ | **Scale benchmark** (decision C2): generate a 120k-word, 30-chapter book with 400 images; measure open, save, search, memory | Open < 1 s, save < 50 ms, canvas at 60 fps at the book level; else migrate storage before M2. |
 | M1.10 | **Test harness and releases**: vitest for state (graph ops, anchors, pagination, import), Rust tests, a Playwright smoke against the dev server with mocked `invoke`; GitHub Actions on macOS builds the ad-hoc-signed `.dmg` on every version tag and **publishes it as a GitHub Release** (D2) | CI green; tagging `v0.x.y` produces a Release with a `.dmg` that installs on a second Mac by following the README. |
 
 ### M2 — The manuscript (writing a book, properly) — *L*
@@ -240,6 +240,9 @@ Built on **D1** (decided: the chapter is the manuscript).
 
 ## 7. After the MVP (kept, not scheduled)
 
+**Performance, found by M1.9 and not yet needed:** pictures are held as data URLs in the page (423 MB of web content for the benchmark book) — serve them through a custom protocol so WebKit keeps and drops decoded images itself; draw only the cards in view at a level with hundreds of cards; send `graph.json` to Rust as raw bytes rather than a JSON string (the write is 4 ms now).
+
+
 From the long plan and the stray work: **video** (image-to-video from a chosen take; a mock adapter first), **branches** (explore a chapter as a variant, compare, promote), **recipes** (Plumb: a graph used as a form), structured multi-output steps, `{{port}}` placeholders, prompt suggestions from your own kept prompts (Visual Electric), Windows, collaboration, Claude via API key, Doodle Lab.
 
 ---
@@ -263,4 +266,4 @@ From the long plan and the stray work: **video** (image-to-video from a chosen t
 
 **M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8**, with two overlaps allowed: M4.1–M4.3 (the image sidecar) can start alongside M2 because they touch different code; M6.1 (Ollama tools) is small and can ride along anywhere.
 
-Start: **M1.1–M1.3** (a build you can open from Applications — M1.1, M1.2 done 2026-09-23; M1.3 built, the type registers as a package, the double-click not yet checked in the installed build; CI workflows written, no tag pushed yet), then M1.4 (the recovery journal — done 2026-09-23), M1.5 (versions), M1.6 (integrity) — done 2026-09-23, then the M1.9 benchmark and M1.10 (CI publishing to GitHub Releases). D1–D3 are decided (§4).
+Start: **M1.1–M1.3** (a build you can open from Applications — M1.1, M1.2 done 2026-09-23; M1.3 built, the type registers as a package, the double-click not yet checked in the installed build; CI workflows written, no tag pushed yet), then M1.4 (the recovery journal — done 2026-09-23), M1.5 (versions), M1.6 (integrity) and the M1.9 benchmark — done 2026-09-23 (JSON stays; the field was re-rendering every card on every frame of a pan, fixed), then and M1.10 (CI publishing to GitHub Releases). D1–D3 are decided (§4).

@@ -1,4 +1,4 @@
-import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
+import { memo, useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
 import { Icon, PopUpIcon, ChevronRightIcon, ImageIcon } from "../icons";
 import { thumbFor, assets } from "../state/assets";
 import { KINDS } from "../graph/kinds";
@@ -17,7 +17,11 @@ export interface NodeHandlers {
 }
 
 /** A node: a card with its head, its ports on the edges, and its body by kind. */
-export function Node({ node, selected, into, dim, handlers }: { node: GraphNode; selected: boolean; into?: boolean; dim?: boolean; handlers: NodeHandlers }) {
+/** A card re-renders when what it shows changes — its node, its state on
+ *  the field — not when another card does (the handlers never change). */
+export const Node = memo(Card);
+
+function Card({ node, selected, into, dim, handlers }: { node: GraphNode; selected: boolean; into?: boolean; dim?: boolean; handlers: NodeHandlers }) {
   const ins = inputs(node);
   const outs = outputs(node);
   const edges = graph.use((g) => g.edges);

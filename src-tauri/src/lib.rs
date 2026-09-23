@@ -1,6 +1,7 @@
 mod archive;
 mod codex;
 mod integrity;
+mod logs;
 mod commands;
 mod mcp;
 mod menu;
@@ -36,6 +37,8 @@ pub fn run() {
             versions::version_save,
             versions::version_index,
             versions::version_read,
+            logs::log_event,
+            logs::log_path,
             integrity::list_backups,
             integrity::read_backup,
             integrity::set_aside,
@@ -53,6 +56,8 @@ pub fn run() {
         ])
         .manage(codex::CodexState::default())
         .setup(|app| {
+            logs::init(app.handle());
+            logs::info("app", &format!("Doodle {} starting ({})", app.package_info().version, if cfg!(debug_assertions) { "dev" } else { "release" }));
             opened::from_args();
             // Doodle's own tools for the agent's turns, on this machine only
             mcp::start(app.handle());

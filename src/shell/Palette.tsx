@@ -8,6 +8,8 @@ import { ui, closePalette, openChooser, openSettings, showBar } from "../state/u
 import { enqueue } from "../state/jobs";
 import { exportText, exportArchiveFile, importArchiveFile, tidyAssets } from "../state/doc";
 import { openVersions, keepVersionHere } from "../state/versions";
+import { findNodes } from "../state/search";
+import { measure } from "../state/bench";
 import { GLYPH } from "../canvas/Doc";
 import { KINDS } from "../graph/kinds";
 import type { GraphNode } from "../state/graph";
@@ -45,21 +47,10 @@ export function Palette() {
       { kind: "cmd", id: "versions", label: "Versions…", icon: PageIcon, run: () => openVersions() },
       { kind: "cmd", id: "keep-version", label: "Keep a version", icon: SaveIcon, run: () => void keepVersionHere() },
       { kind: "cmd", id: "tidy", label: "Tidy unused pictures…", icon: SaveIcon, run: () => void tidyAssets() },
+      { kind: "cmd", id: "measure", label: "Measure performance", icon: FitIcon, run: () => void measure() },
     ];
     const cmds = all.filter((c) => c.kind === "cmd" && (!needle || c.label.toLowerCase().includes(needle)));
-    const nodes: Hit[] = g.order
-      .map((id) => g.nodes[id])
-      .filter((n) => {
-        if (!needle) return true;
-        const words = `${n.title} ${KINDS[n.kind].title} ${n.data.text ?? ""} ${n.data.description ?? ""} ${n.data.name ?? ""}`.toLowerCase();
-        return words.includes(needle);
-      })
-      .sort((a, b) => {
-        const ta = a.title.toLowerCase().startsWith(needle) ? 0 : 1;
-        const tb = b.title.toLowerCase().startsWith(needle) ? 0 : 1;
-        return ta - tb || a.seq - b.seq;
-      })
-      .slice(0, 12)
+    const nodes: Hit[] = findNodes(g, needle)
       .map((n) => ({ kind: "node", node: n, where: n.parent ? (g.nodes[n.parent]?.title ?? "") : "" }));
     return needle ? [...nodes, ...cmds] : [...cmds, ...nodes];
   }, [q, g]);

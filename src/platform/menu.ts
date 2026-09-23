@@ -11,7 +11,9 @@ import { openDialog, save, saveAs, duplicate, reveal, exportText, exportArchiveF
 import { redo, undo } from "../state/history";
 import { deleteSelected, duplicateSelected, selectAll } from "../state/graph";
 import { clearQueue, enqueue } from "../state/jobs";
-import { inTauri } from "./fs";
+import { inTauri, revealPath } from "./fs";
+import { logPath } from "./log";
+import { measure } from "../state/bench";
 import { editorUndo, editorRedo } from "../writer/Editor";
 import { keepVersionHere, openVersions } from "../state/versions";
 
@@ -38,6 +40,8 @@ export const actions: Record<string, () => void> = {
   "view.prev": () => step(-1, () => requestAnimationFrame(fitAll)),
   "view.next": () => step(1, () => requestAnimationFrame(fitAll)),
   "help.shortcuts": openShortcuts,
+  "help.measure": () => void measure(),
+  "help.logs": () => void logPath().then((p) => (p ? revealPath(p) : undefined)),
   // inside a field the platform's own text undo applies; on the field, the journal's
   // a writer has its own history; any other field the platform's text undo
   "edit.undo": () => editorUndo() || (typing() ? document.execCommand("undo") : undo()),

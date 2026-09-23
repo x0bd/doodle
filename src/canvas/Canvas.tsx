@@ -79,7 +79,6 @@ export function Canvas() {
   const focus = nav.use((n) => n.focus);
   const arrival = nav.use((n) => n.arrival);
   const motion = ui.use((u) => u.motion);
-  const here = childrenOf(g, focus);
   // the move the pointer made, played once: in grows from the card, out settles from the field
   const arriveStyle =
     arrival && motion === "full"
@@ -94,6 +93,15 @@ export function Canvas() {
   const writing = (!!focused && !PLACES.has(focused.kind)) || (place && read);
   const ref = useRef<HTMLDivElement>(null);
   const drag = useRef<Drag | null>(null);
+  const handlersNow = useRef<NodeHandlers | null>(null);
+  const stableHandlers = useMemo<NodeHandlers>(
+    () => ({
+      onPointerDown: (e, n) => handlersNow.current?.onPointerDown(e, n),
+      onOpen: (n) => handlersNow.current?.onOpen(n),
+      onPortDown: (e, r, d) => handlersNow.current?.onPortDown(e, r, d),
+    }),
+    [],
+  );
   const [marquee, setMarquee] = useState<Rect | null>(null);
   const [live, setLive] = useState<{ a: Point; b: Point } | null>(null);
   /** the right-click menu, where it was asked for */
@@ -417,6 +425,23 @@ export function Canvas() {
   };
 
   // the dots keep the world's grid: they scale with it, and double when they crowd
+  // What is on the field is drawn once per change to the field — not once
+  // per frame of a pan: moving the camera only rewrites the world's
+  // transform and zoom (PLAN.md M1.9 found every card re-rendered on every
+  // frame). The cards get handlers that never change and call the newest.
+  handlersNow.current = handlers;
+  const world = useMemo(
+    () => (
+      <>
+        <Wires live={live} liveType={liveType} lit={lit} />
+        {childrenOf(g, focus).map((id) => (
+          <Node key={id} node={g.nodes[id]} selected={g.selection.includes(id)} into={into === id} dim={!!lit && !lit.has(id)} handlers={stableHandlers} />
+        ))}
+      </>
+    ),
+    [g, focus, into, lit, live, liveType, map, stableHandlers],
+  );
+
   let gap = 24 * cam.zoom;
   while (gap < 14) gap *= 2;
   const cursor = dragging && drag.current?.mode === "pan" ? "grabbing" : space ? "grab" : undefined;
@@ -452,10 +477,7 @@ export function Canvas() {
           crisp at any magnification instead of being a bitmap stretched */}
       <div className="world" style={{ transform: `translate(${cam.x}px, ${cam.y}px)` }}>
         <div className="world-scale" style={{ zoom: cam.zoom }}>
-          <Wires live={live} liveType={liveType} lit={lit} />
-          {here.map((id) => (
-            <Node key={id} node={g.nodes[id]} selected={g.selection.includes(id)} into={into === id} dim={!!lit && !lit.has(id)} handlers={handlers} />
-          ))}
+          {world}
         </div>
       </div>
       {marquee && (

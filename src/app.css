@@ -146,6 +146,9 @@ html, body, #root { height: 100%; }
   left: 0;
   top: 0;
   transform-origin: 0 0;
+  /* its own layer: a pan moves it on the GPU instead of painting every
+     card and its shadows again (PLAN.md M1.9 measured 30 fps without) */
+  will-change: transform;
 }
 .world-scale { position: absolute; left: 0; top: 0; }
 .marquee {

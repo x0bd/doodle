@@ -74,6 +74,10 @@ static FOUND: std::sync::Mutex<Option<Option<PathBuf>>> = std::sync::Mutex::new(
 /// look again: something may have been installed, updated or moved
 fn rescan() -> Option<PathBuf> {
     let p = scan();
+    crate::logs::info("codex", &match &p {
+        Some(b) => format!("found {}", version_of(b).map(|v| format!("{}.{}.{}", v.0, v.1, v.2)).unwrap_or_else(|| "?".into())),
+        None => "not found".into(),
+    });
     *FOUND.lock().unwrap() = Some(p.clone());
     p
 }

@@ -15,6 +15,7 @@ import { templateById, type TemplateId } from "../graph/templates";
 import { PLACES } from "../graph/kinds";
 import { prov, resetProv, rekey } from "./prov";
 import { asMarkdown } from "./reading";
+import { log, painted, since } from "../platform/log";
 import { check, FORMAT, Unreadable, type Checked, type FileGraph } from "./integrity";
 import { delta, replay, type Tracked } from "./recovery";
 import { say, hushAll } from "./notice";
@@ -183,12 +184,43 @@ async function write(path: string) {
     if (doc.get().path !== path) throw new Error("The document changed while it was being saved");
     flushLog(); // what the log has not yet heard goes before the save's line is drawn
     const saved = tracked(); // taken in the same moment as the words the file gets
-    await saveGraph(path, serialize());
+    const t0 = performance.now();
+    const json = serialize();
+    const t1 = performance.now();
+    await saveGraph(path, json);
+    noteSave(t1 - t0, since(t1), json.length);
     savedOver(path, saved);
     doc.set((d) => ({ ...d, dirty: false, save: "saved", error: undefined }));
   } catch (e) {
     doc.set((d) => ({ ...d, save: "failed", error: String(e) }));
+    log("save", `failed: ${String(e).slice(0, 200)}`, "error");
   }
+}
+
+/** Saves happen every few seconds while writing; the log hears about each
+ *  slow one (over 50 ms, the plan's bar) and a summary every fifty. */
+const saves: number[] = [];
+function noteSave(serializeMs: number, writeMs: number, bytes: number) {
+  const ms = serializeMs + writeMs;
+  if (ms > 50) log("save", `slow: ${ms.toFixed(1)} ms (serialize ${serializeMs.toFixed(1)}, write ${writeMs.toFixed(1)}), ${Math.round(bytes / 1024)} KB`, "warn");
+  saves.push(ms);
+  if (saves.length >= 50) {
+    const s = [...saves].sort((a, b) => a - b);
+    log("save", `50 saves: median ${s[25].toFixed(1)} ms, max ${s[49].toFixed(1)} ms, ${Math.round(bytes / 1024)} KB`);
+    saves.length = 0;
+  }
+}
+
+/** The save, timed and nothing else changed — for the benchmark (M1.9):
+ *  the file written is the one that is open, as it is. */
+export async function timeSave(): Promise<{ serialize: number; write: number; bytes: number } | null> {
+  const path = doc.get().path;
+  if (!inTauri || !path) return null;
+  const t0 = performance.now();
+  const json = serialize();
+  const t1 = performance.now();
+  await saveGraph(path, json);
+  return { serialize: t1 - t0, write: since(t1), bytes: json.length };
 }
 
 /** Save now — asking where, if the graph has never been saved. */
@@ -483,10 +515,18 @@ function load(file: FileGraph, path: string | null) {
 export async function openFrom(path: string): Promise<boolean> {
   if (doc.get().path !== path && !(await mayLeave())) return false;
   try {
+    const t0 = performance.now();
     const got = await readSound(path);
     if (!got) return false;
+    const read = since(t0);
     leaveLog();
+    const t1 = performance.now();
     load(got.file, path);
+    const loaded = since(t1);
+    await painted();
+    const n = Object.keys(got.file.nodes).length;
+    const assets = new Set(Object.values(got.file.nodes).flatMap((x) => [x.asset, ...(x.outputs ?? []), ...(x.attachments ?? [])]).filter(Boolean)).size;
+    log("open", `${since(t0)} ms to first paint (read + check ${read}, load ${loaded}), ${n} nodes, ${assets} pictures${got.fixes.length ? `, ${got.fixes.length} fixes` : ""}${got.said && !got.fixes.length ? ", from a backup" : ""}`);
     await recoverInto(path);
     await restoreJobs(path);
     try {

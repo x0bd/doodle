@@ -65,6 +65,7 @@ pub fn start(app: &AppHandle) {
         Ok(s) => s,
         Err(e) => {
             eprintln!("[mcp] could not listen: {e}");
+            crate::logs::warn("mcp", &format!("could not listen: {e}"));
             return;
         }
     };
@@ -72,6 +73,7 @@ pub fn start(app: &AppHandle) {
     let secret = token();
     let _ = ENDPOINT.set(Endpoint { url: format!("http://127.0.0.1:{port}/mcp"), token: secret.clone() });
     eprintln!("[mcp] listening on 127.0.0.1:{port}");
+    crate::logs::info("mcp", &format!("listening on 127.0.0.1:{port}")); // the port only, never the token
     let waiting: Waiting = WAITING.get_or_init(Arc::default).clone();
     let app = app.clone();
     std::thread::spawn(move || {
