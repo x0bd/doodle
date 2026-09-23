@@ -125,7 +125,8 @@ fn copy_dir(from: &Path, to: &Path) -> Result<(), String> {
     for entry in fs::read_dir(from).map_err(|e| e.to_string())? {
         let entry = entry.map_err(|e| e.to_string())?;
         let name = entry.file_name();
-        if name.to_string_lossy().ends_with(".tmp") {
+        // half-written files, and the recovery log: a copy starts saved
+        if name.to_string_lossy().ends_with(".tmp") || name == "recovery.log" {
             continue;
         }
         let p = entry.path();

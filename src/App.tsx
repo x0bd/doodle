@@ -9,10 +9,12 @@ import { Bar } from "./shell/Bar";
 import { ui, togglePanes, openChooser } from "./state/ui";
 import { listenToMenu } from "./platform/menu";
 import { listenForAgent } from "./agent/tools";
-import { restoreLast, openHandedOver, recentMenu } from "./state/doc";
+import { doc, launch, openHandedOver, recentMenu } from "./state/doc";
+import { fitAll } from "./canvas/view";
 import { Welcome } from "./shell/Welcome";
 import { Palette } from "./shell/Palette";
 import { Shortcuts } from "./shell/Shortcuts";
+import { Notice } from "./shell/Notice";
 import { onFileDrop, onOpened } from "./platform/fs";
 import { attachFiles, attachTo } from "./state/assets";
 import { nav, reading } from "./state/nav";
@@ -24,17 +26,18 @@ export function App() {
   const writing = reading(focus, read);
   useEffect(listenToMenu, []);
   useEffect(listenForAgent, []);
-  // what the Finder opened Doodle with; else the last graph if it is still
-  // there — with its view — else the templates
+  // what the Finder opened Doodle with; else a graph that was never saved
+  // and was being worked on when Doodle stopped; else the last graph if it
+  // is still there — with its view — else the templates
   useEffect(() => {
     let live = true;
     recentMenu();
-    openHandedOver()
-      .then((handed) => handed || restoreLast())
-      .then((restored) => {
-        if (!live) return;
-        if (!restored) openChooser();
-      });
+    launch().then((opened) => {
+      if (!live) return;
+      if (!opened) openChooser();
+      // a recovered graph that was never saved has no view of its own yet
+      else if (!doc.get().path) requestAnimationFrame(fitAll);
+    });
     return () => {
       live = false;
     };
@@ -85,6 +88,7 @@ export function App() {
       <Welcome />
       <Palette />
       <Shortcuts />
+      <Notice />
     </div>
   );
 }

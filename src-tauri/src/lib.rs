@@ -4,6 +4,7 @@ mod commands;
 mod mcp;
 mod menu;
 mod opened;
+mod recovery;
 mod thumbs;
 
 use tauri::Emitter;
@@ -27,6 +28,9 @@ pub fn run() {
             mcp::mcp_reply,
             opened::take_opened,
             opened::set_recent,
+            recovery::recovery_append,
+            recovery::recovery_read,
+            recovery::recovery_clear,
             commands::write_text,
             commands::ollama_where,
             archive::export_archive,
@@ -39,6 +43,7 @@ pub fn run() {
         ])
         .manage(codex::CodexState::default())
         .setup(|app| {
+            opened::from_args();
             // Doodle's own tools for the agent's turns, on this machine only
             mcp::start(app.handle());
             // The boring things live on the platform's own menu bar. Every

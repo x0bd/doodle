@@ -33,6 +33,14 @@ pub fn arrived(app: &AppHandle, paths: Vec<PathBuf>) {
     }
 }
 
+/// A project or an archive named on the command line
+/// (`Doodle.app/Contents/MacOS/doodle ~/Books/Mara.doodle`, or
+/// `pnpm tauri dev -- -- <path>`) arrives the way the Finder's would.
+pub fn from_args() {
+    let mine: Vec<String> = std::env::args().skip(1).map(PathBuf::from).filter(ours).map(|p| p.to_string_lossy().into_owned()).collect();
+    WAITING.lock().unwrap().extend(mine);
+}
+
 /// what the Finder has handed over since the page last asked
 #[tauri::command]
 pub fn take_opened() -> Vec<String> {

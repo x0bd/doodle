@@ -29,6 +29,12 @@ export const readAsset = (dir: string, rel: string) => invoke<string>("read_asse
 export const readThumb = (dir: string, rel: string, size: number) => invoke<string>("read_thumb", { dir, rel, size });
 export const writeAsset = (dir: string, dataUrl: string) => invoke<ImportedAsset>("write_asset", { dir, dataUrl });
 
+/** The recovery log (`recovery.rs`): a project's inside it, a never-saved
+ *  graph's (`dir` null) in Doodle's own Application Support folder. */
+export const recoveryAppend = (dir: string | null, lines: string) => invoke<void>("recovery_append", { dir, lines });
+export const recoveryRead = (dir: string | null) => invoke<string | null>("recovery_read", { dir });
+export const recoveryClear = (dir: string | null) => invoke<void>("recovery_clear", { dir });
+
 /** Files dropped on the window, as paths — the platform hands them over. */
 export async function onFileDrop(handler: (paths: string[], at: { x: number; y: number }) => void) {
   if (!inTauri) return () => {};

@@ -1926,3 +1926,26 @@ html, body, #root { height: 100%; }
 }
 /* a character or a place that would take the picture being carried */
 .node.takes-look { background: color-mix(in srgb, var(--surface-raised), hsl(var(--lit)) 12%); }
+
+/* ── the notice: one sentence from Doodle, under the head ── */
+.notice {
+  position: absolute;
+  top: 58px;
+  left: 50%;
+  translate: -50% 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(620px, calc(100% - 32px));
+  padding: 6px 6px 6px 14px;
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: var(--card-lift), var(--card-lift-2);
+  font-size: var(--t-label);
+  color: var(--fg);
+  animation: in 180ms ease-out both;
+}
+.notice-text { flex: 1; min-width: 0; line-height: 1.4; }
+.notice .pill { flex: none; }
+.notice-x { flex: none; width: 24px; height: 24px; }

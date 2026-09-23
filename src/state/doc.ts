@@ -7,14 +7,16 @@ import { FRAMES } from "../graph/kinds";
 import { createStore } from "./store";
 import { graph, type GraphState } from "./graph";
 import { camera, type Camera } from "../canvas/camera";
-import { history, reset as resetHistory } from "./history";
+import { history, reset as resetHistory, commit, undo } from "./history";
 import { nav, resetNav } from "./nav";
 import { restoreJobs, forgetJobs } from "./jobs";
-import { inTauri, takeOpened, setRecentMenu, loadGraph, pickOpenDir, pickOpenFile, pickSaveDir, pickSaveFile, saveGraph, graphExists, writeAsset, duplicateGraph, revealPath, writeText, exportArchive, importArchive, confirmAsk } from "../platform/fs";
+import { inTauri, recoveryAppend, recoveryRead, recoveryClear, takeOpened, setRecentMenu, loadGraph, pickOpenDir, pickOpenFile, pickSaveDir, pickSaveFile, saveGraph, graphExists, writeAsset, duplicateGraph, revealPath, writeText, exportArchive, importArchive, confirmAsk } from "../platform/fs";
 import { templateById, type TemplateId } from "../graph/templates";
 import { PLACES } from "../graph/kinds";
 import { prov, resetProv, rekey, type Prov } from "./prov";
 import { asMarkdown } from "./reading";
+import { delta, replay, type Tracked } from "./recovery";
+import { say, hush } from "./notice";
 
 export type SaveState = "idle" | "saving" | "saved" | "failed";
 
@@ -183,10 +185,18 @@ async function materialize(path: string) {
 }
 
 async function write(path: string) {
+  // only ever the open document into its own file: a save scheduled for a
+  // project that has since been left must not write what replaced it
+  if (doc.get().path !== path) return;
+  pendingSince = 0;
   doc.set((d) => ({ ...d, save: "saving" }));
   try {
     await materialize(path);
+    if (doc.get().path !== path) throw new Error("The document changed while it was being saved");
+    flushLog(); // what the log has not yet heard goes before the save's line is drawn
+    const saved = tracked(); // taken in the same moment as the words the file gets
     await saveGraph(path, serialize());
+    savedOver(path, saved);
     doc.set((d) => ({ ...d, dirty: false, save: "saved", error: undefined }));
   } catch (e) {
     doc.set((d) => ({ ...d, save: "failed", error: String(e) }));
@@ -199,6 +209,7 @@ export async function save(): Promise<boolean> {
   const d = doc.get();
   const path = d.path ?? (await pickSaveDir(d.name));
   if (!path) return false;
+  flushLog(); // an untitled graph's last lines go to its own log before it has a home
   doc.set((x) => ({ ...x, path, name: nameOf(path) }));
   try {
     localStorage.setItem(LAST, path);
@@ -285,6 +296,7 @@ export async function saveAs() {
   if (!inTauri) return;
   const path = await pickSaveDir(doc.get().name);
   if (!path) return;
+  flushLog();
   doc.set((d) => ({ ...d, path, name: nameOf(path) }));
   try {
     localStorage.setItem(LAST, path);
@@ -295,14 +307,136 @@ export async function saveAs() {
   await write(path);
 }
 
-/** Every change marks the document dirty; with a home, it is written soon after. */
+/** Every change marks the document dirty; with a home, it is written soon
+ *  after — when typing pauses, and at least every five seconds while it
+ *  does not (the recovery log covers the moments in between). */
+let pendingSince = 0;
 history.subscribe(() => {
+  // a journal emptied is a document being opened or begun, not an edit —
+  // and at that moment `doc.path` is still the one being left
+  if (history.get().seq === 0) return;
   doc.set((d) => (d.dirty ? d : { ...d, dirty: true }));
   const path = doc.get().path;
   if (!path) return;
+  pendingSince ||= Date.now();
   clearTimeout(timer);
-  timer = window.setTimeout(() => write(path), 600);
+  timer = window.setTimeout(() => doc.get().path === path && write(path), Math.max(0, Math.min(600, pendingSince + 5000 - Date.now())));
 });
+
+/* ── the recovery log (PLAN.md M1.4; the lines themselves: recovery.ts) ── */
+
+/** what the log so far is written against; null while nothing is logged */
+let base: Tracked | null = null;
+/** whether the never-saved graph's own log is the one being written */
+let untitledLog = false;
+let flushing: number | undefined;
+/** appends, clears and reads, in the order they were asked for */
+let chain: Promise<unknown> = Promise.resolve();
+const queue = (f: () => Promise<unknown>) => (chain = chain.then(f).catch(() => undefined));
+
+function tracked(): Tracked {
+  const g = graph.get();
+  const d = doc.get();
+  return { nodes: g.nodes, order: g.order, edges: g.edges, bible: d.bible, name: d.name, provenance: prov.get() };
+}
+
+/** write down, now, what changed since the last line */
+function flushLog() {
+  clearTimeout(flushing);
+  flushing = undefined;
+  if (!base) return;
+  const now = tracked();
+  const line = delta(base, now);
+  if (!line) return;
+  base = now;
+  const dir = doc.get().path;
+  const text = JSON.stringify(line);
+  queue(() => recoveryAppend(dir, text));
+}
+
+/** a change is on the disk within half a second of being made */
+function noted() {
+  if (base && flushing === undefined) flushing = window.setTimeout(flushLog, 400);
+}
+graph.subscribe(noted);
+doc.subscribe(noted);
+prov.subscribe(noted);
+
+/** stop logging what is open — it is being left */
+function leaveLog() {
+  clearTimeout(timer);
+  pendingSince = 0;
+  hush();
+  flushLog();
+  // a save it was still waiting for is made now, from what it is at this
+  // moment (if it fails, its log still has every change for the next open)
+  const d = doc.get();
+  if (inTauri && d.path && d.dirty) {
+    const path = d.path;
+    const json = serialize();
+    queue(() => saveGraph(path, json).then(() => recoveryClear(path)));
+  }
+  base = null;
+  if (untitledLog) queue(() => recoveryClear(null)); // a never-saved graph, put away by choice
+  untitledLog = false;
+}
+
+/** the file now holds `saved`: its log starts again from there */
+function savedOver(path: string, saved: Tracked) {
+  if (!inTauri) return;
+  queue(() => recoveryClear(path));
+  if (untitledLog) queue(() => recoveryClear(null));
+  untitledLog = false;
+  base = saved;
+  noted();
+}
+
+/** a graph with no file under it: its log begins with the whole of it */
+function logUntitled() {
+  if (!inTauri) return;
+  base = tracked();
+  untitledLog = true;
+  const text = JSON.stringify({ t: Date.now(), base });
+  queue(() => recoveryClear(null));
+  queue(() => recoveryAppend(null, text));
+}
+
+const ago = (t: number) => {
+  const m = Math.round((Date.now() - t) / 60000);
+  return m < 1 ? "just now" : m < 60 ? `${m} min ago` : m < 60 * 24 ? `${Math.round(m / 60)} h ago` : new Date(t).toLocaleString();
+};
+
+/** A project's log laid over it as it opens: what was changed after the
+ *  last save, back — one journal entry, so ⌘Z takes it away again. */
+async function recoverInto(path: string) {
+  base = tracked();
+  const text = await recoveryRead(path).catch(() => null);
+  const r = text ? replay(base, text) : null;
+  if (!r) {
+    if (text) queue(() => recoveryClear(path)); // it held nothing the file does not
+    return;
+  }
+  commit("Recover", () => graph.set((g) => ({ ...g, nodes: r.state.nodes, order: r.state.order, edges: r.state.edges })));
+  resetProv(r.state.provenance);
+  doc.set((d) => ({ ...d, name: r.state.name, bible: r.state.bible, dirty: true }));
+  say(`Recovered what was changed after the last save — the last of it ${ago(r.at)}.`, { label: "Undo", run: undo });
+}
+
+/** On launch: a graph that was never saved and was being worked on when
+ *  Doodle stopped, back as it was. Says whether there was one. */
+export async function recoverUntitled(): Promise<boolean> {
+  if (!inTauri) return false;
+  const text = await recoveryRead(null).catch(() => null);
+  const r = text ? replay(null, text) : null;
+  if (!r) return false;
+  const s = r.state;
+  load({ format: "doodle-graph", version: 1, name: s.name, nodes: s.nodes, order: s.order, edges: s.edges, camera: camera.get(), bible: s.bible, provenance: s.provenance }, null);
+  doc.set((d) => ({ ...d, dirty: true }));
+  base = tracked(); // the log goes on from where it stopped
+  untitledLog = true;
+  say(`“${s.name}” was never saved; here it is as it was ${ago(r.at)}.`, { label: "Save…", run: () => void save() });
+  return true;
+}
 
 /* ── reading ── */
 function load(file: FileGraph, path: string | null) {
@@ -331,7 +465,9 @@ export async function openFrom(path: string): Promise<boolean> {
     const raw = await loadGraph(path);
     const file = JSON.parse(raw) as FileGraph;
     if (file.format !== "doodle-graph") throw new Error("Not a Doodle graph");
+    leaveLog();
     load(file, path);
+    await recoverInto(path);
     await restoreJobs(path);
     try {
       localStorage.setItem(LAST, path);
@@ -354,6 +490,7 @@ export async function openDialog() {
 
 /** A fresh graph from one of the templates. */
 export function newGraph(template: TemplateId = "images") {
+  leaveLog();
   const t = templateById(template);
   const { nodes, edges } = t.build();
   graph.set({
@@ -368,6 +505,17 @@ export function newGraph(template: TemplateId = "images") {
   forgetJobs();
   resetProv();
   doc.set({ path: null, name: `Untitled ${t.name.toLowerCase()}`, dirty: false, save: "idle", bible: EMPTY_BIBLE });
+  logUntitled();
+}
+
+/** What the window opens on, decided once per page — React's development
+ *  double mount must not decide it twice (the second time the Finder's
+ *  hand-over was already taken, and the welcome covered what it opened).
+ *  Something handed over; else a never-saved graph that was being worked
+ *  on; else the last graph. Says whether anything opened. */
+let launched: Promise<boolean> | undefined;
+export function launch(): Promise<boolean> {
+  return (launched ??= openHandedOver().then(async (handed) => handed || (await recoverUntitled()) || restoreLast()));
 }
 
 /** On launch: the last graph if it is still there, else the template. Tells
