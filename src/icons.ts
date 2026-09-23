@@ -16,6 +16,7 @@ export {
   ArrowLeft01Icon as ChevronLeftIcon,
   ArrowRight01Icon as ChevronRightIcon,
   ArrowDown01Icon as ChevronDownIcon,
+  UnfoldMoreIcon as PopUpIcon,
   MoreVerticalIcon as MoreIcon,
   PlayIcon as RunIcon,
   Copy01Icon as CopyIcon,

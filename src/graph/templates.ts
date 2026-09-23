@@ -52,10 +52,10 @@ export const TEMPLATES: Template[] = [
         makeNode("character", 60, 40, { id: "c1", title: "R-404", data: { name: "R-404", description: "A small maintenance robot, dented brass, one blue eye brighter than the other." } }),
         makeNode("style", 60, 290, { id: "s1", title: "Nocturne", data: { description: "Quiet, cold, a single practical light in every frame.", palette: "Ink, brass, sodium orange", lighting: "One source, long shadows" } }),
         makeNode("prompt", 360, 40, { id: "p1", title: "Scene 08", data: { text: "Night. The greenhouse. R-404 finds the last living plant and does not know what to do with its hands." } }),
-        makeNode("location", 60, 540, { id: "l1", title: "The greenhouse", data: { name: "The greenhouse", description: "Glass gone green with age, half the panes blind. Warm where nothing else is. Water somewhere, always, out of sight." } }),
+        makeNode("location", 360, 420, { id: "l1", title: "The greenhouse", data: { name: "The greenhouse", description: "Glass gone green with age, half the panes blind. Warm where nothing else is. Water somewhere, always, out of sight." } }),
         makeNode("model", 360, 290, { id: "m1" }),
         makeNode("generate", 680, 80, { id: "g1", title: "Storyboard", extras: [{ id: "place", name: "place", type: "text" }] }),
-        makeNode("preview", 1020, 60, { id: "v1", title: "Frame" }),
+        makeNode("preview", 1040, 60, { id: "v1", title: "Frame" }),
         // inside R-404
         makeNode("note", 60, 60, { id: "c1n1", title: "Voice", parent: "c1", data: { text: "Never speaks first. Answers in the fewest words that are still kind." } }),
         makeNode("note", 320, 60, { id: "c1n2", title: "History", parent: "c1", data: { text: "Built for the orbital greenhouse. Stayed after everyone left. Has not been told why." } }),
@@ -87,9 +87,9 @@ export const TEMPLATES: Template[] = [
         makeNode("prompt", 360, 250, { id: "p2", title: "Panel 2 · script", data: { text: "Close on Kei's face: the headphones come off." } }),
         makeNode("model", 360, 460, { id: "m1" }),
         makeNode("generate", 680, 40, { id: "g1", title: "Panel 1" }),
-        makeNode("generate", 680, 380, { id: "g2", title: "Panel 2" }),
-        makeNode("preview", 1020, 40, { id: "v1", title: "Page · panel 1" }),
-        makeNode("preview", 1020, 380, { id: "v2", title: "Page · panel 2" }),
+        makeNode("generate", 680, 600, { id: "g2", title: "Panel 2" }),
+        makeNode("preview", 1040, 40, { id: "v1", title: "Page · panel 1" }),
+        makeNode("preview", 1040, 600, { id: "v2", title: "Page · panel 2" }),
       ];
       const edges = [
         wire(["m1", "model"], ["g1", "model"]),

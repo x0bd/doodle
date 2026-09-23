@@ -38,6 +38,7 @@
   --role-teal:   172 26% 42%;
   --role-indigo: 234 28% 56%;
   --role-green:  140 22% 44%;
+  --role-khaki:   74 22% 42%;
 
   /* how strong a wash is on this ground, and how strong a wire */
   --wash: 0.22;
@@ -54,6 +55,7 @@
   --role-teal:   172 28% 56%;
   --role-indigo: 234 32% 68%;
   --role-green:  140 24% 56%;
+  --role-khaki:   74 24% 54%;
   --wash: 0.24;
   --wash-2: 0.4;
   --wire: 0.75;
@@ -452,7 +454,7 @@ html, body, #root { height: 100%; }
    grows so it reads at that size; wires thicken to stay visible. */
 .lod-map .node-body, .lod-map .ins, .lod-map .node-progress { display: none; }
 .lod-map .node { min-height: 0 !important; height: auto !important; gap: 4px; }
-.lod-map .node-head { height: 34px; }
+.lod-map .node-head { height: 36px; }
 .lod-map .node-name { font-size: 22px; }
 .lod-map .node-inside { display: none; }
 .lod-map .port.out.top .port-dot { width: 14px; height: 14px; }
@@ -466,42 +468,62 @@ html, body, #root { height: 100%; }
 .node, .wire-line { transition: opacity var(--fast) var(--ease); }
 
 /* ─── A node ────────────────────────────────────────────────────────────────
-   A card on the field: a head that wears its role as a wash, with a full
-   dot of it and the name; ports on the edges; a well for what it holds.
-   Selected, it wears the ink ring — the one place on the field ink
-   appears. */
+   A card on the field, drawn the way the platform draws its own objects:
+   an object with thickness (the system's lit lip and fallen shade) lifted
+   off the field by a shadow that is two lights, not one — a close contact
+   and a long soft fall. A head that wears its role as a wash, with a lit
+   dot of it and the name at the platform's headline weight; ports on the
+   edges; what it holds below. Selected, it wears the ink ring — the one
+   place on the field ink appears. The geometry is canvas/layout.ts's:
+   HEAD_H 36, ROWS_TOP 42, PORT_ROW 26, the card's padding 12. */
+:root {
+  --card-pad: 12px;
+  --card-rim: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade);
+  --card-lift: 0 1px 2px rgba(14, 14, 13, 0.06), 0 4px 12px -2px rgba(14, 14, 13, 0.07), 0 18px 34px -14px rgba(14, 14, 13, 0.16);
+  --card-lift-2: 0 1px 2px rgba(14, 14, 13, 0.07), 0 8px 20px -4px rgba(14, 14, 13, 0.1), 0 30px 52px -18px rgba(14, 14, 13, 0.24);
+  /* the chosen segment: the card's own face, lifted off the track */
+  --thumb: var(--surface-raised);
+  --thumb-lift: 0 0.5px 1px rgba(14, 14, 13, 0.14), 0 1px 3px rgba(14, 14, 13, 0.08);
+}
+.dark {
+  --card-lift: 0 1px 2px rgba(0, 0, 0, 0.5), 0 6px 14px -2px rgba(0, 0, 0, 0.42), 0 22px 42px -14px rgba(0, 0, 0, 0.62);
+  --card-lift-2: 0 1px 2px rgba(0, 0, 0, 0.55), 0 10px 24px -4px rgba(0, 0, 0, 0.52), 0 34px 60px -18px rgba(0, 0, 0, 0.72);
+  --thumb: rgba(242, 242, 240, 0.16);
+  --thumb-lift: 0 0.5px 1px rgba(0, 0, 0, 0.4);
+}
 .node {
   position: absolute;
   display: flex;
   flex-direction: column;
   gap: 0;
-  padding: 0 14px 14px;
+  padding: 0 var(--card-pad) var(--card-pad);
   border-radius: var(--r-card);
   cursor: default;
   background: var(--surface-raised);
-  box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), var(--lift);
-  transition: box-shadow var(--fast) var(--ease), opacity var(--fast) var(--ease);
+  box-shadow: var(--card-rim), var(--card-lift);
+  transition: box-shadow var(--base) var(--ease), opacity var(--fast) var(--ease), background var(--fast) var(--ease);
 }
 @media (hover: hover) and (pointer: fine) {
-  .node:hover { box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), var(--lift-2); }
+  .node:hover { box-shadow: var(--card-rim), var(--card-lift-2); }
 }
-.node.sel, .node.sel:hover { box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), 0 0 0 2px var(--bg), 0 0 0 4px var(--ink), var(--lift-2); z-index: 2; }
+.node.sel, .node.sel:hover { box-shadow: var(--card-rim), 0 0 0 2px var(--bg), 0 0 0 3.5px var(--ink), var(--card-lift-2); z-index: 2; }
 /* an ⌥-drag would drop into this one: it wears the tint */
-.node.into { background: var(--tint-2); }
+.node.into { background: color-mix(in srgb, var(--surface-raised), var(--fg) 8%); }
 
-/* the head: the role's wash across the top of the card, rounded with it */
-/* the head: the role's wash across the top of the card, rounded with it,
-   with a lit dot of the role and the name */
+/* the head: the role's wash across the top of the card, rounded with it —
+   lit a little more at the top than the bottom, the way a coloured glass
+   takes the light — with a lit dot of the role and the name */
 .node-head {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 9px;
-  height: 30px;
-  margin: 0 -14px var(--gap-tight);
-  padding: 0 14px;
+  gap: 8px;
+  height: 36px;
+  margin: 0 calc(-1 * var(--card-pad)) 6px;
+  padding: 0 10px 0 13px;
   border-radius: var(--r-card) var(--r-card) 0 0;
-  background: hsl(var(--role) / var(--wash));
+  background: linear-gradient(to bottom, hsl(var(--role) / calc(var(--wash) + 0.05)), hsl(var(--role) / calc(var(--wash) - 0.04)));
+  box-shadow: inset 0 1px 0 var(--rim-lit);
   flex-shrink: 0;
 }
 .node-dot {
@@ -509,30 +531,51 @@ html, body, #root { height: 100%; }
   height: 8px;
   border-radius: var(--r-pill);
   background: hsl(var(--lit));
-  box-shadow: 0 0 0 3px hsl(var(--lit) / 0.2);
+  box-shadow: 0 0 0 3px hsl(var(--lit) / 0.2), 0 0 8px hsl(var(--lit) / 0.35);
   flex-shrink: 0;
 }
 .node-name {
   flex: 1;
   min-width: 0;
-  font-size: var(--t-label);
+  font-size: var(--t-body);
   font-weight: var(--w-declare);
-  letter-spacing: -0.005em;
+  letter-spacing: -0.01em;
   color: var(--fg);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.node-state { margin-left: auto; font-size: var(--t-micro); color: var(--fg-faint); }
-/* state is a word, never a colour; rejected steps back */
-.node-st { margin-left: auto; font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--fg-faint); }
+.node-state { margin-left: auto; font-size: var(--t-micro); color: var(--fg-muted); }
+/* state is a word, never a colour — a small capsule of tint; rejected steps back */
+.node-st {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 7px;
+  border-radius: var(--r-pill);
+  background: var(--tint-2);
+  font-size: 10.5px;
+  font-weight: var(--w-mid);
+  color: var(--fg-muted);
+  white-space: nowrap;
+}
 .node-st + .node-inside, .node-st + .node-state { margin-left: 6px; }
 .node.st-rejected { opacity: 0.55; }
 .node.st-rejected.sel { opacity: 0.8; }
-.node-inside { margin-left: auto; min-width: 18px; height: 16px; font-size: 10px; background: hsl(var(--role) / var(--wash-2)); color: var(--fg); }
+.node-inside {
+  margin-left: auto;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  background: hsl(var(--role) / var(--wash-2));
+  color: var(--fg);
+}
 .node-inside + .node-state { margin-left: 6px; }
-.node.running { box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), var(--lift-2); }
-.node.running.sel { box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), 0 0 0 2px var(--bg), 0 0 0 4px var(--ink), var(--lift-2); }
+.node.running { box-shadow: var(--card-rim), var(--card-lift-2); }
+.node.running.sel { box-shadow: var(--card-rim), 0 0 0 2px var(--bg), 0 0 0 3.5px var(--ink), var(--card-lift-2); }
 /* progress is the role, full, along the foot of the head */
 .node-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: hsl(var(--role) / 0.25); overflow: hidden; }
 .node-progress-bar { height: 100%; background: hsl(var(--role)); transition: width 60ms linear; }
@@ -540,17 +583,14 @@ html, body, #root { height: 100%; }
    otherwise collapse say how much room they want, once, here */
 .node-body { flex: 1; min-height: 0; border-radius: var(--r-plate); overflow: hidden; }
 .k-prompt .node-body, .k-note .node-body { min-height: 96px; }
-.k-preview .node-body { min-height: 200px; }
-.k-preview .node-body:has(.node-img) { min-height: 0; }
-.k-preview .node-img { height: auto; aspect-ratio: 1; }
 .k-shot .node-body { min-height: 64px; }
 .node.leaf .node-sheet { min-height: 300px; }
 .node.leaf.k-chapter .node-stack { min-height: 150px; }
 .node-img { display: block; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
 
-/* the ports. The output is one dot on the head's right edge. Inputs are
-   rows in the body — a dot on the left edge, the word, and what feeds it —
-   at fixed heights (canvas/layout.ts) so the wires know where they land. */
+/* the ports. The output is one jack on the head's right edge. Inputs are
+   rows in the body — a jack on the left edge, the word, and what feeds it —
+   at fixed heights (canvas/layout.ts) so the plugs land in the jacks. */
 .port {
   position: absolute;
   display: grid;
@@ -560,8 +600,8 @@ html, body, #root { height: 100%; }
   cursor: crosshair;
 }
 .port::before { content: ""; position: absolute; inset: -6px; }
-.port.out.top { right: -10px; top: 5px; }
-.port.in { left: -10px; top: 2px; }
+.port.out.top { right: -10px; top: 8px; }
+.port.in { left: -10px; top: 3px; }
 /* the jack: a ring cut into the card's edge, the way a patchbay has them.
    Free, it is dark with a thin collar in what flows through it; patched,
    the collar takes the signal and the cable's plug is seated in it. */
@@ -570,7 +610,7 @@ html, body, #root { height: 100%; }
   height: 11px;
   border-radius: var(--r-pill);
   background: var(--surface);
-  box-shadow: inset 0 1px 1px var(--rim-in), 0 0 0 1.5px hsl(var(--flow) / 0.45);
+  box-shadow: inset 0 1px 1px var(--rim-in), 0 0 0 1.5px hsl(var(--flow) / 0.5);
   transition: background var(--fast) var(--ease), box-shadow var(--fast) var(--ease), transform var(--fast) var(--ease);
 }
 .port.on .port-dot { background: var(--surface); box-shadow: inset 0 1px 1px var(--rim-in), 0 0 0 1.5px hsl(var(--signal-hsl) / 0.9); }
@@ -589,72 +629,116 @@ html, body, #root { height: 100%; }
 .wiring .port.out { opacity: 0.35; }
 .wire-hit { cursor: default; }
 
-/* the input rows */
-.ins { display: flex; flex-direction: column; margin: 0 -14px; padding: 0 14px 0 0; flex-shrink: 0; }
+/* the input rows: the port's name, and what feeds it as a token — the
+   source's own wash and its lit dot, the way a variable is a capsule in a
+   sentence rather than a word in a column */
+.ins { display: flex; flex-direction: column; margin: 0 calc(-1 * var(--card-pad)); padding: 0 var(--card-pad) 0 0; flex-shrink: 0; }
 .in-row {
   position: relative;
   display: flex;
   align-items: center;
   gap: var(--gap-tight);
   height: 26px;
-  padding-left: 16px;
+  padding-left: 15px;
   font-size: var(--t-label);
   color: var(--fg-faint);
 }
 .in-row.on { color: var(--fg-muted); }
 .in-name { flex-shrink: 0; }
 .in-from {
-  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   min-width: 0;
-  text-align: right;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--fg);
+  max-width: 64%;
+  height: 20px;
+  margin-left: auto;
+  padding: 0 8px 0 6px;
+  border-radius: var(--r-pill);
+  background: hsl(var(--role) / var(--wash));
+  font-size: 11.5px;
   font-weight: var(--w-mid);
+  color: var(--fg);
 }
-.ins + .node-body { margin-top: var(--gap-tight); }
+.in-from i { width: 6px; height: 6px; border-radius: var(--r-pill); background: hsl(var(--lit)); flex-shrink: 0; }
+.in-from span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ins + .node-body { margin-top: 6px; }
 
 /* the bodies, by kind */
-.node-select { width: 100%; justify-content: space-between; cursor: default; }
+/* a model: a pop-up — its word and the up-and-down chevrons, in a capsule of tint */
+.node-select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  height: 30px;
+  padding: 0 9px 0 12px;
+  border-radius: var(--r-ctl);
+  background: var(--tint);
+  font-size: var(--t-label);
+  font-weight: var(--w-mid);
+  color: var(--fg);
+  cursor: default;
+}
+.node-select svg { color: var(--fg-faint); flex-shrink: 0; }
 .node-select .list-word { text-align: left; }
+.k-model .node-body { overflow: visible; }
 .node-text {
   min-height: 96px;
+  max-height: 260px;
+  field-sizing: content;
   display: block;
   width: 100%;
   height: 100%;
-  padding: 8px 10px;
+  padding: 9px 11px;
   background: none;
   resize: none;
   outline: none;
   font-family: var(--font-ui);
-  font-size: var(--t-label);
-  line-height: 1.45;
-  color: var(--fg-muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--fg);
   cursor: text;
 }
-.node-text:focus { color: var(--fg); }
 .node-text::placeholder { color: var(--fg-faint); }
+
+/* a preview: the print, to the card's edges and its corners, the way a
+   photograph fills the widget that shows it */
+.node-print {
+  margin: 0 calc(-1 * var(--card-pad)) calc(-1 * var(--card-pad));
+  border-radius: 0 0 var(--r-card) var(--r-card);
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  box-shadow: inset 0 1px 2px var(--rim-in);
+}
+.node-print.has { min-height: 0; display: block; box-shadow: none; }
+.node-print .node-img { height: auto; aspect-ratio: 1; }
+.node-print-none { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: var(--t-micro); color: var(--fg-faint); }
+
 /* ─── What a card says ──────────────────────────────────────────────────────
    Nothing is drawn: no row plates, no dividers, no rule under a group's
    name. A group is announced by a word with air above it, and every row
    is a label in Inter against its value — a figure in mono, a word in
-   Inter. The controls keep their capsule and wear the tint when chosen,
-   and that is the whole of the colour on a card besides its dot. */
+   Inter — laid out the way the platform's own inspectors lay theirs: the
+   name on the left, the control against the right edge. */
 .node-form { display: flex; flex-direction: column; }
 .node-part { display: flex; flex-direction: column; }
-.node-part + .node-part { margin-top: var(--gap-near); }
+.node-part + .node-part { margin-top: 14px; }
 /* a group's name: a word, with the gap doing the grouping */
 .node-rule {
   padding: 0 2px;
   margin: 0 0 2px;
   font-size: var(--t-micro);
+  font-weight: var(--w-declare);
   color: var(--fg-faint);
 }
 .node-part:first-child .node-rule { margin-top: 0; }
 
 .node-form .group-row {
-  min-height: 26px;
+  min-height: 28px;
   padding: 0 2px;
   gap: 4px var(--gap-tight);
   flex-wrap: wrap;
@@ -667,14 +751,14 @@ html, body, #root { height: 100%; }
 .node-form .group-ctl { margin-left: auto; }
 .node-form .group-name { font-size: var(--t-label); color: var(--fg-muted); white-space: nowrap; }
 .node-form .group-ctl { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-.node-form .px { font-size: var(--t-label); color: var(--fg); }
+.node-form .px { font-size: var(--t-label); font-variant-numeric: tabular-nums; color: var(--fg); }
 /* something written into is a slot cut into the card */
-.node-form .group-row.col { flex-direction: column; align-items: stretch; gap: 3px; padding: 4px 2px 2px; }
+.node-form .group-row.col { flex-direction: column; align-items: stretch; gap: 4px; padding: 4px 2px 2px; }
 .node-form .group-row.col .group-name { font-size: var(--t-micro); color: var(--fg-faint); }
 .node-form .group-row.col .inp {
   width: 100%;
-  padding: 7px 9px;
-  border-radius: var(--r-sm);
+  padding: 7px 10px;
+  border-radius: var(--r-plate);
   background: var(--surface);
   box-shadow: inset 0 1px 1px var(--rim-in);
   font-size: var(--t-label);
@@ -684,51 +768,75 @@ html, body, #root { height: 100%; }
 }
 .node-form .inp::placeholder { color: var(--fg-faint); }
 
-/* a key: the word, and the chosen one in the tint it is owed */
-.node-form .seg { background: none; box-shadow: none; padding: 0; gap: 2px; }
-.node-form .seg-btn {
-  padding: 3px 8px;
+/* a segmented control: a track of tint, and the chosen segment the card's
+   own face lifted out of it — the tint, not the ink */
+.node-form .seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  padding: 2px;
   border-radius: var(--r-ctl);
-  font-size: var(--t-micro);
-  font-weight: var(--w-report);
-  color: var(--fg-faint);
+  background: var(--tint);
   box-shadow: none;
 }
-.node-form .seg-btn.on { background: var(--tint-2); color: var(--fg); font-weight: var(--w-mid); box-shadow: none; }
-@media (hover: hover) and (pointer: fine) { .node-form .seg-btn:hover { background: var(--tint); color: var(--fg); } }
+.node-form .seg-btn {
+  height: 20px;
+  padding: 0 7px;
+  border-radius: var(--r-ctl);
+  font-size: var(--t-micro);
+  font-weight: var(--w-mid);
+  color: var(--fg-muted);
+  background: none;
+  box-shadow: none;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+}
+.node-form .seg-btn.key { padding: 0 6px; font-size: 10.5px; }
+.node-form .seg-btn.on { background: var(--thumb); color: var(--fg); box-shadow: var(--thumb-lift); }
+@media (hover: hover) and (pointer: fine) { .node-form .seg-btn:not(.on):hover { color: var(--fg); } }
+/* a stepper: the same track, the figure between its two keys */
+.node-form .seg .seg-val { min-width: 38px; padding: 0 2px; text-align: center; }
+.node-form .seg:has(.seg-val) .seg-btn { width: 20px; padding: 0; display: grid; place-items: center; color: var(--fg-faint); }
+@media (hover: hover) and (pointer: fine) { .node-form .seg:has(.seg-val) .seg-btn:hover { background: var(--tint); color: var(--fg); } }
 
-/* a chooser: its word and the chevron, a capsule of tint under the pointer */
+/* a pop-up: its word and the up-and-down chevrons, a capsule of tint under the pointer */
 .node-form .pill.select {
   height: 22px;
-  padding: 0 7px;
+  padding: 0 5px 0 8px;
   border-radius: var(--r-ctl);
   background: none;
   box-shadow: none;
   color: var(--fg);
   font-size: var(--t-label);
-  gap: 4px;
+  gap: 3px;
 }
+.node-form .pill.select svg { color: var(--fg-faint); }
 @media (hover: hover) and (pointer: fine) { .node-form .pill.select:hover { background: var(--tint); box-shadow: none; } }
-.node-form .pill-icon.sm { width: 20px; height: 20px; color: var(--fg-faint); background: none; box-shadow: none; }
+.node-form .pill-icon.sm { width: 22px; height: 22px; color: var(--fg-faint); background: none; box-shadow: none; }
 @media (hover: hover) and (pointer: fine) { .node-form .pill-icon.sm:hover { background: var(--tint); color: var(--fg); } }
 
-/* a track: a capsule slot with the value filled in the role's own light */
-.node-form .slide { gap: 9px; }
-.node-form .slide input[type="range"] { width: 68px; height: 14px; }
+/* a slider: a thin track filled in the role's own light, and a round
+   white knob that sits on it, the platform's own */
+.node-form .slide { display: inline-flex; align-items: center; gap: 10px; }
+.node-form .slide input[type="range"] { -webkit-appearance: none; appearance: none; width: 76px; height: 16px; margin: 0; background: none; }
 .node-form .slide input[type="range"]::-webkit-slider-runnable-track {
   height: 4px;
   border-radius: var(--r-ctl);
-  background: linear-gradient(to right, hsl(var(--lit, var(--role-slate))) var(--at, 50%), var(--bg) var(--at, 50%));
-  box-shadow: inset 0 1px 1px var(--rim-in);
-}
-.node-form .slide input[type="range"]::-webkit-slider-thumb {
-  width: 10px;
-  height: 10px;
-  margin-top: -3px;
-  background: hsl(var(--lit, var(--role-slate)));
+  background: linear-gradient(to right, hsl(var(--lit, var(--role-slate))) var(--at, 50%), var(--tint-2) var(--at, 50%));
   box-shadow: none;
 }
-@media (hover: hover) and (pointer: fine) { .node-form .slide input[type="range"]:hover::-webkit-slider-thumb { box-shadow: 0 0 0 4px hsl(var(--lit) / 0.18); } }
+.node-form .slide input[type="range"]::-webkit-slider-thumb {
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: var(--r-pill);
+  background: #fff;
+  box-shadow: 0 0 0 0.5px rgba(14, 14, 13, 0.12), 0 1px 2px rgba(14, 14, 13, 0.22), 0 2px 5px rgba(14, 14, 13, 0.1);
+  transition: transform var(--fast) var(--ease);
+}
+@media (hover: hover) and (pointer: fine) { .node-form .slide input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.1); } }
+.node-form .slide input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.18); }
 .node-form .slide-fig {
   min-width: 30px;
   padding: 0;
@@ -742,7 +850,7 @@ html, body, #root { height: 100%; }
 .bloom { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 2px 0 0; }
 .bloom-take {
   aspect-ratio: 1;
-  border-radius: var(--r-plate);
+  border-radius: var(--r-sm);
   overflow: hidden;
   background: var(--surface);
   box-shadow: inset 0 1px 2px var(--rim-in);
@@ -752,25 +860,56 @@ html, body, #root { height: 100%; }
 @media (hover: hover) and (pointer: fine) { .bloom-take:hover { box-shadow: 0 0 0 1.5px var(--fg-muted); } }
 .bloom-take:focus-visible { box-shadow: 0 0 0 1.5px var(--fg-muted); background: var(--surface); }
 .bloom-take:active { transform: translateY(1px); }
-.bloom-take.on { box-shadow: 0 0 0 2px var(--surface-raised), 0 0 0 4px var(--ink); }
+.bloom-take.on { box-shadow: 0 0 0 2px var(--surface-raised), 0 0 0 3.5px var(--ink); }
 .node-row-k { font-size: var(--t-micro); color: var(--fg-muted); white-space: nowrap; }
 .node-row-v { font-size: var(--t-micro); color: var(--fg); }
 
-/* character: a reference beside a name and a line */
-.node-char { display: flex; gap: 8px; }
-.node-ref { width: 64px; height: 64px; flex-shrink: 0; border-radius: var(--r-plate); overflow: hidden; }
-.node-char-what { flex: 1; min-width: 0; padding: 2px 2px 0 0; }
-.node-char-name { font-size: var(--t-label); font-weight: var(--w-mid); color: var(--fg); }
-.node-char-desc {
+/* a character: the way a contact card has a person — the face in a round
+   (their initials on their own colour until there is one), the name, a line */
+.node-who { display: flex; align-items: flex-start; gap: 12px; padding: 4px 2px 2px; overflow: visible; }
+.who-face {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-pill);
+  overflow: hidden;
+  background: linear-gradient(to bottom, hsl(var(--role) / 0.62), hsl(var(--role) / 0.9));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  font-size: 18px;
+  font-weight: var(--w-declare);
+  letter-spacing: 0.01em;
+  color: #fff;
+}
+.who-what { flex: 1; min-width: 0; padding-top: 3px; }
+.who-name { font-size: var(--t-body); font-weight: var(--w-declare); letter-spacing: -0.01em; color: var(--fg); }
+.who-desc {
   margin-top: 3px;
-  font-size: var(--t-micro);
+  font-size: var(--t-label);
   line-height: 1.45;
   color: var(--fg-muted);
   display: -webkit-box;
-  -webkit-line-clamp: 6;
+  -webkit-line-clamp: 5;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+/* a location: the way a map card has a place — the view across the top,
+   the hatch of emptiness on its own wash until there is a picture */
+.node-place { display: flex; flex-direction: column; padding: 2px 0 2px; overflow: visible; }
+.node-place .who-name, .node-place .who-desc { padding: 0 2px; }
+.place-view {
+  aspect-ratio: 16 / 9;
+  margin-bottom: 10px;
+  border-radius: var(--r-plate);
+  overflow: hidden;
+  background:
+    repeating-linear-gradient(-45deg, hsl(var(--role) / 0.3) 0 1px, transparent 1px 8px),
+    linear-gradient(to bottom, hsl(var(--role) / var(--wash)), hsl(var(--role) / var(--wash-2)));
+}
+.place-view.has { background: var(--surface); }
+.node-place .who-desc { -webkit-line-clamp: 3; }
+
 /* a description on a card: as much as the card has room for, no more —
    the rows below it keep their places */
 .node-desc {
@@ -787,42 +926,62 @@ html, body, #root { height: 100%; }
 }
 .node-rows .node-row { flex-shrink: 0; }
 .node-row-v { max-width: 62%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; }
+
 /* ─── Paper ─────────────────────────────────────────────────────────────────
-   A page and a chapter are sheets, not cards: a warmer, brighter ground
-   than the field's objects, a hairline edge like a cut sheet, no wash on
-   the head. The words are the whole face of it, at a reading size, and
-   you write on it where it lies — the way an editor is nothing but the
-   page. */
-:root { --paper: #fffefa; --paper-ink: #1a1a18; --paper-edge: rgba(14, 14, 13, 0.14); --paper-shade: 14, 14, 13; }
-.dark { --paper: #292927; --paper-ink: #efeee9; --paper-edge: rgba(242, 242, 240, 0.13); --paper-shade: 0, 0, 0; }
+   A page and a chapter are sheets, not cards — the way a document browser
+   shows a document: a warmer, brighter ground than the field's objects, a
+   hairline edge like a cut sheet (the one edge on content, deliberate), a
+   soft shadow under it, no wash on the head. The words are the whole face
+   of it, at a reading size, and you write on it where it lies. A chapter
+   is the same sheet with its pages stacked under it. */
+:root {
+  --paper: #fffefa; --paper-ink: #1a1a18; --paper-edge: rgba(14, 14, 13, 0.13); --paper-shade: 14, 14, 13;
+  --paper-under: #f8f6f0; --paper-under-2: #f0ede6; --paper-edge-2: rgba(14, 14, 13, 0.17);
+}
+.dark {
+  --paper: #292927; --paper-ink: #efeee9; --paper-edge: rgba(242, 242, 240, 0.12); --paper-shade: 0, 0, 0;
+  --paper-under: #232321; --paper-under-2: #1d1d1b; --paper-edge-2: rgba(242, 242, 240, 0.1);
+}
 .node.leaf {
-  padding: 0 0 12px;
+  --sheet: 0 0 0 0.5px var(--paper-edge), 0 1px 2px rgba(var(--paper-shade), 0.07);
+  --sheet-fall: 0 10px 26px -6px rgba(var(--paper-shade), 0.16);
+  --sheet-fall-2: 0 18px 40px -8px rgba(var(--paper-shade), 0.22);
+  padding: 0 0 10px;
   gap: 0;
   background: var(--paper);
-  border-radius: 3px;
-  box-shadow: 0 0 0 1px var(--paper-edge), 0 1px 2px rgba(var(--paper-shade), 0.08), 0 10px 28px rgba(var(--paper-shade), 0.14);
+  border-radius: 4px;
+  box-shadow: var(--sheet), var(--sheet-fall);
+}
+/* the pages under a chapter: two more sheets, each a little smaller and
+   lower, their edges showing */
+.node.leaf.k-chapter {
+  --sheet: 0 0 0 0.5px var(--paper-edge), 0 1px 2px rgba(var(--paper-shade), 0.07),
+    0 8px 0 -4px var(--paper-under), 0 8px 0 -3.5px var(--paper-edge-2),
+    0 15px 0 -8px var(--paper-under-2), 0 15px 0 -7.5px var(--paper-edge-2);
+  --sheet-fall: 0 16px 30px -8px rgba(var(--paper-shade), 0.18);
+  --sheet-fall-2: 0 24px 46px -10px rgba(var(--paper-shade), 0.24);
 }
 @media (hover: hover) and (pointer: fine) {
-  .node.leaf:hover { box-shadow: 0 0 0 1px var(--paper-edge), 0 2px 4px rgba(var(--paper-shade), 0.1), 0 16px 40px rgba(var(--paper-shade), 0.18); }
+  .node.leaf:hover { box-shadow: var(--sheet), var(--sheet-fall-2); }
 }
-.node.leaf.sel, .node.leaf.sel:hover { box-shadow: 0 0 0 1px var(--paper-edge), 0 0 0 3px var(--bg), 0 0 0 5px var(--ink), 0 16px 40px rgba(var(--paper-shade), 0.18); }
-/* the running head: the sheet's name in small mono, the way a book runs
-   its title along the top of every page; the ports on the head's edges */
-.node.leaf .node-head { height: 36px; margin: 0; padding: 0 12px 0 20px; border-radius: 3px 3px 0 0; background: transparent; gap: 6px; }
+.node.leaf.sel, .node.leaf.sel:hover { box-shadow: 0 0 0 0.5px var(--paper-edge), 0 0 0 3px var(--bg), 0 0 0 4.5px var(--ink), var(--sheet), var(--sheet-fall-2); }
+/* the running head: the sheet's name, small, the way a book runs its title
+   along the top of every page; the ports on the head's edges */
+.node.leaf .node-head { height: 36px; margin: 0; padding: 0 12px 0 20px; border-radius: 4px 4px 0 0; background: transparent; box-shadow: none; gap: 6px; }
 .node-run {
   flex: 1;
   min-width: 0;
-  font-family: var(--font-mono);
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
   font-size: var(--t-micro);
-  letter-spacing: var(--tr-micro);
-  text-transform: uppercase;
-  color: var(--fg-faint);
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
-.node-run-name { color: var(--fg-muted); }
-.node-run-of { color: var(--fg-faint); }
+.node-run-name { font-weight: var(--w-mid); color: var(--fg-muted); overflow: hidden; text-overflow: ellipsis; }
+.node-run-of { color: var(--fg-faint); overflow: hidden; text-overflow: ellipsis; }
+/* a chapter's name is its title, said at the headline weight */
+.k-chapter .node-run-name { font-size: var(--t-body); font-weight: var(--w-declare); letter-spacing: -0.01em; color: var(--paper-ink); }
 .node.leaf .node-inside { background: var(--tint-2); }
 .port.in.edge { position: absolute; left: -10px; top: 8px; }
 .node.leaf .port.out.top { top: 8px; }
@@ -830,7 +989,7 @@ html, body, #root { height: 100%; }
 .node-sheet {
   display: flex;
   flex-direction: column;
-  padding: 2px 20px 0;
+  padding: 0 20px;
 }
 .sheet-text {
   flex: 1;
@@ -850,46 +1009,53 @@ html, body, #root { height: 100%; }
 .sheet-text::placeholder { color: var(--fg-faint); font-style: italic; }
 /* words arriving from a writer: shown, not yet kept */
 .sheet-text.arriving, .prose.arriving { color: var(--fg-muted); }
-/* the folio: the count where a page keeps its number */
+/* the foot: the count, and the folio where a page keeps its number */
 .sheet-foot {
-  height: 18px;
-  padding: 4px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 20px;
+  padding: 6px 0 0;
   font-family: var(--font-mono);
   font-size: 10px;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
   color: var(--fg-faint);
-  text-align: right;
 }
+.sheet-folio { color: var(--fg-muted); }
 /* the map keeps a sheet a sheet */
-.lod-map .node.leaf .node-head { height: 34px; }
-.lod-map .node-run { font-size: 18px; letter-spacing: 0; text-transform: none; font-family: var(--font-ui); font-weight: var(--w-declare); color: var(--fg); }
+.lod-map .node.leaf .node-head { height: 36px; }
+.lod-map .node-run, .lod-map .k-chapter .node-run-name { font-size: 18px; font-weight: var(--w-declare); color: var(--fg); }
+.lod-map .node-run-of { display: none; }
 
-/* the chapter: pages as a small stack, each a sheet on the sheet */
-.node-stack { display: flex; flex-direction: column; gap: 8px; padding: 2px 20px 0; }
-.stack-line { font-size: var(--t-label); line-height: 1.5; color: var(--fg-muted); }
-.stack { flex: 1; min-height: 0; position: relative; display: flex; flex-direction: column; gap: 6px; }
-.stack-sheet {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  padding: 7px 10px 8px;
-  border-radius: 4px;
-  background: var(--surface-raised);
-  box-shadow: 0 0 0 1px var(--paper-edge), 0 1px 2px rgba(14, 14, 13, 0.05);
-  margin-left: calc(var(--i) * 6px);
-  margin-right: calc((2 - var(--i)) * 6px);
+/* the chapter: its summary, then its contents the way a book lists them —
+   a name, how it opens, and where it falls; distance, never a leader */
+.node-stack { display: flex; flex-direction: column; gap: 10px; padding: 0 20px; }
+.stack-line {
+  font-size: var(--t-label);
+  line-height: 1.5;
+  color: var(--fg-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
-.stack-sheet b { font-size: var(--t-label); font-weight: var(--w-mid); color: var(--paper-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.stack-sheet span { font-size: var(--t-micro); line-height: 1.4; color: var(--fg-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.toc { flex: 1; min-height: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; }
+.toc-row { display: flex; align-items: baseline; gap: 12px; padding: 3px 0; }
+.toc-what { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.toc-what b { font-size: var(--t-label); font-weight: var(--w-mid); color: var(--paper-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.toc-what span { font-size: var(--t-micro); line-height: 1.4; color: var(--fg-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.toc-n { font-family: var(--font-mono); font-size: 10.5px; color: var(--fg-faint); flex-shrink: 0; }
+.toc-more { padding-top: 2px; font-size: var(--t-micro); color: var(--fg-faint); }
 .stack-none { flex: 1; font-size: var(--t-label); font-style: italic; color: var(--fg-faint); }
 
 /* the card's right edge: a grip, there under the pointer */
 .node-grip {
   position: absolute;
-  top: 30px;
+  top: 36px;
   right: -3px;
-  bottom: 6px;
-  width: 8px;
+  bottom: 8px;
+  width: 6px;
   border-radius: var(--r-pill);
   background: transparent;
   cursor: ew-resize;
@@ -901,7 +1067,8 @@ html, body, #root { height: 100%; }
 .node-grip:focus-visible { opacity: 1; background: var(--ink); }
 
 /* the open key on a card: there under the pointer, gone otherwise */
-.node-open { width: 22px; height: 22px; margin-left: 2px; opacity: 0; transition: opacity var(--fast) var(--ease), background var(--fast) var(--ease), color var(--fast) var(--ease); }
+.node-open { width: 22px; height: 22px; margin-left: 2px; opacity: 0; background: none; box-shadow: none; color: var(--fg-muted); transition: opacity var(--fast) var(--ease), background var(--fast) var(--ease), color var(--fast) var(--ease); }
+@media (hover: hover) and (pointer: fine) { .node-open:hover { background: var(--tint-2); color: var(--fg); } }
 .node:hover .node-open, .node-open:focus-visible { opacity: 1; }
 .node-inside + .node-open, .node-state + .node-open, .node-st + .node-open { margin-left: 2px; }
 .lod-map .node-open { display: none; }

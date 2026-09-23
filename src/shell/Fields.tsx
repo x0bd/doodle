@@ -1,4 +1,4 @@
-import { Icon, ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, DiceIcon } from "../icons";
+import { Icon, PopUpIcon, ChevronLeftIcon, ChevronRightIcon, DiceIcon } from "../icons";
 import type { Field } from "../graph/kinds";
 import type { CSSProperties } from "react";
 import { updateData, type GraphNode } from "../state/graph";
@@ -50,7 +50,7 @@ export function FieldRow({ node, field }: { node: GraphNode; field: Field }) {
         {field.type === "select" && (
           <label className="pill pill-sm select">
             <span>{String(v)}</span>
-            <Icon icon={ChevronDownIcon} size={11} strokeWidth={2.2} />
+            <Icon icon={PopUpIcon} size={12} strokeWidth={2} />
             <select value={String(v)} onChange={(e) => set(e.target.value)} aria-label={field.label}>
               {field.options.map((o) => (
                 <option key={o} value={o}>{o}</option>

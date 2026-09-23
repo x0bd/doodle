@@ -1,5 +1,5 @@
 import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
-import { Icon, ChevronDownIcon, ChevronRightIcon } from "../icons";
+import { Icon, PopUpIcon, ChevronRightIcon, ImageIcon } from "../icons";
 import { urlFor, assets } from "../state/assets";
 import { KINDS } from "../graph/kinds";
 import { FieldRow } from "../shell/Fields";
@@ -28,16 +28,16 @@ export function Node({ node, selected, into, dim, handlers }: { node: GraphNode;
     );
 
   const g = graph.get();
-  /** what feeds an input, by title */
+  /** what feeds an input */
   const source = (ref: PortRef) => {
     const e = Object.values(edges).find((e) => e.to.node === ref.node && e.to.port === ref.port);
-    return e ? g.nodes[e.from.node]?.title : undefined;
+    return e ? g.nodes[e.from.node] : undefined;
   };
 
   // a sheet: a page or a chapter wears a running head, not a band — its
   // input sits on the head's left edge, its source named in the head
   const sheet = node.kind === "page" || node.kind === "chapter";
-  const fedBy = sheet && ins[0] ? source({ node: node.id, port: ins[0].id }) : undefined;
+  const fedBy = sheet && ins[0] ? source({ node: node.id, port: ins[0].id })?.title : undefined;
 
   // the card is as tall as what it holds; the engine is told what that is
   const box = useRef<HTMLDivElement>(null);
@@ -80,13 +80,12 @@ export function Node({ node, selected, into, dim, handlers }: { node: GraphNode;
         {sheet ? (
           <span className="node-run">
             <span className="node-run-name">{node.title}</span>
-            {node.kind === "chapter" && <span className="node-run-of"> · chapter</span>}
-            {fedBy && <span className="node-run-of"> · from {fedBy}</span>}
+            {fedBy && <span className="node-run-of">from {fedBy}</span>}
           </span>
         ) : (
           <span className="node-name">{node.title}</span>
         )}
-        {node.status !== "canon" && <span className="node-st">{node.status === "exploration" ? "explore" : node.status}</span>}
+        {node.status !== "canon" && <span className="node-st">{STATE_WORD[node.status]}</span>}
         {inside > 0 && <span className="node-inside badge" title={`${inside} inside — double-click to enter`}>{inside}</span>}
         {job && job.state !== "completed" && (
           <span className="node-state px">
@@ -123,7 +122,8 @@ export function Node({ node, selected, into, dim, handlers }: { node: GraphNode;
         <div className="ins">
           {ins.map((p) => {
             const ref = { node: node.id, port: p.id };
-            const from = source(ref);
+            const src = source(ref);
+            const from = src?.title;
             return (
               <div key={p.id} className={`in-row${from ? " on" : ""}`}>
                 <button
@@ -137,7 +137,12 @@ export function Node({ node, selected, into, dim, handlers }: { node: GraphNode;
                   <span className="port-dot" />
                 </button>
                 <span className="in-name">{p.name}</span>
-                {from && <span className="in-from">{from}</span>}
+                {src && (
+                  <span className={`in-from k-${src.kind}`}>
+                    <i aria-hidden />
+                    <span>{src.title}</span>
+                  </span>
+                )}
               </div>
             );
           })}
@@ -178,9 +183,9 @@ function Body({ node }: { node: GraphNode }) {
     case "model":
       return (
         <div className="node-body">
-          <div className="pill pill-sm node-select" title="Change in the inspector">
+          <div className="node-select" title="Change in the inspector">
             <span className="list-word">{String(node.data.model)}</span>
-            <Icon icon={ChevronDownIcon} size={11} strokeWidth={2.2} />
+            <Icon icon={PopUpIcon} size={12} strokeWidth={2} />
           </div>
         </div>
       );
@@ -229,21 +234,42 @@ function Body({ node }: { node: GraphNode }) {
     }
     case "preview":
       return (
-        <div className="node-body well">
-          {node.asset && <img className="node-img" src={urlFor(node.asset)} alt="" draggable={false} />}
+        <div className={`node-body node-print${node.asset ? " has" : ""}`}>
+          {node.asset ? (
+            <img className="node-img" src={urlFor(node.asset)} alt="" draggable={false} />
+          ) : (
+            <span className="node-print-none">
+              <Icon icon={ImageIcon} size={20} strokeWidth={1.5} />
+              <span>Nothing yet</span>
+            </span>
+          )}
         </div>
       );
-    case "location":
-    case "character":
+    case "character": {
+      // a person the way a contact card has one: the face in a round, or
+      // their initials on their own colour until there is a face
+      const name = String(node.data.name || node.title);
       return (
-        <div className="node-body node-char">
-          <div className={`node-ref well${node.asset ? "" : " diag"}`}>
+        <div className="node-body node-who">
+          <div className="who-face">
+            {node.asset ? <img className="node-img" src={urlFor(node.asset)} alt="" draggable={false} /> : <span>{initials(name)}</span>}
+          </div>
+          <div className="who-what">
+            <div className="who-name">{name}</div>
+            <div className="who-desc">{String(node.data.description || "No description yet")}</div>
+          </div>
+        </div>
+      );
+    }
+    case "location":
+      // a place the way a map card has one: the view across the top, then its name
+      return (
+        <div className="node-body node-place">
+          <div className={`place-view${node.asset ? " has" : ""}`}>
             {node.asset && <img className="node-img" src={urlFor(node.asset)} alt="" draggable={false} />}
           </div>
-          <div className="node-char-what">
-            <div className="node-char-name">{String(node.data.name || node.title)}</div>
-            <div className="node-char-desc">{String(node.data.description || "No description yet")}</div>
-          </div>
+          <div className="who-name">{String(node.data.name || node.title)}</div>
+          <div className="who-desc">{String(node.data.description || "No description yet")}</div>
         </div>
       );
     case "style":
@@ -272,6 +298,15 @@ function Body({ node }: { node: GraphNode }) {
   }
 }
 
+const STATE_WORD: Record<GraphNode["status"], string> = { canon: "Canon", draft: "Draft", exploration: "Explore", rejected: "Rejected" };
+const initials = (name: string) =>
+  name
+    .split(/[\s\-_]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join("");
+
 const countWords = (t: string) => (t.trim() ? t.trim().split(/\s+/).length : 0);
 const fmtCount = (n: number) => n.toLocaleString("en-US");
 
@@ -279,6 +314,14 @@ const fmtCount = (n: number) => n.toLocaleString("en-US");
  *  place, and how many there are. Nothing else — the sheet is the invitation. */
 function PageBody({ node }: { node: GraphNode }) {
   const j = jobs.use();
+  // the folio: where this page falls among its own
+  const folio = graph.use((g) =>
+    childrenOf(g, node.parent)
+      .map((id) => g.nodes[id])
+      .filter((n) => n.kind === "page")
+      .sort((a, b) => a.seq - b.seq)
+      .findIndex((n) => n.id === node.id) + 1,
+  );
   // a writer at work shows its words here as they come; they are not the page yet
   const partial = partialFor(j, node.id);
   const text = partial ?? String(node.data.text ?? "");
@@ -294,13 +337,18 @@ function PageBody({ node }: { node: GraphNode }) {
         onPointerDown={(e) => e.stopPropagation()}
         spellCheck
       />
-      <div className="sheet-foot px">{partial !== undefined ? "writing…" : words ? `${fmtCount(words)} words` : ""}</div>
+      <div className="sheet-foot px">
+        <span>{partial !== undefined ? "writing…" : words ? `${fmtCount(words)} words` : ""}</span>
+        <span className="sheet-folio">{folio || ""}</span>
+      </div>
     </div>
   );
 }
 
-/** A chapter on the field: its pages as a small stack, in order, and the
- *  count. Enter it and the pages are the field. */
+/** A chapter on the field: a sheet with its pages stacked under it — its
+ *  summary, its contents in order, and the count. Enter it and the pages
+ *  are the field. */
+const SHOWN = 5;
 function ChapterBody({ node }: { node: GraphNode }) {
   const g = graph.use();
   const pages = childrenOf(g, node.id).map((id) => g.nodes[id]).filter((n) => n.kind === "page").sort((a, b) => a.seq - b.seq);
@@ -310,19 +358,25 @@ function ChapterBody({ node }: { node: GraphNode }) {
     <div className="node-body node-stack">
       {summary && <p className="stack-line selectable">{summary}</p>}
       {pages.length ? (
-        <div className="stack">
-          {pages.slice(0, 3).map((p, i) => (
-            <div key={p.id} className="stack-sheet" style={{ "--i": i } as React.CSSProperties}>
-              <b>{p.title}</b>
-              <span>{String(p.data.text ?? "").trim().split("\n")[0] || "—"}</span>
-            </div>
+        // its contents, the way a book lists them: the page's name, how it
+        // opens, and where it falls
+        <ol className="toc">
+          {pages.slice(0, SHOWN).map((p, i) => (
+            <li key={p.id} className="toc-row">
+              <span className="toc-what">
+                <b>{p.title}</b>
+                <span>{String(p.data.text ?? "").trim().split("\n")[0] || "Not begun"}</span>
+              </span>
+              <span className="toc-n px">{i + 1}</span>
+            </li>
           ))}
-        </div>
+          {pages.length > SHOWN && <li className="toc-more">and {pages.length - SHOWN} more</li>}
+        </ol>
       ) : (
         <div className="stack-none">No pages yet. Enter it to begin one.</div>
       )}
       <div className="sheet-foot px">
-        {pages.length ? `${pages.length} ${pages.length === 1 ? "page" : "pages"}${words ? ` · ${fmtCount(words)} words` : ""}` : ""}
+        <span>{pages.length ? `${pages.length} ${pages.length === 1 ? "page" : "pages"}${words ? ` · ${fmtCount(words)} words` : ""}` : ""}</span>
       </div>
     </div>
   );

@@ -5,10 +5,10 @@
 import type { Point } from "./camera";
 import { inputs, outputs, type GraphNode, type PortRef } from "../state/graph";
 
-export const NODE_PAD = 8;
-export const HEAD_H = 30; // the head band, flush with the card's top
-export const ROWS_TOP = HEAD_H + 6; // 36: the band, then the card's gap
-export const PORT_ROW = 24; // an input row in the body
+export const NODE_PAD = 12;
+export const HEAD_H = 36; // the head band, flush with the card's top (.node-head)
+export const ROWS_TOP = HEAD_H + 6; // 42: the band, then the card's gap (.node-head margin)
+export const PORT_ROW = 26; // an input row in the body (.in-row)
 
 /** far out, cards are their heads; every port lands on the band */
 let mapMode = false;
