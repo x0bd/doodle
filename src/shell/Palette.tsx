@@ -6,7 +6,7 @@ import { fitRect } from "../canvas/camera";
 import { screenRect, fitAll } from "../canvas/view";
 import { ui, closePalette, openChooser, openSettings, showBar } from "../state/ui";
 import { enqueue } from "../state/jobs";
-import { exportText, exportArchiveFile, importArchiveFile } from "../state/doc";
+import { exportText, exportArchiveFile, importArchiveFile, tidyAssets } from "../state/doc";
 import { openVersions, keepVersionHere } from "../state/versions";
 import { GLYPH } from "../canvas/Doc";
 import { KINDS } from "../graph/kinds";
@@ -44,6 +44,7 @@ export function Palette() {
       { kind: "cmd", id: "settings", label: "Settings…", icon: SettingsIcon, run: openSettings },
       { kind: "cmd", id: "versions", label: "Versions…", icon: PageIcon, run: () => openVersions() },
       { kind: "cmd", id: "keep-version", label: "Keep a version", icon: SaveIcon, run: () => void keepVersionHere() },
+      { kind: "cmd", id: "tidy", label: "Tidy unused pictures…", icon: SaveIcon, run: () => void tidyAssets() },
     ];
     const cmds = all.filter((c) => c.kind === "cmd" && (!needle || c.label.toLowerCase().includes(needle)));
     const nodes: Hit[] = g.order

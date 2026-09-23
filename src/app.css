@@ -1941,7 +1941,7 @@ html, body, #root { height: 100%; }
   gap: 10px;
   max-width: min(620px, calc(100% - 32px));
   padding: 6px 6px 6px 14px;
-  border-radius: 999px;
+  border-radius: 18px; /* a capsule on one line; a card when it wraps */
   background: var(--surface);
   box-shadow: var(--card-lift), var(--card-lift-2);
   font-size: var(--t-label);
@@ -1951,6 +1951,7 @@ html, body, #root { height: 100%; }
 .notice-text { flex: 1; min-width: 0; line-height: 1.4; }
 .notice .pill { flex: none; }
 .notice-x { flex: none; width: 24px; height: 24px; }
+.notice-more { flex: none; font-size: var(--t-micro); color: var(--fg-faint); }
 
 /* ── versions: the list down the left, the chosen one read against now ── */
 .vsheet { width: min(860px, 100%); height: min(580px, 88dvh); }

@@ -50,6 +50,7 @@ pub fn build(app: &App) -> tauri::Result<Menu<Wry>> {
         .separator()
         .item(&item("file.duplicate", "Duplicate Graph", None)?)
         .item(&item("file.reveal", "Reveal in Finder", None)?)
+        .item(&item("file.tidy", "Tidy Unused Pictures…", None)?)
         .separator()
         .item(&PredefinedMenuItem::close_window(app, Some("Close Graph"))?)
         .build()?;

@@ -5,18 +5,19 @@
  */
 import { FRAMES } from "../graph/kinds";
 import { createStore } from "./store";
-import { graph, type GraphState } from "./graph";
-import { camera, type Camera } from "../canvas/camera";
+import { graph } from "./graph";
+import { camera } from "../canvas/camera";
 import { history, reset as resetHistory, commit, undo } from "./history";
 import { nav, resetNav } from "./nav";
 import { restoreJobs, forgetJobs } from "./jobs";
-import { inTauri, askThree, recoveryAppend, recoveryRead, recoveryClear, takeOpened, setRecentMenu, loadGraph, pickOpenDir, pickOpenFile, pickSaveDir, pickSaveFile, saveGraph, graphExists, writeAsset, duplicateGraph, revealPath, writeText, exportArchive, importArchive, confirmAsk } from "../platform/fs";
+import { inTauri, askThree, listBackups, readBackup, setAside, unusedAssets, trashUnusedAssets, recoveryAppend, recoveryRead, recoveryClear, takeOpened, setRecentMenu, loadGraph, pickOpenDir, pickOpenFile, pickSaveDir, pickSaveFile, saveGraph, graphExists, writeAsset, duplicateGraph, revealPath, writeText, exportArchive, importArchive, confirmAsk } from "../platform/fs";
 import { templateById, type TemplateId } from "../graph/templates";
 import { PLACES } from "../graph/kinds";
-import { prov, resetProv, rekey, type Prov } from "./prov";
+import { prov, resetProv, rekey } from "./prov";
 import { asMarkdown } from "./reading";
+import { check, FORMAT, Unreadable, type Checked, type FileGraph } from "./integrity";
 import { delta, replay, type Tracked } from "./recovery";
-import { say, hush } from "./notice";
+import { say, hushAll } from "./notice";
 import { keepDaily, loadVersions, versions } from "./versions";
 const versionsDir = () => versions.get().dir;
 
@@ -120,26 +121,11 @@ export function bibleText(): string {
   return [b.tone && `Tone: ${b.tone}`, b.rules && `Rules: ${b.rules}`, b.avoid && `Avoid: ${b.avoid}`].filter(Boolean).join("\n");
 }
 
-interface FileGraph {
-  format: "doodle-graph";
-  version: 1;
-  name: string;
-  nodes: GraphState["nodes"];
-  order: GraphState["order"];
-  edges: GraphState["edges"];
-  camera: Camera;
-  /** each workspace's last view, by node id; "root" for the top */
-  views?: Record<string, Camera>;
-  bible?: Bible;
-  /** where every generated thing came from, by what it produced */
-  provenance?: Record<string, Prov>;
-}
-
 function serialize(): string {
   const g = graph.get();
   const file: FileGraph = {
     format: "doodle-graph",
-    version: 1,
+    version: FORMAT,
     name: doc.get().name,
     nodes: g.nodes,
     order: g.order,
@@ -370,7 +356,7 @@ prov.subscribe(noted);
 function leaveLog() {
   clearTimeout(timer);
   pendingSince = 0;
-  hush();
+  hushAll();
   flushLog();
   // a save it was still waiting for is made now, from what it is at this
   // moment (if it fails, its log still has every change for the next open)
@@ -497,24 +483,90 @@ function load(file: FileGraph, path: string | null) {
 export async function openFrom(path: string): Promise<boolean> {
   if (doc.get().path !== path && !(await mayLeave())) return false;
   try {
-    const raw = await loadGraph(path);
-    const file = JSON.parse(raw) as FileGraph;
-    if (file.format !== "doodle-graph") throw new Error("Not a Doodle graph");
+    const got = await readSound(path);
+    if (!got) return false;
     leaveLog();
-    load(file, path);
+    load(got.file, path);
     await recoverInto(path);
     await restoreJobs(path);
     try {
       localStorage.setItem(LAST, path);
-    remember(path, nameOf(path));
+      remember(path, nameOf(path));
     } catch {
       /* fine */
+    }
+    // what had to happen to open it is said last, over any other notice
+    if (got.said) {
+      say(got.said);
+      doc.set((d) => ({ ...d, dirty: true }));
+      void write(path); // the file is sound again from here
     }
     return true;
   } catch (e) {
     doc.set((d) => ({ ...d, save: "failed", error: String(e) }));
     return false;
   }
+}
+
+/** A project's graph as it can be trusted (PLAN.md M1.6): its own file,
+ *  set right where it had to be — or, when that file is damaged, the newest
+ *  backup that is sound, the damaged file kept aside. Nothing, with the
+ *  reason said, when neither will do. */
+async function readSound(path: string): Promise<(Checked & { said?: string }) | null> {
+  const name = nameOf(path);
+  let why: Unreadable;
+  try {
+    const got = check(await loadGraph(path));
+    if (!got.fixes.length) return got;
+    const kept = await setAside(path).catch(() => null);
+    const list = got.fixes.length > 1 ? `${got.fixes.slice(0, -1).join(", ")}, and ${got.fixes.at(-1)}` : got.fixes[0];
+    return { ...got, said: `“${name}” was mended as it opened — ${list}.${kept ? " The file as it was is kept beside it." : ""}` };
+  } catch (e) {
+    why = e instanceof Unreadable ? e : new Unreadable("could not be read");
+  }
+  if (why.newer) {
+    await confirmAsk(`“${name}” ${why.message}. Update Doodle to open it — nothing in it has been changed.`, "Open", "Alright");
+    return null;
+  }
+  for (const b of await listBackups(path).catch(() => [] as string[])) {
+    try {
+      const got = check(await readBackup(path, b));
+      const kept = await setAside(path).catch(() => null);
+      const at = new Date(Number(/graph-(\d+)/.exec(b)?.[1] ?? 0) * 1000);
+      const when = at.toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" });
+      return {
+        ...got,
+        said: `“${name}” was damaged, so it opened from its backup of ${when}. ${kept ? "The damaged file is kept beside it; anything" : "Anything"} later may be in Versions.`,
+      };
+    } catch {
+      /* an older one, then */
+    }
+  }
+  await confirmAsk(`“${name}” ${why.message}, and none of its backups could be read either. Nothing has been changed.`, "Open", "Alright");
+  return null;
+}
+
+/** File › Tidy Unused Pictures: the pictures nothing names — not the
+ *  graph, its runs, its versions or what is not saved yet — found first
+ *  and counted, then moved to the Trash only if the writer says so. */
+export async function tidyAssets() {
+  const path = doc.get().path;
+  if (!inTauri || !path) return say("Only a saved project keeps pictures of its own.");
+  if (doc.get().dirty) await write(path);
+  const found = await unusedAssets(path).catch(() => null);
+  if (!found) return say("The project's pictures could not be looked through.");
+  if (!found.files.length) return say("Every picture in the project is used somewhere.");
+  const n = found.files.length;
+  const mb = found.bytes / 1048576;
+  const size = mb >= 1 ? `${mb.toFixed(mb < 10 ? 1 : 0)} MB` : `${Math.max(1, Math.round(found.bytes / 1024))} KB`;
+  const ok = await confirmAsk(
+    `${n === 1 ? "One picture" : `${n} pictures`} (${size}) ${n === 1 ? "is" : "are"} used nowhere — not on the field, in a run, or in any version. Move ${n === 1 ? "it" : "them"} to the Trash?`,
+    "Tidy unused pictures",
+    "Move to Trash",
+  );
+  if (!ok) return;
+  const moved = await trashUnusedAssets(path).catch(() => -1);
+  say(moved < 0 ? "The pictures could not be moved to the Trash." : `Moved ${moved === 1 ? "one picture" : `${moved} pictures`} to the Trash.`);
 }
 
 export async function openDialog() {

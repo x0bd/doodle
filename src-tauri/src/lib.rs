@@ -1,5 +1,6 @@
 mod archive;
 mod codex;
+mod integrity;
 mod commands;
 mod mcp;
 mod menu;
@@ -35,6 +36,11 @@ pub fn run() {
             versions::version_save,
             versions::version_index,
             versions::version_read,
+            integrity::list_backups,
+            integrity::read_backup,
+            integrity::set_aside,
+            integrity::unused_assets,
+            integrity::trash_unused_assets,
             commands::write_text,
             commands::ollama_where,
             archive::export_archive,

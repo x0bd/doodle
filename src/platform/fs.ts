@@ -40,6 +40,14 @@ export const versionSave = (dir: string, id: string, meta: string, body: string)
 export const versionIndex = (dir: string) => invoke<string>("version_index", { dir });
 export const versionRead = (dir: string, id: string) => invoke<string>("version_read", { dir, id });
 
+/** Integrity (`integrity.rs`): the backups to fall back on, a damaged file
+ *  kept aside, the pictures nothing uses. */
+export const listBackups = (dir: string) => invoke<string[]>("list_backups", { dir });
+export const readBackup = (dir: string, name: string) => invoke<string>("read_backup", { dir, name });
+export const setAside = (dir: string) => invoke<string | null>("set_aside", { dir });
+export const unusedAssets = (dir: string) => invoke<{ files: string[]; bytes: number }>("unused_assets", { dir });
+export const trashUnusedAssets = (dir: string) => invoke<number>("trash_unused_assets", { dir });
+
 /** Files dropped on the window, as paths — the platform hands them over. */
 export async function onFileDrop(handler: (paths: string[], at: { x: number; y: number }) => void) {
   if (!inTauri) return () => {};
