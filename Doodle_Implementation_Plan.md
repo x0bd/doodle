@@ -1,3 +1,5 @@
+> **Revised 2026-09-23 — read `PLAN.md` first.** It replaces this document's sequencing and its MVP (§3): the MVP is now a **book** written in an **installed macOS build**, with pictures made by ChatGPT or by open models on the machine (FLUX.2, Ideogram 4 via MLX), and material imported onto an inspiration board. This document stays the reference for its invariants (§4.3, §26.2), its AI permission model (§11.3), its vocabulary and its later stages.
+
 # Doodle — Implementation Plan and Agent-Executable Technical Specification
 
 > Status: implementation-ready draft  
