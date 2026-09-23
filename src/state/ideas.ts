@@ -1,0 +1,119 @@
+/**
+ * Things the agent proposes to add — beats, notes, characters, places —
+ * as ghosts on the page they were proposed for, the way proposed shots
+ * are (shots.ts). Kept, one becomes a node, one journal entry; a beat
+ * that names the passage it came from is tied to it, so the page marks
+ * where it sits. Dropped, it is gone. Nothing here is the document until
+ * the writer keeps it (plan §11.3: the assistant observes and proposes).
+ */
+import { createStore } from "./store";
+import { graph, childrenOf, makeNode, type GraphNode } from "./graph";
+import { commit } from "./history";
+import { locate } from "./anchors";
+import { plain, formOf } from "../writer/markup";
+import type { NodeKind } from "../graph/kinds";
+
+export type IdeaKind = "beat" | "note" | "character" | "location";
+
+export interface Idea {
+  kind: IdeaKind;
+  title: string;
+  text: string;
+  /** the words of the parent this came from, to tie it to them */
+  quote?: string;
+  why?: string;
+}
+
+export interface IdeaSet {
+  id: string;
+  /** the node they are proposed for: a beat goes inside it; a character or
+   *  a place goes beside it, at its level */
+  nodeId: string;
+  items: Idea[];
+  by: string;
+}
+
+export const ideas = createStore<Record<string, IdeaSet>>({});
+let seq = 0;
+
+export function offer(nodeId: string, items: Idea[], by: string): number {
+  const clean = items.filter((i) => i.title?.trim() || i.text?.trim()).slice(0, 24);
+  if (!clean.length) return 0;
+  const id = `i${++seq}`;
+  ideas.set((s) => ({ ...s, [id]: { id, nodeId, items: clean, by } }));
+  return clean.length;
+}
+
+export const ideasFor = (all: Record<string, IdeaSet>, nodeId: string) => Object.values(all).filter((s) => s.nodeId === nodeId);
+
+const KIND: Record<IdeaKind, NodeKind> = { beat: "note", note: "note", character: "character", location: "location" };
+
+function made(set: IdeaSet, idea: Idea, offset: number): GraphNode | undefined {
+  const g = graph.get();
+  const host = g.nodes[set.nodeId];
+  if (!host) return undefined;
+  const kind = KIND[idea.kind];
+  if (kind === "note") {
+    const n = childrenOf(g, host.id).length + offset;
+    const node = makeNode("note", 60 + n * 260, 60, { parent: host.id, title: idea.title.slice(0, 60) || `Beat ${n + 1}`, data: { text: idea.text } });
+    // a beat that says where it came from is tied there, if the words are
+    if (idea.quote?.trim()) {
+      const words = plain(String(host.data.text ?? ""), formOf(host.data));
+      const at = words.indexOf(idea.quote.trim());
+      const anchor = { node: host.id, text: idea.quote.trim(), at: Math.max(0, at) };
+      if (locate(words, anchor)) node.anchor = anchor;
+    }
+    return node;
+  }
+  // a character or a place lives beside what it was proposed for
+  const x = host.x + (offset + 1) * 40;
+  const y = host.y + host.h + 60 + offset * 30;
+  return makeNode(kind, x, y, {
+    parent: host.parent,
+    title: idea.title.slice(0, 60),
+    status: "draft",
+    data: kind === "character" ? { name: idea.title, description: idea.text } : { name: idea.title, description: idea.text },
+  });
+}
+
+/** Keep one: it becomes a node. */
+export function keepIdea(id: string, index: number) {
+  const set = ideas.get()[id];
+  const idea = set?.items[index];
+  if (!set || !idea) return;
+  const node = made(set, idea, 0);
+  if (!node) return;
+  commit("Keep", () => graph.set((x) => ({ ...x, nodes: { ...x.nodes, [node.id]: node }, order: [...x.order, node.id] })));
+  dropIdea(id, index);
+}
+
+/** Keep them all: one journal entry. */
+export function keepAllIdeas(id: string) {
+  const set = ideas.get()[id];
+  if (!set) return;
+  const nodes = set.items.map((it, i) => made(set, it, i)).filter((n): n is GraphNode => !!n);
+  commit("Keep all", () =>
+    graph.set((x) => ({ ...x, nodes: { ...x.nodes, ...Object.fromEntries(nodes.map((n) => [n.id, n])) }, order: [...x.order, ...nodes.map((n) => n.id)] })),
+  );
+  dismissIdeas(id);
+}
+
+export function dropIdea(id: string, index: number) {
+  ideas.set((s) => {
+    const set = s[id];
+    if (!set) return s;
+    const items = set.items.filter((_, i) => i !== index);
+    const next = { ...s };
+    if (items.length) next[id] = { ...set, items };
+    else delete next[id];
+    return next;
+  });
+}
+
+export function dismissIdeas(id: string) {
+  ideas.set((s) => {
+    const next = { ...s };
+    delete next[id];
+    return next;
+  });
+}

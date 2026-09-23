@@ -250,6 +250,10 @@ enum CodexEvent {
     Delta { turn_id: String, delta: String },
     Done { turn_id: String, text: String, status: String, error: Option<String> },
     Failed { turn_id: String, error: String },
+    /// a new message begins: what streams next replaces what streamed before
+    Message { turn_id: String },
+    /// the agent reached for one of Doodle's tools
+    Tool { turn_id: String, tool: String, status: String },
 }
 
 fn start(app: &AppHandle) -> Result<Server, String> {
@@ -289,6 +293,17 @@ fn start(app: &AppHandle) -> Result<Server, String> {
                     if let (Some(t), Some(d)) = (turn_id, p.get("delta").and_then(|s| s.as_str())) {
                         texts.entry(t.clone()).or_default().push_str(d);
                         let _ = app2.emit("codex", CodexEvent::Delta { turn_id: t, delta: d.to_string() });
+                    }
+                }
+                "item/started" if p["item"]["type"].as_str() == Some("agentMessage") => {
+                    if let Some(t) = turn_id {
+                        texts.remove(&t);
+                        let _ = app2.emit("codex", CodexEvent::Message { turn_id: t });
+                    }
+                }
+                "item/started" if p["item"]["type"].as_str() == Some("mcpToolCall") => {
+                    if let (Some(t), Some(tool)) = (turn_id, p["item"]["tool"].as_str()) {
+                        let _ = app2.emit("codex", CodexEvent::Tool { turn_id: t, tool: tool.to_string(), status: "started".into() });
                     }
                 }
                 "item/completed" => {
@@ -373,7 +388,15 @@ pub struct TurnHandle {
 /// first), an optional schema the answer must match. Returns at once; the
 /// words arrive as `codex` events.
 #[tauri::command]
-pub async fn codex_turn(app: AppHandle, prompt: String, system: Option<String>, schema: Option<Value>, images: Option<Vec<String>>) -> Result<TurnHandle, String> {
+pub async fn codex_turn(
+    app: AppHandle,
+    prompt: String,
+    system: Option<String>,
+    schema: Option<Value>,
+    images: Option<Vec<String>>,
+    tools: Option<bool>,
+    instructions: Option<String>,
+) -> Result<TurnHandle, String> {
     let cwd = scratch(&app, "text")?;
     let pictures = stage(&scratch(&app, "pictures")?, &images.unwrap_or_default());
     let text = match system {
@@ -382,7 +405,24 @@ pub async fn codex_turn(app: AppHandle, prompt: String, system: Option<String>, 
     };
     tauri::async_runtime::spawn_blocking(move || {
         with_server(&app, |s| {
-            let t = s.request("thread/start", json!({ "cwd": cwd, "sandbox": "read-only", "ephemeral": true, "approvalPolicy": "never" }))?;
+            let mut start = json!({ "cwd": cwd, "sandbox": "read-only", "ephemeral": true, "approvalPolicy": "never" });
+            // Doodle's tools, for this thread only: they read and propose, so
+            // they are approved; nothing of the user's own Codex config is touched
+            if tools == Some(true) {
+                if let Some(e) = crate::mcp::endpoint() {
+                    start["config"] = json!({ "mcp_servers": { "doodle": {
+                        "url": e.url,
+                        "http_headers": { "Authorization": format!("Bearer {}", e.token) },
+                        "default_tools_approval_mode": "approve",
+                        "startup_timeout_sec": 10,
+                        "tool_timeout_sec": 40,
+                    } } });
+                }
+            }
+            if let Some(i) = instructions.filter(|i| !i.trim().is_empty()) {
+                start["developerInstructions"] = json!(i);
+            }
+            let t = s.request("thread/start", start)?;
             let thread_id = t["result"]["thread"]["id"].as_str().ok_or_else(|| format!("no thread: {}", t["error"]["message"]))?.to_string();
             // the words, then each picture as a file on this machine
             let mut input = vec![json!({ "type": "text", "text": text })];

@@ -1,6 +1,7 @@
 mod archive;
 mod codex;
 mod commands;
+mod mcp;
 mod menu;
 mod thumbs;
 
@@ -22,6 +23,7 @@ pub fn run() {
             commands::read_asset,
             commands::write_asset,
             thumbs::read_thumb,
+            mcp::mcp_reply,
             commands::write_text,
             archive::export_archive,
             archive::import_archive,
@@ -33,6 +35,8 @@ pub fn run() {
         ])
         .manage(codex::CodexState::default())
         .setup(|app| {
+            // Doodle's own tools for the agent's turns, on this machine only
+            mcp::start(app.handle());
             // The boring things live on the platform's own menu bar. Every
             // item that is Doodle's (not the platform's) reports to the
             // front end by id, and the front end does the work.

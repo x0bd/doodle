@@ -8,6 +8,7 @@ import { Settings } from "./shell/Settings";
 import { Bar } from "./shell/Bar";
 import { ui, togglePanes, openChooser } from "./state/ui";
 import { listenToMenu } from "./platform/menu";
+import { listenForAgent } from "./agent/tools";
 import { restoreLast } from "./state/doc";
 import { Welcome } from "./shell/Welcome";
 import { Palette } from "./shell/Palette";
@@ -22,6 +23,7 @@ export function App() {
   const read = ui.use((u) => u.read);
   const writing = reading(focus, read);
   useEffect(listenToMenu, []);
+  useEffect(listenForAgent, []);
   // the last graph if it is still there — with its view — else the template, framed
   useEffect(() => {
     let live = true;

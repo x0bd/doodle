@@ -25,12 +25,21 @@ const shown = (pics: Picture[] | undefined) => (pics?.length ? pics.map((p) => p
 type CodexEvent =
   | { kind: "delta"; turnId: string; delta: string }
   | { kind: "done"; turnId: string; text: string; status: string; error?: string }
-  | { kind: "failed"; turnId: string; error: string };
+  | { kind: "failed"; turnId: string; error: string }
+  | { kind: "tool"; turnId: string; tool: string; status: string }
+  | { kind: "message"; turnId: string };
 
 /** A turn on the app server: words as they come, the whole at the end.
  *  Cancel interrupts the turn. */
 async function turn(req: TextRequest, onDelta: ((t: string) => void) | undefined, signal: AbortSignal): Promise<string> {
-  const handle = await invoke<{ thread_id: string; turn_id: string }>("codex_turn", { prompt: req.prompt, system: req.system ?? null, schema: req.schema ?? null, images: shown(req.images) });
+  const handle = await invoke<{ thread_id: string; turn_id: string }>("codex_turn", {
+    prompt: req.prompt,
+    system: req.system ?? null,
+    schema: req.schema ?? null,
+    images: shown(req.images),
+    tools: !!req.tools,
+    instructions: req.instructions ?? null,
+  });
   return new Promise<string>((resolve, reject) => {
     let off: UnlistenFn | undefined;
     let acc = "";
@@ -54,6 +63,11 @@ async function turn(req: TextRequest, onDelta: ((t: string) => void) | undefined
         if (ev.status === "failed") finish(() => reject(new Error(ev.error ?? "Codex failed")));
         else if (ev.status === "interrupted") finish(() => reject(new DOMException("Cancelled", "AbortError")));
         else finish(() => resolve(ev.text || acc));
+      } else if (ev.kind === "message") {
+        // the agent speaks again, after a tool: its words start over
+        acc = "";
+      } else if (ev.kind === "tool") {
+        req.onTool?.(ev.tool);
       } else if (ev.kind === "failed") {
         finish(() => reject(new Error(ev.error)));
       }

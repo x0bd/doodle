@@ -10,8 +10,23 @@ import { pick } from "../providers/registry";
 import { ui } from "./ui";
 import { bibleText } from "./doc";
 import { expandMentions } from "../canvas/mentions";
+import { briefing, runTool } from "../agent/tools";
+import type { TextRequest } from "../providers/types";
 
 export type Ask = "expand" | "continue" | "rewrite" | "ask";
+
+/** a tool as the draft says it is being used */
+const DOING: Record<string, string> = {
+  doodle_here: "looking where you are",
+  doodle_outline: "reading the outline",
+  doodle_read: "reading",
+  doodle_find: "searching",
+  propose_beats: "proposing beats",
+  propose_shots: "proposing shots",
+  propose_text: "drafting",
+  propose_characters: "proposing characters",
+  propose_places: "proposing places",
+};
 
 export interface Draft {
   id: string;
@@ -22,6 +37,11 @@ export interface Draft {
   state: "thinking" | "ready" | "failed";
   error?: string;
   provider?: string;
+  /** what the agent is doing, when it is working the document */
+  doing?: string;
+  /** the agent worked the document and this is its account of it — read,
+   *  not kept: what it proposed waits on the page on its own */
+  reply?: boolean;
 }
 
 export const drafts = createStore<Record<string, Draft>>({});
@@ -80,11 +100,18 @@ export async function propose(nodeId: string, ask: Ask, instruction = "") {
     drafts.set((d) => (d[id] ? { ...d, [id]: { ...d[id], provider: provider.descriptor.name } } : d));
     const words = expandMentions(String(node.data[proseKey(node.kind)] ?? "")).trim();
     // a blank page continued begins from what came before
-    const req = { prompt: words || (ask === "continue" ? "This page is blank. Begin it, carrying on from what came before." : words), system };
+    const req: TextRequest = { prompt: words || (ask === "continue" ? "This page is blank. Begin it, carrying on from what came before." : words), system };
+    // a free ask works the document: it can read it and leave proposals
+    if (ask === "ask") {
+      req.tools = true;
+      req.instructions = briefing(nodeId);
+      req.runTool = (name, args) => runTool(name, args, provider.descriptor.name);
+      req.onTool = (name) => drafts.set((d) => (d[id] ? { ...d, [id]: { ...d[id], doing: DOING[name] ?? name, reply: true } } : d));
+    }
     // words as they come, when the provider can give them
     const onDelta = (partial: string) => drafts.set((d) => (d[id] ? { ...d, [id]: { ...d[id], text: partial } } : d));
     const text = provider.streamText ? await provider.streamText(req, onDelta, ctl.signal) : await provider.generateText!(req, ctl.signal);
-    drafts.set((d) => (d[id] ? { ...d, [id]: { ...d[id], text, state: "ready" } } : d));
+    drafts.set((d) => (d[id] ? { ...d, [id]: { ...d[id], text, state: "ready", doing: undefined } } : d));
   } catch (e) {
     const cancelled = e instanceof DOMException && e.name === "AbortError";
     if (cancelled) reject(id);
@@ -104,7 +131,7 @@ export const proseKey = (kind: string) => (kind === "character" || kind === "loc
 
 export function accept(id: string) {
   const d = drafts.get()[id];
-  if (!d || d.state !== "ready") return;
+  if (!d || d.state !== "ready" || d.reply) return;
   const node = graph.get().nodes[d.nodeId];
   if (!node) return;
   const key = proseKey(node.kind);

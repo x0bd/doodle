@@ -52,6 +52,15 @@ export interface TextRequest {
   schema?: unknown;
   /** pictures to look at with the words (vision) */
   images?: Picture[];
+  /** Doodle's own tools for this turn (agent/tools.ts): a provider that
+   *  speaks MCP is handed Doodle's server; one that does not may call
+   *  `runTool` directly */
+  tools?: boolean;
+  /** what the agent is told about where it is, when it has the tools */
+  instructions?: string;
+  runTool?: (name: string, args: Record<string, unknown>) => { text: string; error: boolean };
+  /** a tool reached for, as it happens */
+  onTool?: (name: string) => void;
 }
 
 export interface Progress {

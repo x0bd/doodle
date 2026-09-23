@@ -4,6 +4,7 @@ import {
   type IconSvgElement,
 } from "../icons";
 import { shots, proposalsFor, keepShot, keepAll, dropShot, dismiss } from "../state/shots";
+import { ideas, ideasFor, keepIdea, keepAllIdeas, dropIdea, dismissIdeas } from "../state/ideas";
 import { KINDS, type NodeKind } from "../graph/kinds";
 import { graph, updateData, rename, childrenOf, makeNode, addNode, takeOutput, type GraphNode } from "../state/graph";
 import { drafts, draftsFor, accept, reject, cancel, proseKey } from "../state/drafts";
@@ -17,7 +18,7 @@ import { FieldRow } from "../shell/Fields";
 import { mentionables } from "./mentions";
 import { useState, useMemo } from "react";
 import { Editor, type Picked, type Tie } from "../writer/Editor";
-import { formOf, countWords } from "../writer/markup";
+import { formOf, countWords, plain } from "../writer/markup";
 
 export const GLYPH: Record<NodeKind, IconSvgElement> = {
   model: ModelIcon, prompt: TextIcon, generate: GenerateIcon, preview: ImageIcon,
@@ -30,6 +31,8 @@ const runtime = (words: number) => {
   return s < 60 ? `≈ ${Math.max(5, Math.round(s / 5) * 5)} s` : `≈ ${Math.round(s / 60)} min`;
 };
 
+const IDEA_WORD: Record<string, string> = { beat: "beats", note: "notes", character: "characters", location: "places" };
+
 const ASK_LABEL = { expand: "Expanded", continue: "Continued", rewrite: "Rewritten", ask: "Answered" } as const;
 
 /** A node entered is a document: its own page, one idiom for every kind.
@@ -40,6 +43,7 @@ export function Doc({ id }: { id: string }) {
   const node = g.nodes[id];
   const all = drafts.use();
   const proposals = shots.use();
+  const offers = ideas.use();
   const j = jobs.use();
   assets.use();
   const name = doc.use((d) => d.name);
@@ -49,6 +53,7 @@ export function Doc({ id }: { id: string }) {
   const images = node.attachments ?? [];
   const mine = draftsFor(all, id);
   const proposed = proposalsFor(proposals, id);
+  const offered = ideasFor(offers, id);
   const parent = node.parent ? g.nodes[node.parent]?.title : name;
   const job = RUNNABLE.has(node.kind) ? jobFor(j, id) : undefined;
   const ties = tiedTo(g, id);
@@ -98,9 +103,14 @@ export function Doc({ id }: { id: string }) {
             <section key={d.id} className={`draft ${d.state}`} aria-live="polite">
               <div className="draft-head">
                 <span className="lbl">
-                  {d.state === "thinking" ? `${d.provider ?? "Thinking"}…` : d.state === "failed" ? "Could not" : `${ASK_LABEL[d.ask]} — a draft${d.provider ? ` · ${d.provider}` : ""}`}
+                  {d.state === "thinking" ? `${d.provider ?? "Thinking"}${d.doing ? ` · ${d.doing}` : ""}…` : d.state === "failed" ? "Could not" : d.reply ? `${d.provider ?? "The agent"} answered` : `${ASK_LABEL[d.ask]} — a draft${d.provider ? ` · ${d.provider}` : ""}`}
                 </span>
-                {d.state === "ready" && (
+                {d.state === "ready" && d.reply && (
+                  <button className="pill-icon sm" aria-label="Done" title="Done with it" onClick={() => reject(d.id)}>
+                    <Icon icon={CloseIcon} size={12} strokeWidth={2.2} />
+                  </button>
+                )}
+                {d.state === "ready" && !d.reply && (
                   <span className="draft-acts">
                     <button className="pill pill-sm" onClick={() => accept(d.id)}>
                       <Icon icon={CheckIcon} size={11} strokeWidth={2.4} />
@@ -122,10 +132,52 @@ export function Doc({ id }: { id: string }) {
                   </button>
                 )}
               </div>
-              {d.state === "ready" && <p className="draft-text selectable">{d.text}</p>}
-              {d.state === "thinking" && d.text && <p className="draft-text writing">{d.text}</p>}
+              {d.state === "ready" && <Editor value={d.text} form={formOf(node.data)} readOnly className="draft-text selectable" />}
+              {d.state === "thinking" && d.text && <p className="draft-text writing">{plain(d.text, formOf(node.data))}</p>}
               {d.state === "failed" && <p className="draft-text">{d.error}</p>}
             </section>
+        ))}
+
+        {offered.map((set) => (
+          <section key={set.id} className="proposal ready" aria-live="polite">
+            <div className="sec-head">
+              <span className="sec-name">Proposed {IDEA_WORD[set.items[0]?.kind ?? "note"]}</span>
+              <span className="sec-note">{set.items.length} from {set.by} — ghosts until you keep them</span>
+              <button className="pill pill-sm" onClick={() => keepAllIdeas(set.id)}>
+                <Icon icon={CheckIcon} size={11} strokeWidth={2.4} />
+                Keep all
+              </button>
+              <button className="pill-icon sm" aria-label="Dismiss all" onClick={() => dismissIdeas(set.id)}>
+                <Icon icon={CloseIcon} size={12} strokeWidth={2.2} />
+              </button>
+            </div>
+            <ol className="ghosts">
+              {set.items.map((it, i) => (
+                <li key={i} className="ghost">
+                  <span className="beat-n px">{i + 1}</span>
+                  <div className="beat-what">
+                    <span className="ghost-title">{it.title}</span>
+                    <span className="ghost-text">{it.text}</span>
+                    {(it.quote || it.why) && (
+                      <span className="ghost-cam px">
+                        {it.quote && <>from “{it.quote.length > 80 ? `${it.quote.slice(0, 80)}…` : it.quote}”</>}
+                        {it.why && <span className="ghost-why"> — {it.why}</span>}
+                      </span>
+                    )}
+                  </div>
+                  <span className="ghost-acts">
+                    <button className="pill pill-sm" onClick={() => keepIdea(set.id, i)}>
+                      <Icon icon={CheckIcon} size={11} strokeWidth={2.4} />
+                      Keep
+                    </button>
+                    <button className="pill-icon sm" aria-label="Drop" onClick={() => dropIdea(set.id, i)}>
+                      <Icon icon={CloseIcon} size={12} strokeWidth={2.2} />
+                    </button>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </section>
         ))}
 
         {proposed.map((p) => (

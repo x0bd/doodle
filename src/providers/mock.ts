@@ -84,6 +84,7 @@ export const mock: Provider = {
   async generateText(req: TextRequest, signal: AbortSignal): Promise<string> {
     await new Promise((r) => setTimeout(r, 400));
     if (signal.aborted) throw new DOMException("Cancelled", "AbortError");
+    if (req.tools && req.runTool) return agent(req, signal);
     if (req.system?.includes("JSON array only")) {
       const n = Number(req.system.match(/Propose (\d+) shots/)?.[1] ?? 6);
       return JSON.stringify(SHOTS.slice(0, Math.max(1, Math.min(SHOTS.length, n))));
@@ -97,3 +98,37 @@ export const mock: Provider = {
     return `${brief}.\n\n${scene}\n\n(Mock. Wire a real writer in Settings when there is one.)`;
   },
 };
+
+/** The mock as an agent: it works the document through the same tools a
+ *  real one reaches over MCP — where it is, what is written there — and
+ *  proposes what the ask is about: shots, characters, or (by default) a
+ *  beat for each of the first sentences, each tied to its sentence. */
+async function agent(req: TextRequest, signal: AbortSignal): Promise<string> {
+  const step = async (name: string, args: Record<string, unknown> = {}) => {
+    req.onTool?.(name);
+    await new Promise((r) => setTimeout(r, 350));
+    if (signal.aborted) throw new DOMException("Cancelled", "AbortError");
+    return req.runTool!(name, args);
+  };
+  const here = (await step("doodle_here")).text;
+  const id = here.match(/Open: .*?id ([\w-]+)/)?.[1] ?? here.match(/Selected: .*?id ([\w-]+)/)?.[1];
+  if (!id) return "(Mock) Open a scene or a page and ask again — I work on what is open.";
+  const read = (await step("doodle_read", { id })).text;
+  const words = read.split("Words:\n")[1]?.split("\n\nInside:")[0]?.trim() ?? "";
+  const ask = `${req.system ?? ""}`.toLowerCase();
+  if (/\bshots?\b/.test(ask)) {
+    const r = await step("propose_shots", { id, shots: SHOTS.slice(0, 4) });
+    return `(Mock) I read it and ${r.text.charAt(0).toLowerCase()}${r.text.slice(1)}`;
+  }
+  if (/character|who/.test(ask)) {
+    const r = await step("propose_characters", { id, characters: [{ name: "The keeper", description: "Mara's father; says little, watches the weather for a living." }] });
+    return `(Mock) ${r.text}`;
+  }
+  const sentences = words.replace(/[#>*_~]/g, "").split(/(?<=[.!?])\s+/).map((t) => t.trim()).filter((t) => t.length > 12).slice(0, 4);
+  if (!sentences.length) return "(Mock) There are no words here yet to find beats in.";
+  const r = await step("propose_beats", {
+    id,
+    beats: sentences.map((t, i) => ({ title: t.split(/[,.;:!?]/)[0].split(" ").slice(0, 5).join(" "), text: `Beat ${i + 1}: ${t}`, quote: t })),
+  });
+  return `(Mock) I read it and ${r.text.charAt(0).toLowerCase()}${r.text.slice(1)}`;
+}
