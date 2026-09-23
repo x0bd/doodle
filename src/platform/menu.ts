@@ -15,6 +15,7 @@ import { clearQueue, enqueue } from "../state/jobs";
 import { inTauri, revealPath } from "./fs";
 import { logPath } from "./log";
 import { measure } from "../state/bench";
+import { makeDiagnostics } from "../state/diagnostics";
 import { editorUndo, editorRedo } from "../writer/Editor";
 import { keepVersionHere, openVersions } from "../state/versions";
 
@@ -42,6 +43,7 @@ export const actions: Record<string, () => void> = {
   "view.next": () => step(1, () => requestAnimationFrame(fitAll)),
   "help.shortcuts": openShortcuts,
   "help.measure": () => void measure(),
+  "help.diagnostics": () => void makeDiagnostics(),
   "help.sample": () => void openSample().then(() => painted()).then(fitAll),
   "help.logs": () => void logPath().then((p) => (p ? revealPath(p) : undefined)),
   // inside a field the platform's own text undo applies; on the field, the journal's

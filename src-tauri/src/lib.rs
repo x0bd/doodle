@@ -39,6 +39,7 @@ pub fn run() {
             versions::version_read,
             logs::log_event,
             logs::log_path,
+            logs::diagnostics_bundle,
             integrity::list_backups,
             integrity::read_backup,
             integrity::set_aside,

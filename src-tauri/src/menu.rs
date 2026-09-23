@@ -107,6 +107,7 @@ pub fn build(app: &App) -> tauri::Result<Menu<Wry>> {
         .separator()
         .item(&item("help.logs", "Reveal Logs", None)?)
         .item(&item("help.measure", "Measure Performance", None)?)
+        .item(&item("help.diagnostics", "Make a Diagnostics Bundle…", None)?)
         .build()?;
 
     MenuBuilder::new(app)
