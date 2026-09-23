@@ -7,7 +7,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { inTauri } from "../platform/fs";
-import type { ImageRequest, ImageResult, Progress, Provider, TextRequest } from "./types";
+import type { ImageRequest, ImageResult, Picture, Progress, Provider, TextRequest } from "./types";
 
 export interface CodexStatus {
   found: boolean;
@@ -18,6 +18,10 @@ export interface CodexStatus {
 
 export const codexStatus = () => invoke<CodexStatus>("codex_status");
 
+/** pictures as Codex reads them: the file where there is one (Rust makes
+ *  the 1024 copy), else the bytes, which Rust writes to a scratch file */
+const shown = (pics: Picture[] | undefined) => (pics?.length ? pics.map((p) => p.path ?? p.data).filter((x): x is string => !!x) : null);
+
 type CodexEvent =
   | { kind: "delta"; turnId: string; delta: string }
   | { kind: "done"; turnId: string; text: string; status: string; error?: string }
@@ -26,7 +30,7 @@ type CodexEvent =
 /** A turn on the app server: words as they come, the whole at the end.
  *  Cancel interrupts the turn. */
 async function turn(req: TextRequest, onDelta: ((t: string) => void) | undefined, signal: AbortSignal): Promise<string> {
-  const handle = await invoke<{ thread_id: string; turn_id: string }>("codex_turn", { prompt: req.prompt, system: req.system ?? null, schema: req.schema ?? null });
+  const handle = await invoke<{ thread_id: string; turn_id: string }>("codex_turn", { prompt: req.prompt, system: req.system ?? null, schema: req.schema ?? null, images: shown(req.images) });
   return new Promise<string>((resolve, reject) => {
     let off: UnlistenFn | undefined;
     let acc = "";
@@ -82,7 +86,7 @@ export const codex: Provider = {
     const t0 = performance.now();
     onProgress({ fraction: 0.1, note: "asking" });
     const parts = [req.prompt, req.negative && `Avoid: ${req.negative}.`, `${req.width}×${req.height}.`].filter(Boolean);
-    const r = await invoke<{ data_url: string; path: string }>("codex_image", { prompt: parts.join(" "), seed: req.seed });
+    const r = await invoke<{ data_url: string; path: string }>("codex_image", { prompt: parts.join(" "), seed: req.seed, images: shown(req.images) });
     onProgress({ fraction: 1, note: "done" });
     return { asset: r.data_url, seed: req.seed, elapsedMs: performance.now() - t0 };
   },

@@ -129,6 +129,12 @@ function Source({ node }: { node: GraphNode }) {
             <div className="group-val mono">{p.seed}</div>
           </div>
         )}
+        {p.pictures && p.pictures.length > 0 && (
+          <div className="group-row">
+            <div className="group-name">Shown</div>
+            <div className="group-val">{p.pictures.map((l) => l.replace(/ \(.*\)$/, "")).join(", ")}</div>
+          </div>
+        )}
         {p.inputs.length > 0 && (
           <div className="group-row col">
             <div className="group-name">From</div>

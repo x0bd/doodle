@@ -23,8 +23,13 @@ fn candidates() -> Vec<PathBuf> {
     if let Ok(p) = std::env::var("DOODLE_CODEX") {
         v.push(PathBuf::from(p));
     }
-    for dir in ["/opt/homebrew/bin", "/usr/local/bin"] {
-        v.push(Path::new(dir).join("codex"));
+    for root in ["/opt/homebrew", "/usr/local"] {
+        v.push(Path::new(root).join("bin/codex"));
+        // npm's own install: the native binary its Node launcher would run —
+        // an app opened from the Finder may have no `node` on its PATH
+        let pkg = Path::new(root).join("lib/node_modules/@openai/codex/node_modules/@openai");
+        v.push(pkg.join("codex-darwin-arm64/vendor/aarch64-apple-darwin/bin/codex"));
+        v.push(pkg.join("codex-darwin-x64/vendor/x86_64-apple-darwin/bin/codex"));
     }
     v.push(PathBuf::from("/Applications/ChatGPT.app/Contents/Resources/codex"));
     if let Some(home) = std::env::var_os("HOME") {
@@ -33,8 +38,50 @@ fn candidates() -> Vec<PathBuf> {
     v
 }
 
+/// a script (npm's launcher) rather than the program itself
+fn is_script(p: &Path) -> bool {
+    fs::File::open(p)
+        .and_then(|mut f| {
+            let mut head = [0u8; 2];
+            std::io::Read::read_exact(&mut f, &mut head).map(|_| &head == b"#!")
+        })
+        .unwrap_or(true)
+}
+
+/// `codex-cli 0.156.1` → (0, 156, 1, stable?)
+fn version_of(p: &Path) -> Option<(u64, u64, u64, bool)> {
+    let out = Command::new(p).arg("--version").output().ok()?;
+    let s = String::from_utf8_lossy(&out.stdout);
+    let v = s.split_whitespace().last()?;
+    let (num, pre) = v.split_once('-').map(|(a, b)| (a, Some(b))).unwrap_or((v, None));
+    let mut n = num.split('.').map(|x| x.parse::<u64>().unwrap_or(0));
+    Some((n.next()?, n.next().unwrap_or(0), n.next().unwrap_or(0), pre.is_none()))
+}
+
+/// The newest Codex on this machine. The account's default model moves
+/// with the service, and an older CLI is refused it ("requires a newer
+/// version of Codex"), so the first one found is not good enough: every
+/// candidate is asked its version and the highest wins — a release over a
+/// prerelease of the same number. `DOODLE_CODEX` still wins outright.
+/// Found once per launch.
 pub fn find() -> Option<PathBuf> {
-    candidates().into_iter().find(|p| p.is_file())
+    static FOUND: std::sync::OnceLock<Option<PathBuf>> = std::sync::OnceLock::new();
+    FOUND
+        .get_or_init(|| {
+            if let Ok(p) = std::env::var("DOODLE_CODEX") {
+                let p = PathBuf::from(p);
+                if p.is_file() {
+                    return Some(p);
+                }
+            }
+            candidates()
+                .into_iter()
+                .filter(|p| p.is_file() && !is_script(p))
+                .filter_map(|p| version_of(&p).map(|v| (v, p)))
+                .max_by(|a, b| a.0.cmp(&b.0))
+                .map(|(_, p)| p)
+        })
+        .clone()
 }
 
 /// Which way the CLI is signed in, from the shape of its auth file only —
@@ -65,11 +112,42 @@ fn scratch(app: &tauri::AppHandle, name: &str) -> Result<PathBuf, String> {
     Ok(dir)
 }
 
-fn run(bin: &Path, cwd: &Path, sandbox: &str, prompt: &str) -> Result<String, String> {
+/// Pictures shown with the words, as files Codex can read: a document's
+/// asset as its 1024 thumbnail (made if need be), an in-memory picture (a
+/// data URL) written into the scratch folder, anything else as given.
+fn stage(cwd: &Path, images: &[String]) -> Vec<PathBuf> {
+    use base64::Engine;
+    let mut out = Vec::new();
+    for (i, img) in images.iter().enumerate() {
+        if let Some(rest) = img.strip_prefix("data:") {
+            let Some((head, b64)) = rest.split_once(',') else { continue };
+            let ext = if head.contains("jpeg") { "jpg" } else if head.contains("webp") { "webp" } else { "png" };
+            let Ok(bytes) = base64::engine::general_purpose::STANDARD.decode(b64) else { continue };
+            let p = cwd.join(format!("picture-{i}.{ext}"));
+            if fs::write(&p, bytes).is_ok() {
+                out.push(p);
+            }
+        } else if let Some(at) = img.find("/assets/") {
+            let (dir, rel) = (Path::new(&img[..at]), &img[at + 1..]);
+            out.push(crate::thumbs::thumb_file(dir, rel, 1024).unwrap_or_else(|_| PathBuf::from(img)));
+        } else {
+            out.push(PathBuf::from(img));
+        }
+    }
+    out
+}
+
+fn run(bin: &Path, cwd: &Path, sandbox: &str, prompt: &str, images: &[PathBuf]) -> Result<String, String> {
     let out = cwd.join("last.txt");
     let _ = fs::remove_file(&out);
-    let mut child = Command::new(bin)
-        .args(["exec", "--ephemeral", "--skip-git-repo-check", "-s", sandbox, "-C"])
+    let mut cmd = Command::new(bin);
+    cmd.arg("exec");
+    // pictures first: `-i` takes several, so nothing positional may follow it
+    for p in images {
+        cmd.arg("-i").arg(p);
+    }
+    let mut child = cmd
+        .args(["--ephemeral", "--skip-git-repo-check", "-s", sandbox, "-C"])
         .arg(cwd)
         .arg("-o")
         .arg(&out)
@@ -96,7 +174,7 @@ pub async fn codex_text(app: tauri::AppHandle, prompt: String, system: Option<St
         Some(s) if !s.trim().is_empty() => format!("{s}\n\n---\n\n{prompt}"),
         _ => prompt,
     };
-    tauri::async_runtime::spawn_blocking(move || run(&bin, &cwd, "read-only", &full))
+    tauri::async_runtime::spawn_blocking(move || run(&bin, &cwd, "read-only", &full, &[]))
         .await
         .map_err(|e| e.to_string())?
         .map(|s| s.trim().to_string())
@@ -109,15 +187,21 @@ pub struct CodexImage {
 }
 
 #[tauri::command]
-pub async fn codex_image(app: tauri::AppHandle, prompt: String, seed: u64) -> Result<CodexImage, String> {
+pub async fn codex_image(app: tauri::AppHandle, prompt: String, seed: u64, images: Option<Vec<String>>) -> Result<CodexImage, String> {
     let bin = find().ok_or("Codex is not installed")?;
     let cwd = scratch(&app, &format!("image-{seed}-{}", std::process::id()))?;
     let name = format!("out-{seed}.png");
+    let refs = if images.as_ref().map(|v| v.is_empty()).unwrap_or(true) {
+        String::new()
+    } else {
+        "\n\nThe attached images are references: keep who and where they show recognisable, in the new picture's own framing.".to_string()
+    };
     let ask = format!(
-        "Use your image generation tool to create one image: {prompt}\n\nSave the PNG into the current directory as {name}. Reply with only the absolute path of the saved file."
+        "Use your image generation tool to create one image: {prompt}{refs}\n\nSave the PNG into the current directory as {name}. Reply with only the absolute path of the saved file."
     );
     let cwd2 = cwd.clone();
-    tauri::async_runtime::spawn_blocking(move || run(&bin, &cwd2, "workspace-write", &ask))
+    let pictures = stage(&cwd, &images.unwrap_or_default());
+    tauri::async_runtime::spawn_blocking(move || run(&bin, &cwd2, "workspace-write", &ask, &pictures))
         .await
         .map_err(|e| e.to_string())??;
     // trust the folder, not the reply: the newest PNG in it
@@ -289,8 +373,9 @@ pub struct TurnHandle {
 /// first), an optional schema the answer must match. Returns at once; the
 /// words arrive as `codex` events.
 #[tauri::command]
-pub async fn codex_turn(app: AppHandle, prompt: String, system: Option<String>, schema: Option<Value>) -> Result<TurnHandle, String> {
+pub async fn codex_turn(app: AppHandle, prompt: String, system: Option<String>, schema: Option<Value>, images: Option<Vec<String>>) -> Result<TurnHandle, String> {
     let cwd = scratch(&app, "text")?;
+    let pictures = stage(&scratch(&app, "pictures")?, &images.unwrap_or_default());
     let text = match system {
         Some(s) if !s.trim().is_empty() => format!("{s}\n\n---\n\n{prompt}"),
         _ => prompt,
@@ -299,7 +384,12 @@ pub async fn codex_turn(app: AppHandle, prompt: String, system: Option<String>, 
         with_server(&app, |s| {
             let t = s.request("thread/start", json!({ "cwd": cwd, "sandbox": "read-only", "ephemeral": true, "approvalPolicy": "never" }))?;
             let thread_id = t["result"]["thread"]["id"].as_str().ok_or_else(|| format!("no thread: {}", t["error"]["message"]))?.to_string();
-            let mut params = json!({ "threadId": thread_id, "input": [{ "type": "text", "text": text }] });
+            // the words, then each picture as a file on this machine
+            let mut input = vec![json!({ "type": "text", "text": text })];
+            for p in &pictures {
+                input.push(json!({ "type": "localImage", "path": p }));
+            }
+            let mut params = json!({ "threadId": thread_id, "input": input });
             if let Some(sc) = schema {
                 params["outputSchema"] = sc;
             }

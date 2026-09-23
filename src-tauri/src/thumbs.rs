@@ -91,6 +91,15 @@ pub fn thumb(dir: &Path, rel: &str, size: u32) -> Result<(Vec<u8>, String), Stri
     Ok((bytes, out_ext.to_string()))
 }
 
+/// Where a thumbnail is on disk, made if it is not there — or the original,
+/// when the original is already small enough (or cannot be read here).
+pub fn thumb_file(dir: &Path, rel: &str, size: u32) -> Result<PathBuf, String> {
+    let (_, ext) = thumb(dir, rel, size)?;
+    let stem = Path::new(rel).file_stem().and_then(|s| s.to_str()).ok_or("No name")?;
+    let made = dir.join(format!("thumbs/{stem}-{}.{ext}", nearest(size)));
+    Ok(if made.is_file() { made } else { dir.join(rel) })
+}
+
 /// The thumbnail as a data URL, made off the main thread.
 #[tauri::command]
 pub async fn read_thumb(dir: String, rel: String, size: u32) -> Result<String, String> {

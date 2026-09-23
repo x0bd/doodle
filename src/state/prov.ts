@@ -24,6 +24,8 @@ export interface Prov {
   seed?: number;
   /** what fed it, by node — their names as they were */
   inputs: { node: string; port: string; title: string; kind: string }[];
+  /** the pictures it was shown, by whose they were */
+  pictures?: string[];
   /** the project's rules, as they stood */
   rules?: string;
   /** the run that made it, for the History */

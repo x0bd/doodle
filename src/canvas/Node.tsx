@@ -5,7 +5,7 @@ import { KINDS } from "../graph/kinds";
 import { FieldRow } from "../shell/Fields";
 import { graph, inputs, outputs, updateData, childCount, childrenOf, measure, setWidth, takeOutput, type GraphNode, type PortRef } from "../state/graph";
 import { camera, toWorld } from "./camera";
-import { setOnField } from "../state/remix";
+import { setOnField, giveLook } from "../state/remix";
 import { jobs, jobFor, partialFor } from "../state/jobs";
 import { Editor } from "../writer/Editor";
 import { plain, formOf, countWords } from "../writer/markup";
@@ -318,6 +318,9 @@ function pullOut(e: ReactPointerEvent, ref: string, url: string | undefined, cli
     }
     ghost.style.left = `${ev.clientX}px`;
     ghost.style.top = `${ev.clientY}px`;
+    const under = document.elementFromPoint(ev.clientX, ev.clientY)?.closest<HTMLElement>(".k-character, .k-location");
+    document.querySelectorAll(".node.takes-look").forEach((el) => el !== under && el.classList.remove("takes-look"));
+    if (under?.classList.contains("node")) under.classList.add("takes-look");
   };
   const up = (ev: PointerEvent) => {
     window.removeEventListener("pointermove", move);
@@ -325,9 +328,12 @@ function pullOut(e: ReactPointerEvent, ref: string, url: string | undefined, cli
     window.removeEventListener("pointercancel", up);
     if (!ghost) return click();
     ghost.remove();
+    document.querySelectorAll(".node.takes-look").forEach((el) => el.classList.remove("takes-look"));
     const over = document.elementFromPoint(ev.clientX, ev.clientY);
-    // let go on the field (not on a card, not on the chrome): a card of its own
-    if (over?.closest(".stage") && !over.closest("[data-node]")) setOnField(ref, toWorld(camera.get(), { x: ev.clientX, y: ev.clientY }));
+    const card = over?.closest<HTMLElement>("[data-node]");
+    // on a character or a place: its picture; on the field: a card of its own
+    if (card && (card.classList.contains("k-character") || card.classList.contains("k-location"))) giveLook(card.dataset.node!, ref);
+    else if (over?.closest(".stage") && !card) setOnField(ref, toWorld(camera.get(), { x: ev.clientX, y: ev.clientY }));
   };
   window.addEventListener("pointermove", move);
   window.addEventListener("pointerup", up);

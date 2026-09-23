@@ -12,6 +12,17 @@ export interface ProviderDescriptor {
 
 export type ProviderStatus = "available" | "unavailable" | "needs-auth" | "unknown";
 
+/** a picture shown to a model with the words: whose it is, and where to
+ *  find it — a file for a provider that reads files, the bytes (a data URL,
+ *  1024 on the long side) for one that takes them inline. `ref` is the
+ *  document's own reference, kept so a request can be read again later. */
+export interface Picture {
+  label: string;
+  ref: string;
+  path?: string;
+  data?: string;
+}
+
 export interface ImageRequest {
   prompt: string;
   negative: string;
@@ -22,6 +33,8 @@ export interface ImageRequest {
   sampler: string;
   width: number;
   height: number;
+  /** references for how someone or somewhere looks */
+  images?: Picture[];
 }
 
 export interface ImageResult {
@@ -37,6 +50,8 @@ export interface TextRequest {
   model?: string;
   /** a JSON Schema the answer must match, for providers that can promise it */
   schema?: unknown;
+  /** pictures to look at with the words (vision) */
+  images?: Picture[];
 }
 
 export interface Progress {

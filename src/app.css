@@ -1904,3 +1904,5 @@ html, body, #root { height: 100%; }
   box-shadow: 0 0 0 2px var(--surface-raised), 0 12px 30px rgba(0, 0, 0, 0.3);
   opacity: 0.94;
 }
+/* a character or a place that would take the picture being carried */
+.node.takes-look { background: color-mix(in srgb, var(--surface-raised), hsl(var(--lit)) 12%); }

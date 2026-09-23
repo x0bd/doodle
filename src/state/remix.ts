@@ -75,3 +75,15 @@ export function setOnField(ref: string, at: { x: number; y: number }) {
     graph.set((x) => ({ ...x, nodes: { ...x.nodes, [card.id]: card }, order: [...x.order, card.id], selection: [card.id], edgeSelection: [] })),
   );
 }
+
+/** a take dropped on a character or a place becomes its picture — what
+ *  every writer and generator it feeds is shown from now on */
+export function giveLook(id: string, ref: string) {
+  commit("Picture", () =>
+    graph.set((x) => {
+      const n = x.nodes[id];
+      if (!n || (n.kind !== "character" && n.kind !== "location")) return x;
+      return { ...x, nodes: { ...x.nodes, [id]: { ...n, asset: ref, attachments: [...new Set([...(n.attachments ?? []), ref])] } } };
+    }),
+  );
+}

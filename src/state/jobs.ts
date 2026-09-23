@@ -8,13 +8,13 @@ import { graph, childrenOf, layOnPages, type GraphNode } from "./graph";
 import { commit } from "./history";
 import { pick } from "../providers/registry";
 import { doc, bibleText } from "./doc";
-import { writeAsset, saveRecord, loadRecord, inTauri } from "../platform/fs";
+import { writeAsset, saveRecord, loadRecord, inTauri, readThumb } from "../platform/fs";
 import { ui } from "./ui";
 import { expandMentions } from "../canvas/mentions";
 import { plain, formOf } from "../writer/markup";
 import { FRAMES } from "../graph/kinds";
 import { record, inputsOf } from "./prov";
-import type { ImageRequest, Progress, TextRequest } from "../providers/types";
+import type { ImageRequest, Picture, Progress, TextRequest } from "../providers/types";
 
 export type JobState = "queued" | "running" | "completed" | "failed" | "cancelled";
 
@@ -82,6 +82,58 @@ function describe(n: GraphNode | undefined, bare = false): string {
   return words(String(d.text ?? ""), n);
 }
 
+/** The pictures a node is shown with its words: every character and place
+ *  that feeds it and has one — through its own ports or given by hand —
+ *  labelled so the model can tell which is whom. Rejected ones never. */
+function picturesFor(n: GraphNode): Picture[] {
+  const g = graph.get();
+  const seen = new Set<string>();
+  const out: Picture[] = [];
+  for (const e of Object.values(g.edges)) {
+    if (e.to.node !== n.id) continue;
+    const from = g.nodes[e.from.node];
+    if (!from || from.status === "rejected" || !from.asset || seen.has(from.id)) continue;
+    if (from.kind !== "character" && from.kind !== "location") continue;
+    seen.add(from.id);
+    out.push({ label: `${String(from.data.name || from.title)} (${from.kind === "location" ? "a place" : "a character"})`, ref: from.asset });
+  }
+  return out;
+}
+
+/** what the model is told about the pictures, so it knows which is whom */
+const captions = (pics: Picture[]) =>
+  pics.length ? `Pictures attached, in order: ${pics.map((p, i) => `${i + 1}. ${p.label}`).join("; ")}. Use them for how these look.` : "";
+
+/** A request's pictures, found at run time: the file where there is one,
+ *  and a 1024 copy of the bytes for a provider that takes them inline. */
+async function see(pics: Picture[] | undefined): Promise<Picture[] | undefined> {
+  if (!pics?.length) return undefined;
+  const dir = doc.get().path;
+  const out = await Promise.all(
+    pics.map(async (p): Promise<Picture | null> => {
+      try {
+        if (p.ref.startsWith("assets/")) {
+          if (!dir) return null;
+          return { ...p, path: `${dir}/${p.ref}`, data: await readThumb(dir, p.ref, 1024) };
+        }
+        if (p.ref.startsWith("data:")) return { ...p, data: p.ref };
+        const blob = await fetch(p.ref).then((r) => r.blob());
+        const data = await new Promise<string>((res, rej) => {
+          const fr = new FileReader();
+          fr.onload = () => res(String(fr.result));
+          fr.onerror = rej;
+          fr.readAsDataURL(blob);
+        });
+        return { ...p, data };
+      } catch {
+        return null;
+      }
+    }),
+  );
+  const found = out.filter((p): p is Picture => !!p);
+  return found.length ? found : undefined;
+}
+
 /** everything given to a node by hand, in the order it was given */
 function given(n: GraphNode, bare = false): string[] {
   return (n.extras ?? []).map((p) => describe(fed(n, p.id), bare)).filter(Boolean);
@@ -95,9 +147,11 @@ export function requestFor(gen: GraphNode): ImageRequest {
   const neg = fed(gen, "negative");
   const d = gen.data;
   const seed = d.control === "Random" ? Math.floor(Math.random() * 1_000_000) : Number(d.seed);
-  const prompt = [describe(pos, true), describe(fed(gen, "character"), true), describe(fed(gen, "style"), true), ...given(gen, true), bibleText().replace(/\n/g, ". ")].filter(Boolean).join(". ");
+  const images = picturesFor(gen);
+  const prompt = [describe(pos, true), describe(fed(gen, "character"), true), describe(fed(gen, "style"), true), ...given(gen, true), bibleText().replace(/\n/g, ". "), captions(images)].filter(Boolean).join(". ");
   return {
     prompt,
+    images: images.length ? images : undefined,
     negative: neg ? plain(String(neg.data.text ?? ""), formOf(neg.data)) : "",
     model: String(model?.data.model ?? "Mock"),
     seed,
@@ -124,8 +178,9 @@ async function keep(asset: string): Promise<string> {
 
 export function textRequestFor(w: GraphNode): TextRequest {
   const brief = fed(w, "brief");
-  const system = [bibleText(), describe(fed(w, "character")), describe(fed(w, "style")), ...given(w), `Length: ${w.data.length}`].filter(Boolean).join("\n");
-  return { prompt: String(brief?.data.text ?? ""), system, model: String(w.data.model) };
+  const images = picturesFor(w);
+  const system = [bibleText(), describe(fed(w, "character")), describe(fed(w, "style")), ...given(w), `Length: ${w.data.length}`, captions(images)].filter(Boolean).join("\n");
+  return { prompt: String(brief?.data.text ?? ""), system, model: String(w.data.model), images: images.length ? images : undefined };
 }
 
 /** the words a running writer has so far for this page, if any */
@@ -222,7 +277,8 @@ async function run(id: string) {
   try {
     const onProgress = (p: Progress) => patch(id, { progress: p.fraction, note: p.note });
     if (job.kind === "text") {
-      const req = job.request as TextRequest;
+      const asked = job.request as TextRequest;
+      const req = { ...asked, images: await see(asked.images) };
       const { provider, fellBack } = await pick("text.generate", ui.get().writeWith);
       patch(id, { note: fellBack ? "mock instead" : provider.descriptor.name.toLowerCase(), provider: provider.descriptor.id });
       // the words as they come, shown on the page they are for; the document
@@ -242,6 +298,7 @@ async function run(id: string) {
         at: Date.now(),
         prompt: req.prompt,
         system: req.system,
+        pictures: req.images?.map((p) => p.label),
         inputs: inputsOf(gen.id),
         rules: bibleText() || undefined,
         job: id,
@@ -260,7 +317,8 @@ async function run(id: string) {
         }
       });
     } else {
-      const base = job.request as ImageRequest;
+      const asked = job.request as ImageRequest;
+      const base = { ...asked, images: await see(asked.images) };
       const { provider, fellBack } = await pick("image.generate", ui.get().drawWith);
       patch(id, { provider: provider.descriptor.id, note: fellBack ? "mock instead" : undefined });
       const count = job.count ?? 1;
@@ -286,6 +344,7 @@ async function run(id: string) {
           prompt: req.prompt,
           system: req.negative || undefined,
           seed: result.seed,
+          pictures: req.images?.map((p) => p.label),
           inputs: inputsOf(gen.id),
           rules: bibleText() || undefined,
           job: id,
