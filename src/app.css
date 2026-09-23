@@ -1846,6 +1846,13 @@ html, body, #root { height: 100%; }
 .welcome-row { min-height: 48px; padding: 8px 10px; gap: 11px; align-items: flex-start; }
 .welcome-row .welcome-glyph { margin-top: 1px; }
 .welcome-row.quiet .welcome-title { color: var(--fg-muted); }
+/* the first run's first row: the sample, chosen for you — the tint, not the ink */
+.welcome-row.lead { background: var(--tint); }
+.welcome-row.still { cursor: default; align-items: center; }
+.welcome-row.still:hover, .welcome-row.still:active { background: transparent; }
+.welcome-row.still .chip { flex: none; }
+.welcome-found { margin-bottom: 6px; }
+.welcome-aside { display: block; margin: 0 10px var(--gap-near); }
 .welcome-glyph {
   display: grid;
   place-items: center;
@@ -1859,7 +1866,7 @@ html, body, #root { height: 100%; }
 .welcome-glyph.plain { background: var(--surface); color: var(--fg-muted); }
 .welcome-what { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; padding-top: 2px; }
 .welcome-title { font-size: var(--t-body); color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.welcome-sub { font-size: var(--t-label); line-height: 1.45; color: var(--fg-faint); }
+.welcome-sub { font-size: var(--t-label); line-height: 1.45; color: var(--fg-faint); white-space: normal; }
 .tpl-images { --role: var(--role-green); }
 .tpl-film   { --role: var(--role-blue); }
 .tpl-manga  { --role: var(--role-orange); }

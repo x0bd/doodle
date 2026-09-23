@@ -102,6 +102,7 @@ pub fn build(app: &App) -> tauri::Result<Menu<Wry>> {
 
     let help = SubmenuBuilder::new(app, "Help")
         .item(&item("help.shortcuts", "Keyboard Shortcuts", Some("CmdOrCtrl+Slash"))?)
+        .item(&item("help.sample", "Open the Sample Book", None)?)
         .item(&item("help.site", "Doodle on GitHub", None)?)
         .separator()
         .item(&item("help.logs", "Reveal Logs", None)?)

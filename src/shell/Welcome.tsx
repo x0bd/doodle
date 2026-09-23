@@ -1,13 +1,34 @@
 import { useEffect, useState } from "react";
 import { Icon, CloseIcon, BookIcon, MangaIcon, FilmIcon, ImageIcon, GraphIcon, type IconSvgElement } from "../icons";
-import { TEMPLATES, type TemplateId } from "../graph/templates";
+import { TEMPLATES, SAMPLE, type TemplateId } from "../graph/templates";
+import { providers } from "../providers/registry";
+import { probe, type Found } from "../providers/found";
 import { ui, closeChooser } from "../state/ui";
 import { newGraph, openDialog, openFrom, recent, forget, mayLeave, type Seen } from "../state/doc";
 import { graph } from "../state/graph";
 import { fitAll } from "../canvas/view";
 import { graphExists, inTauri } from "../platform/fs";
 
-const GLYPH: Record<TemplateId, IconSvgElement> = { images: ImageIcon, film: FilmIcon, manga: MangaIcon, book: BookIcon };
+const GLYPH: Record<TemplateId, IconSvgElement> = { images: ImageIcon, film: FilmIcon, manga: MangaIcon, book: BookIcon, sample: BookIcon };
+
+/** The first time Doodle opens on a Mac — nothing opened before, never
+ *  welcomed — the welcome leads with the sample book and says what it
+ *  found to write and draw with (PLAN.md M1.7). */
+const WELCOMED = "doodle.welcomed.v1";
+function firstRun() {
+  try {
+    return !localStorage.getItem(WELCOMED) && recent().length === 0;
+  } catch {
+    return false;
+  }
+}
+function welcomed() {
+  try {
+    localStorage.setItem(WELCOMED, String(Date.now()));
+  } catch {
+    /* a private window */
+  }
+}
 
 const ago = (t: number) => {
   const m = Math.round((Date.now() - t) / 60000);
@@ -29,9 +50,15 @@ export function Welcome() {
   const open = ui.use((s) => s.chooser);
   const empty = graph.use((g) => g.order.length === 0);
   const [seen, setSeen] = useState<Seen[]>([]);
+  const [first, setFirst] = useState(false);
+  const [found, setFound] = useState<Record<string, Found> | null>(null);
 
   useEffect(() => {
-    if (open) setSeen(recent());
+    if (!open) return;
+    setSeen(recent());
+    const f = firstRun();
+    setFirst(f);
+    if (f) probe().then(setFound, () => setFound({}));
   }, [open]);
 
   useEffect(() => {
@@ -53,6 +80,7 @@ export function Welcome() {
 
   const pick = async (id: TemplateId) => {
     if (!(await ask())) return;
+    welcomed();
     newGraph(id);
     closeChooser();
     requestAnimationFrame(fitAll);
@@ -66,6 +94,10 @@ export function Welcome() {
       return;
     }
     if (await openFrom(r.path)) closeChooser();
+  };
+  const openOne = async () => {
+    welcomed();
+    await openDialog();
   };
 
   return (
@@ -82,7 +114,9 @@ export function Welcome() {
           <span className="welcome-mark">DD</span>
           <div>
             <h1 className="welcome-name">Doodle</h1>
-            <p className="welcome-note">A recursively zoomable creative document.</p>
+            <p className="welcome-note">
+              {first ? "A book, a film or a set of pictures as a field you can zoom into — and write inside." : "A recursively zoomable creative document."}
+            </p>
           </div>
         </header>
 
@@ -90,6 +124,17 @@ export function Welcome() {
           <section className="welcome-col">
             <h2 className="welcome-of">Start</h2>
             <div className="list">
+              {first && (
+                <button className="welcome-row list-row lead tpl-book" onClick={() => void pick("sample")}>
+                  <span className="welcome-glyph">
+                    <Icon icon={BookIcon} size={15} strokeWidth={1.7} />
+                  </span>
+                  <span className="welcome-what">
+                    <span className="welcome-title">{SAMPLE.name}</span>
+                    <span className="welcome-sub">A sample book with a chapter already written. Open it and look around — a minute is enough.</span>
+                  </span>
+                </button>
+              )}
               {TEMPLATES.map((t) => (
                 <button key={t.id} className={`welcome-row list-row tpl-${t.id}`} onClick={() => void pick(t.id)}>
                   <span className="welcome-glyph">
@@ -105,7 +150,27 @@ export function Welcome() {
           </section>
 
           <section className="welcome-col">
-            <h2 className="welcome-of">{seen.length ? "Lately" : "Open"}</h2>
+            {first && (
+              <>
+                <h2 className="welcome-of">What it can use</h2>
+                <div className="list welcome-found">
+                  {providers.map((p) => {
+                    const f = found?.[p.descriptor.id];
+                    return (
+                      <div key={p.descriptor.id} className="welcome-row list-row still">
+                        <span className="welcome-what">
+                          <span className="welcome-title">{p.descriptor.id === "mock" ? "The stand-in" : p.descriptor.name}</span>
+                          <span className="welcome-sub">{f ? f.says.split(/(?<=\.)\s/)[0] : "Looking…"}</span>
+                        </span>
+                        <span className={`chip${f?.ready ? " on" : ""}`}>{f?.chip ?? "…"}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="welcome-sub welcome-aside">Nothing here is needed to write. Settings › Providers says how to add what is missing.</p>
+              </>
+            )}
+            {!first && <h2 className="welcome-of">{seen.length ? "Lately" : "Open"}</h2>}
             <div className="list">
               {seen.map((r) => (
                 <button key={r.path} className="welcome-row list-row" onClick={() => void go(r)} title={r.path}>
@@ -121,7 +186,7 @@ export function Welcome() {
                   </span>
                 </button>
               ))}
-              <button className="welcome-row list-row quiet" onClick={() => void openDialog()}>
+              <button className="welcome-row list-row quiet" onClick={() => void openOne()}>
                 <span className="welcome-glyph plain" />
                 <span className="welcome-what">
                   <span className="welcome-title">Open a graph…</span>

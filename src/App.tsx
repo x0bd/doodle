@@ -11,6 +11,7 @@ import { listenToMenu } from "./platform/menu";
 import { listenForAgent } from "./agent/tools";
 import { doc, launch, openHandedOver, recentMenu } from "./state/doc";
 import { fitAll } from "./canvas/view";
+import { painted } from "./platform/log";
 import { Welcome } from "./shell/Welcome";
 import { Palette } from "./shell/Palette";
 import { Shortcuts } from "./shell/Shortcuts";
@@ -37,7 +38,7 @@ export function App() {
       if (!live) return;
       if (!opened) openChooser();
       // a recovered graph that was never saved has no view of its own yet
-      else if (!doc.get().path) requestAnimationFrame(fitAll);
+      else if (!doc.get().path) void painted().then(fitAll);
     });
     return () => {
       live = false;

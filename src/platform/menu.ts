@@ -6,8 +6,9 @@
 import { listen } from "@tauri-apps/api/event";
 import { openChooser, openPalette, openSettings, openShortcuts, toggleInspector, toggleNavigator, togglePanes, toggleTheme } from "../state/ui";
 import { fitAll, zoomActual, zoomIn, zoomOut } from "../canvas/view";
+import { painted } from "./log";
 import { step } from "../state/nav";
-import { openDialog, save, saveAs, duplicate, reveal, exportText, exportArchiveFile, importArchiveFile, openRecent, clearRecent, tidyAssets } from "../state/doc";
+import { openDialog, save, saveAs, duplicate, reveal, exportText, exportArchiveFile, importArchiveFile, openRecent, clearRecent, tidyAssets, openSample } from "../state/doc";
 import { redo, undo } from "../state/history";
 import { deleteSelected, duplicateSelected, selectAll } from "../state/graph";
 import { clearQueue, enqueue } from "../state/jobs";
@@ -41,6 +42,7 @@ export const actions: Record<string, () => void> = {
   "view.next": () => step(1, () => requestAnimationFrame(fitAll)),
   "help.shortcuts": openShortcuts,
   "help.measure": () => void measure(),
+  "help.sample": () => void openSample().then(() => painted()).then(fitAll),
   "help.logs": () => void logPath().then((p) => (p ? revealPath(p) : undefined)),
   // inside a field the platform's own text undo applies; on the field, the journal's
   // a writer has its own history; any other field the platform's text undo

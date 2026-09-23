@@ -5,7 +5,7 @@
 import { makeNode, type Edge, type GraphNode } from "../state/graph";
 import { FIXTURES } from "../providers/fixtures";
 
-export type TemplateId = "images" | "film" | "manga" | "book";
+export type TemplateId = "images" | "film" | "manga" | "book" | "sample";
 
 export interface Template {
   id: TemplateId;
@@ -135,4 +135,70 @@ export const TEMPLATES: Template[] = [
   },
 ];
 
-export const templateById = (id: TemplateId) => TEMPLATES.find((t) => t.id === id)!;
+/**
+ * The book a first run opens (PLAN.md M1.7): a chapter already written, a
+ * second begun, the people and the place it is about, a voice — and a note
+ * that says how to move around it. Everything in it can be changed; it is
+ * only there so the first minute is writing, not wondering.
+ */
+export const SAMPLE: Template = {
+  id: "sample",
+  name: "The keeper's daughter",
+  note: "A sample book to find your way around.",
+  build() {
+    const P1 = [
+      "The ship is there at first light, the way a word is there when you wake with it. No sail set. No smoke. No one at the rail.",
+      "Mara counts the gulls on the yard and stops at eleven. Eleven is too many for a ship that is moving and too few for one that has been still a week.",
+      "Below her the lamp is still turning, because nobody has told it the night is over. She puts her hand flat on the gallery rail, which is wet and very cold, and feels the whole tower hum with the clockwork her father winds every evening at six.",
+    ].join("\n\n");
+    const P2 = [
+      "Her father does not come up. He has not come up the tower stairs since the spring, and she has stopped asking him to.",
+      "She takes the glass down instead, and the notebook where he writes the weather, and she writes: _Ship, three masts, no colours, anchored off the north rocks. Wind west, light. Sea slight._ Then she stops, because the notebook has never been asked to hold a ship before and she is not sure it has room.",
+      "The tide is going out. By noon the rocks will show like the backs of animals, and the ship, if it has any sense, will be gone.",
+    ].join("\n\n");
+    const P3 = [
+      "It has no sense. At noon it is still there.",
+      "Tom Keel comes along the causeway with his collar up and his pipe cold, the way he does when there is something he would rather not be first to say.",
+      "“Manifest,” he says, and holds out a packet of oilcloth tied with tarred string. “Came ashore in the night. Your father reads the wrecks.”",
+      "“It isn't a wreck,” Mara says.",
+      "Tom looks out at the ship for a long moment, and then at her. “Not yet,” he says.",
+    ].join("\n\n");
+    const nodes = [
+      makeNode("note", 60, 40, {
+        id: "start",
+        title: "Start here",
+        data: {
+          text: [
+            "This is a book, laid out as a field. Everything in it is a card, and every card can be opened.",
+            "Double-click One to go inside the chapter: its pages are there. Double-click a page, or zoom into it, to write. Pinch out, or press Escape, to rise back up.",
+            "Select a few words on a page and choose + Beat to keep a note tied to them. Type @ to name Mara, Tom or the lighthouse in the words.",
+            "⌘K finds anything. File › Versions… keeps every day's chapter. Settings › Providers says who can write and draw for you here.",
+            "Nothing in this book is precious: change it, or start your own from File › New Graph.",
+          ].join("\n\n"),
+        },
+      }),
+      makeNode("character", 380, 330, { id: "c1", title: "Mara", data: { name: "Mara", description: "Seventeen. The lighthouse keeper's daughter; has never been to the mainland; reads the cargo manifest of every wreck that comes ashore." } }),
+      makeNode("character", 660, 330, { id: "c2", title: "Tom Keel", data: { name: "Tom Keel", description: "The harbour pilot. Sixties. Kind, slow to say a hard thing, and always the one who has to." } }),
+      makeNode("location", 940, 330, { id: "l1", title: "The lighthouse", data: { name: "The lighthouse", description: "A granite tower on a tidal island, joined to the town by a causeway at low water. A gallery at the top; the lamp turned by clockwork wound each evening." } }),
+      makeNode("style", 1020, 40, { id: "s1", title: "Voice", data: { description: "Close third person on Mara, present tense. Short sentences; the weather in every scene; nothing explained that can be shown.", palette: "", lighting: "" } }),
+      makeNode("chapter", 380, 40, { id: "ch1", title: "One", data: { summary: "The morning a ship comes in without a crew." } }),
+      makeNode("chapter", 700, 40, { id: "ch2", title: "Two", data: { summary: "What the manifest says, and what it does not." } }),
+      makeNode("page", 60, 40, { id: "pg1", title: "Page 1", parent: "ch1", data: { text: P1 } }),
+      makeNode("page", 400, 40, { id: "pg2", title: "Page 2", parent: "ch1", data: { text: P2 } }),
+      makeNode("page", 740, 40, { id: "pg3", title: "Page 3", parent: "ch1", data: { text: P3 } }),
+      makeNode("note", 60, 60, { id: "b1", title: "The ship", parent: "pg1", data: { text: "No one aboard, and it anchored anyway. Who set the anchor?" } }),
+      makeNode("prompt", 60, 520, { id: "p2", title: "Brief", parent: "ch2", data: { text: "Chapter two. Mara opens the manifest at the kitchen table while her father sleeps. The cargo listed is ordinary — salt, rope, lamp oil — except the last line, which is a name: hers." } }),
+      makeNode("write", 400, 520, { id: "w2", parent: "ch2" }),
+      makeNode("page", 60, 40, { id: "pg4", title: "Page 1", parent: "ch2", data: { text: "The oilcloth is stiff with salt and the string will not come undone, so she cuts it with the bread knife." } }),
+    ];
+    const edges = [
+      wire(["p2", "text"], ["w2", "brief"]),
+      wire(["c1", "text"], ["w2", "character"]),
+      wire(["s1", "text"], ["w2", "style"]),
+      wire(["w2", "text"], ["pg4", "text"]),
+    ];
+    return { nodes: nodes.map((n) => ({ ...n, status: "canon" as const })), edges };
+  },
+};
+
+export const templateById = (id: TemplateId) => (id === "sample" ? SAMPLE : TEMPLATES.find((t) => t.id === id)!);

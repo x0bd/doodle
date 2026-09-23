@@ -631,7 +631,7 @@ export function newGraph(template: TemplateId = "images") {
   resetNav();
   forgetJobs();
   resetProv();
-  doc.set({ path: null, name: `Untitled ${t.name.toLowerCase()}`, dirty: false, save: "idle", bible: EMPTY_BIBLE });
+  doc.set({ path: null, name: template === "sample" ? t.name : `Untitled ${t.name.toLowerCase()}`, dirty: false, save: "idle", bible: EMPTY_BIBLE });
   logUntitled();
 }
 
@@ -656,6 +656,12 @@ async function openUntitled() {
   if (!(await mayLeave())) return;
   leaveLog();
   await recoverUntitled();
+}
+
+/** Help › Open the Sample Book: the first run's book, any time after */
+export async function openSample() {
+  if (!(await mayLeave())) return;
+  newGraph("sample");
 }
 
 /** On launch: the last graph if it is still there, else the template. Tells
