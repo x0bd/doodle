@@ -22,3 +22,4 @@ hex = "0.4.3"
 base64 = "0.23.1"
 tauri-plugin-opener = "2.5.5"
 zip = { version = "8.6.0", default-features = false, features = ["deflate"] }
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp", "gif"] }

@@ -5,7 +5,7 @@
  */
 import { createStore } from "./store";
 import { doc, save } from "./doc";
-import { importAsset, readAsset } from "../platform/fs";
+import { importAsset, readAsset, readThumb } from "../platform/fs";
 import { graph } from "./graph";
 import { commit } from "./history";
 
@@ -28,6 +28,54 @@ export function urlFor(ref: string | undefined): string | undefined {
       .finally(() => loading.delete(ref));
   }
   return undefined;
+}
+
+/**
+ * A small copy of an image, for wherever it is shown small (plan §10.2):
+ * a take in a bloom, a card's picture, a run in the history. 256, 512 or
+ * 1024 on the long side. A file's is made once by Rust and kept in
+ * `thumbs/`; an image still in memory is made here. Until it arrives, the
+ * original if it is already loaded, else nothing.
+ */
+export function thumbFor(ref: string | undefined, size: 256 | 512 | 1024 = 512): string | undefined {
+  if (!ref) return undefined;
+  const key = `thumb${size}:${ref}`;
+  const have = assets.get()[key];
+  if (have) return have;
+  if (!loading.has(key)) {
+    const dir = doc.get().path;
+    const made = ref.startsWith("assets/") ? (dir ? readThumb(dir, ref, size) : null) : shrink(ref, size);
+    if (made) {
+      loading.add(key);
+      made
+        .then((url) => assets.set((a) => ({ ...a, [key]: url })))
+        .catch(() => undefined)
+        .finally(() => loading.delete(key));
+    }
+  }
+  return ref.startsWith("assets/") ? assets.get()[ref] : ref;
+}
+
+/** an in-memory image drawn small by the webview itself */
+function shrink(src: string, size: number): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const k = size / Math.max(img.naturalWidth, img.naturalHeight);
+      if (k >= 1) return resolve(src);
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.naturalWidth * k);
+      c.height = Math.round(img.naturalHeight * k);
+      const ctx = c.getContext("2d");
+      if (!ctx) return resolve(src);
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(img, 0, 0, c.width, c.height);
+      // a PNG may be transparent; anything else is a JPEG
+      resolve(src.startsWith("data:image/png") ? c.toDataURL("image/png") : c.toDataURL("image/jpeg", 0.84));
+    };
+    img.onerror = reject;
+    img.src = src;
+  });
 }
 
 /** Bring files into the folder — saving first if the graph has no home —

@@ -2,6 +2,7 @@ mod archive;
 mod codex;
 mod commands;
 mod menu;
+mod thumbs;
 
 use tauri::Emitter;
 
@@ -20,6 +21,7 @@ pub fn run() {
             commands::import_asset,
             commands::read_asset,
             commands::write_asset,
+            thumbs::read_thumb,
             commands::write_text,
             archive::export_archive,
             archive::import_archive,

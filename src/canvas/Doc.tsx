@@ -7,7 +7,7 @@ import { shots, proposalsFor, keepShot, keepAll, dropShot, dismiss } from "../st
 import { KINDS, type NodeKind } from "../graph/kinds";
 import { graph, updateData, rename, childrenOf, makeNode, addNode, takeOutput, type GraphNode } from "../state/graph";
 import { drafts, draftsFor, accept, reject, cancel, proseKey } from "../state/drafts";
-import { urlFor, assets } from "../state/assets";
+import { urlFor, thumbFor, assets } from "../state/assets";
 import { enter, step, sibling, siblings } from "../state/nav";
 import { tiedTo, tie, untie, held, holdBeat, askToTie, type Tied } from "../state/anchors";
 import { fitAll } from "./view";
@@ -206,7 +206,7 @@ export function Doc({ id }: { id: string }) {
             {images.length > 0 && (
               <div className="media">
                 {images.map((ref, i) => {
-                  const url = urlFor(ref);
+                  const url = thumbFor(ref, 512);
                   return <div key={`${i}:${ref}`} className="media-img well">{url && <img src={url} alt="" draggable={false} />}</div>;
                 })}
               </div>
@@ -356,7 +356,7 @@ function Body({ node }: { node: GraphNode }) {
       return (
         <div className="sheet-char">
           <div className={`sheet-ref well${node.asset ? "" : " diag"}`}>
-            {node.asset && <img src={urlFor(node.asset)} alt="" draggable={false} />}
+            {node.asset && <img src={thumbFor(node.asset, 512)} alt="" draggable={false} />}
             {!node.asset && <span className="sheet-ref-hint">Drop a reference</span>}
           </div>
           <div className="sheet-fields">
@@ -414,7 +414,7 @@ function Body({ node }: { node: GraphNode }) {
             <Section name="Takes" note="What came out. The ringed one goes on.">
               <div className="contact" role="radiogroup" aria-label="Takes">
                 {outs.slice(-8).map((ref, i) => {
-                  const url = urlFor(ref);
+                  const url = thumbFor(ref, 512);
                   const on = node.asset === ref;
                   return (
                     <button key={`${i}:${ref}`} className={`contact-take${on ? " on" : ""}`} role="radio" aria-checked={on} onClick={() => !on && takeOutput(node.id, ref)}>

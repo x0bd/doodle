@@ -26,6 +26,7 @@ export interface ImportedAsset {
 }
 export const importAsset = (dir: string, path: string) => invoke<ImportedAsset>("import_asset", { dir, path });
 export const readAsset = (dir: string, rel: string) => invoke<string>("read_asset", { dir, rel });
+export const readThumb = (dir: string, rel: string, size: number) => invoke<string>("read_thumb", { dir, rel, size });
 export const writeAsset = (dir: string, dataUrl: string) => invoke<ImportedAsset>("write_asset", { dir, dataUrl });
 
 /** Files dropped on the window, as paths — the platform hands them over. */

@@ -1,6 +1,6 @@
 import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
 import { Icon, PopUpIcon, ChevronRightIcon, ImageIcon } from "../icons";
-import { urlFor, assets } from "../state/assets";
+import { thumbFor, assets } from "../state/assets";
 import { KINDS } from "../graph/kinds";
 import { FieldRow } from "../shell/Fields";
 import { graph, inputs, outputs, updateData, childCount, childrenOf, measure, setWidth, takeOutput, type GraphNode, type PortRef } from "../state/graph";
@@ -213,7 +213,7 @@ function Body({ node }: { node: GraphNode }) {
           {outs.length > 0 && (
             <div className="bloom" role="radiogroup" aria-label="Candidates">
               {outs.slice(-4).map((ref, i) => {
-                const url = urlFor(ref);
+                const url = thumbFor(ref, 256);
                 const on = node.asset === ref;
                 return (
                   <button
@@ -238,7 +238,7 @@ function Body({ node }: { node: GraphNode }) {
       return (
         <div className={`node-body node-print${node.asset ? " has" : ""}`}>
           {node.asset ? (
-            <img className="node-img" src={urlFor(node.asset)} alt="" draggable={false} />
+            <img className="node-img" src={thumbFor(node.asset, 1024)} alt="" draggable={false} />
           ) : (
             <span className="node-print-none">
               <Icon icon={ImageIcon} size={20} strokeWidth={1.5} />
@@ -254,7 +254,7 @@ function Body({ node }: { node: GraphNode }) {
       return (
         <div className="node-body node-who">
           <div className="who-face">
-            {node.asset ? <img className="node-img" src={urlFor(node.asset)} alt="" draggable={false} /> : <span>{initials(name)}</span>}
+            {node.asset ? <img className="node-img" src={thumbFor(node.asset, 256)} alt="" draggable={false} /> : <span>{initials(name)}</span>}
           </div>
           <div className="who-what">
             <div className="who-name">{name}</div>
@@ -268,7 +268,7 @@ function Body({ node }: { node: GraphNode }) {
       return (
         <div className="node-body node-place">
           <div className={`place-view${node.asset ? " has" : ""}`}>
-            {node.asset && <img className="node-img" src={urlFor(node.asset)} alt="" draggable={false} />}
+            {node.asset && <img className="node-img" src={thumbFor(node.asset, 512)} alt="" draggable={false} />}
           </div>
           <div className="who-name">{String(node.data.name || node.title)}</div>
           <div className="who-desc">{String(node.data.description || "No description yet")}</div>

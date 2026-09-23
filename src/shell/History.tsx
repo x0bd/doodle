@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { jobs, retry, type Job } from "../state/jobs";
 import { graph, select, takeOutput } from "../state/graph";
-import { urlFor, assets } from "../state/assets";
+import { thumbFor, assets } from "../state/assets";
 import { fitRect } from "../canvas/camera";
 import { screenRect } from "../canvas/view";
 import { nav, riseTo } from "../state/nav";
@@ -38,7 +38,7 @@ export function History({ onClose }: { onClose: () => void }) {
         {runs.length === 0 && <p className="pane-empty">Nothing has run yet. Queue runs the graph.</p>}
         {runs.slice(0, 12).map((run) => {
           const node = g.nodes[run.nodeId];
-          const thumb = run.outputs?.[0] ? urlFor(run.outputs[0]) : undefined;
+          const thumb = run.outputs?.[0] ? thumbFor(run.outputs[0], 256) : undefined;
           const secs = run.startedAt && run.endedAt ? ((run.endedAt - run.startedAt) / 1000).toFixed(1) : "–";
           const req = run.request as ImageRequest;
           return (
