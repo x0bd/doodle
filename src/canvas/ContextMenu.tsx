@@ -5,6 +5,7 @@ import { graph, select, addNode, makeNode, duplicateSelected, deleteSelected, se
 import { enter, nav } from "../state/nav";
 import { enqueue, RUNNABLE } from "../state/jobs";
 import { fitAll } from "./view";
+import { remix, remixable } from "../state/remix";
 import { GLYPH } from "./Doc";
 import type { Point } from "./camera";
 
@@ -90,6 +91,9 @@ export function ContextMenu({ menu, onClose }: { menu: Menu; onClose: () => void
             )}
             {!many && RUNNABLE.has(node.kind) && (
               <Row key_="⌘⏎" onClick={() => (onClose(), enqueue([node.id]))}>Run this one</Row>
+            )}
+            {!many && remixable(node.asset) && (
+              <Row onClick={() => (onClose(), remix(node.asset!))}>Remix — a branch from this</Row>
             )}
             {!many && takesWords(node) && (
               <>

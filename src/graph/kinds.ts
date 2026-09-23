@@ -4,6 +4,8 @@
  * the inspector edits. The canvas and the inspector both read from here;
  * neither knows a kind by name.
  */
+import { LOOKS } from "./looks";
+
 export type NodeKind = "model" | "prompt" | "generate" | "preview" | "character" | "location" | "style" | "write" | "page" | "note" | "shot" | "chapter";
 
 /** the kinds that are written in — entered, they are a document; zoomed
@@ -20,7 +22,8 @@ export interface Port {
 }
 
 export type Field =
-  | { key: string; label: string; type: "select"; options: string[] }
+  /** one of a list; `fills` sets other fields to go with a choice (a look) */
+  | { key: string; label: string; type: "select"; options: string[]; fills?: Record<string, Record<string, string>> }
   | { key: string; label: string; type: "number"; min: number; max: number; step: number; digits?: number }
   /** a number you set by hand along a track, with its figure beside it */
   | { key: string; label: string; type: "range"; min: number; max: number; step: number; digits?: number; unit?: string }
@@ -29,6 +32,17 @@ export type Field =
   | { key: string; label: string; type: "seed" }
   | { key: string; label: string; type: "line" }
   | { key: string; label: string; type: "text"; rows?: number };
+
+/** a picture's shape, the way a photographer picks a frame, not a pair of
+ *  numbers: the long side is 1024, the short side what the ratio makes it,
+ *  to the nearest 8 */
+export const FRAMES: Record<string, [number, number]> = {
+  "1:1": [1024, 1024],
+  "4:5": [816, 1024],
+  "3:2": [1024, 680],
+  "16:9": [1024, 576],
+  "9:16": [576, 1024],
+};
 
 export interface KindDef {
   kind: NodeKind;
@@ -83,7 +97,7 @@ export const KINDS: Record<NodeKind, KindDef> = {
     ],
     outputs: [{ id: "image", name: "image", type: "image" }],
     size: { w: 320, h: 338 },
-    data: { seed: 12345, control: "Fixed", steps: 30, strength: 8, sampler: "dpm++ 2M", width: 1024, height: 1024, count: 1 },
+    data: { seed: 12345, control: "Fixed", steps: 30, strength: 8, sampler: "dpm++ 2M", frame: "1:1", count: 1 },
     groups: [
       {
         name: "Sampling",
@@ -99,8 +113,7 @@ export const KINDS: Record<NodeKind, KindDef> = {
         name: "Output",
         fields: [
           { key: "count", label: "Candidates", type: "choice", options: ["1", "2", "3", "4"] },
-          { key: "width", label: "Width", type: "number", min: 256, max: 2048, step: 64 },
-          { key: "height", label: "Height", type: "number", min: 256, max: 2048, step: 64 },
+          { key: "frame", label: "Frame", type: "choice", options: Object.keys(FRAMES) },
         ],
       },
     ],
@@ -158,11 +171,12 @@ export const KINDS: Record<NodeKind, KindDef> = {
     inputs: [],
     outputs: [{ id: "text", name: "description", type: "text" }],
     size: { w: 240, h: 150 },
-    data: { description: "", palette: "", lighting: "" },
+    data: { look: "Your own", description: "", palette: "", lighting: "" },
     groups: [
       {
         name: "Look",
         fields: [
+          { key: "look", label: "Start from", type: "select", options: ["Your own", ...Object.keys(LOOKS)], fills: { ...LOOKS } as unknown as Record<string, Record<string, string>> },
           { key: "description", label: "Description", type: "text", rows: 3 },
           { key: "palette", label: "Palette", type: "line" },
           { key: "lighting", label: "Lighting", type: "line" },

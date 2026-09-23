@@ -12,6 +12,7 @@ import { writeAsset, saveRecord, loadRecord, inTauri } from "../platform/fs";
 import { ui } from "./ui";
 import { expandMentions } from "../canvas/mentions";
 import { plain, formOf } from "../writer/markup";
+import { FRAMES } from "../graph/kinds";
 import { record, inputsOf } from "./prov";
 import type { ImageRequest, Progress, TextRequest } from "../providers/types";
 
@@ -103,8 +104,9 @@ export function requestFor(gen: GraphNode): ImageRequest {
     steps: Number(d.steps),
     strength: Number(d.strength),
     sampler: String(d.sampler),
-    width: Number(d.width),
-    height: Number(d.height),
+    // a frame if it has one; a graph from before frames keeps its numbers
+    width: FRAMES[String(d.frame)]?.[0] ?? Number(d.width ?? 1024),
+    height: FRAMES[String(d.frame)]?.[1] ?? Number(d.height ?? 1024),
   };
 }
 

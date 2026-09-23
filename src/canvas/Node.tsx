@@ -4,7 +4,8 @@ import { thumbFor, assets } from "../state/assets";
 import { KINDS } from "../graph/kinds";
 import { FieldRow } from "../shell/Fields";
 import { graph, inputs, outputs, updateData, childCount, childrenOf, measure, setWidth, takeOutput, type GraphNode, type PortRef } from "../state/graph";
-import { camera } from "./camera";
+import { camera, toWorld } from "./camera";
+import { setOnField } from "../state/remix";
 import { jobs, jobFor, partialFor } from "../state/jobs";
 import { Editor } from "../writer/Editor";
 import { plain, formOf, countWords } from "../writer/markup";
@@ -221,9 +222,8 @@ function Body({ node }: { node: GraphNode }) {
                     className={`bloom-take${on ? " on" : ""}`}
                     role="radio"
                     aria-checked={on}
-                    title={on ? "The take" : "Make this the take"}
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onClick={() => !on && takeOutput(node.id, ref)}
+                    title={on ? "The take — drag it out to set it on the field" : "Make this the take — drag it out to set it on the field"}
+                    onPointerDown={(e) => pullOut(e, ref, url, () => !on && takeOutput(node.id, ref))}
                   >
                     {url && <img src={url} alt="" draggable={false} />}
                   </button>
@@ -298,6 +298,40 @@ function Body({ node }: { node: GraphNode }) {
     case "chapter":
       return <ChapterBody node={node} />;
   }
+}
+
+/** A take is chosen with a click and pulled out with a drag: out past a
+ *  few pixels it follows the pointer as a small print, and let go on the
+ *  field it becomes a card of its own there. */
+function pullOut(e: ReactPointerEvent, ref: string, url: string | undefined, click: () => void) {
+  e.stopPropagation();
+  if (e.button !== 0) return;
+  const from = { x: e.clientX, y: e.clientY };
+  let ghost: HTMLImageElement | null = null;
+  const move = (ev: PointerEvent) => {
+    if (!ghost && Math.hypot(ev.clientX - from.x, ev.clientY - from.y) < 6) return;
+    if (!ghost) {
+      ghost = document.createElement("img");
+      ghost.className = "take-ghost";
+      if (url) ghost.src = url;
+      document.body.appendChild(ghost);
+    }
+    ghost.style.left = `${ev.clientX}px`;
+    ghost.style.top = `${ev.clientY}px`;
+  };
+  const up = (ev: PointerEvent) => {
+    window.removeEventListener("pointermove", move);
+    window.removeEventListener("pointerup", up);
+    window.removeEventListener("pointercancel", up);
+    if (!ghost) return click();
+    ghost.remove();
+    const over = document.elementFromPoint(ev.clientX, ev.clientY);
+    // let go on the field (not on a card, not on the chrome): a card of its own
+    if (over?.closest(".stage") && !over.closest("[data-node]")) setOnField(ref, toWorld(camera.get(), { x: ev.clientX, y: ev.clientY }));
+  };
+  window.addEventListener("pointermove", move);
+  window.addEventListener("pointerup", up);
+  window.addEventListener("pointercancel", up);
 }
 
 const STATE_WORD: Record<GraphNode["status"], string> = { canon: "Canon", draft: "Draft", exploration: "Explore", rejected: "Rejected" };

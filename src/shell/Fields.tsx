@@ -49,9 +49,17 @@ export function FieldRow({ node, field }: { node: GraphNode; field: Field }) {
         )}
         {field.type === "select" && (
           <label className="pill pill-sm select">
-            <span>{String(v)}</span>
+            <span>{String(v ?? field.options[0])}</span>
             <Icon icon={PopUpIcon} size={12} strokeWidth={2} />
-            <select value={String(v)} onChange={(e) => set(e.target.value)} aria-label={field.label}>
+            <select
+              value={String(v ?? field.options[0])}
+              onChange={(e) => {
+                const fill = field.fills?.[e.target.value];
+                if (fill) updateData(node.id, { [field.key]: e.target.value, ...fill });
+                else set(e.target.value);
+              }}
+              aria-label={field.label}
+            >
               {field.options.map((o) => (
                 <option key={o} value={o}>{o}</option>
               ))}

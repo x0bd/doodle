@@ -2,6 +2,7 @@ import { KINDS } from "../graph/kinds";
 import { useState } from "react";
 import { graph, select, setStatus, type Canon, type GraphNode } from "../state/graph";
 import { prov, behind } from "../state/prov";
+import { remix, remixable } from "../state/remix";
 import { FieldRow } from "./Fields";
 import { GLYPH } from "../canvas/Doc";
 import { Icon } from "../icons";
@@ -142,6 +143,12 @@ function Source({ node }: { node: GraphNode }) {
               ))}
             </ul>
           </div>
+        )}
+        {remixable(p.key) && (
+          <button className="group-row group-more" onClick={() => remix(p.key)} title="A new generator under the one that made this, fed the same, its seed held">
+            <div className="group-name">Remix</div>
+            <div className="group-val">a branch from this</div>
+          </button>
         )}
         <button className="group-row group-more" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
           <div className="group-name">What was asked</div>

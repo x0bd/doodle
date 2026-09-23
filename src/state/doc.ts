@@ -3,6 +3,7 @@
  * since it was written, and how the last write went. Saving is never
  * promised until Rust confirms it.
  */
+import { FRAMES } from "../graph/kinds";
 import { createStore } from "./store";
 import { graph, type GraphState } from "./graph";
 import { camera, type Camera } from "../canvas/camera";
@@ -269,6 +270,13 @@ function load(file: FileGraph, path: string | null) {
   file.order.forEach((id, i) => {
     const n = nodes[id];
     if (n && (n.seq == null || n.parent === undefined || !n.status)) nodes[id] = { ...n, seq: n.seq ?? i + 1, parent: n.parent ?? null, status: n.status ?? "canon" };
+    // a generator from before frames: the frame nearest its width and height
+    const m = nodes[id];
+    if (m?.kind === "generate" && m.data.frame === undefined) {
+      const r = Number(m.data.width ?? 1024) / Number(m.data.height ?? 1024);
+      const frame = Object.entries(FRAMES).sort(([, a], [, b]) => Math.abs(a[0] / a[1] - r) - Math.abs(b[0] / b[1] - r))[0][0];
+      nodes[id] = { ...m, data: { ...m.data, frame } };
+    }
   });
   graph.set({ nodes, order: file.order, edges: file.edges, selection: [], edgeSelection: [] });
   resetNav(file.views ?? {});

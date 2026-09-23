@@ -1889,3 +1889,18 @@ html, body, #root { height: 100%; }
 .paper-form .seg-btn { height: 20px; padding: 0 9px; font-size: var(--t-micro); box-shadow: none; }
 .paper-form .seg-btn.on { background: var(--surface-raised); box-shadow: 0 0.5px 1px rgba(14, 14, 13, 0.14), 0 1px 3px rgba(14, 14, 13, 0.08); }
 .dark .paper-form .seg-btn.on { background: rgba(242, 242, 240, 0.16); box-shadow: none; }
+
+/* a take pulled out of a bloom, following the pointer until it is let go */
+.take-ghost {
+  position: fixed;
+  z-index: 100;
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: var(--r-sm);
+  pointer-events: none;
+  translate: -50% -50%;
+  rotate: -2deg;
+  box-shadow: 0 0 0 2px var(--surface-raised), 0 12px 30px rgba(0, 0, 0, 0.3);
+  opacity: 0.94;
+}

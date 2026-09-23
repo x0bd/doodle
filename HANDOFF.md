@@ -40,6 +40,10 @@ A recursively zoomable creative document. On the field it is a node graph — Mo
 
 **Provenance** (`state/prov.ts`). Every generated thing records where it came from — provider, model, when, the prompt and system as they went out, the seed, what fed it (node, port and title as they were), the bible's rules, the run — keyed by **what it produced**: an image by its asset reference (content-addressed; `rekey()` follows them when the first save moves them into the folder), words by the run's id, which the writer and the pages it wrote carry as `node.from`. It saves inside `graph.json` (`provenance`) and comes back with the document. The inspector shows it as **Where this came from** for whatever is selected (`behind()` resolves through a node's take or its `from`): who and when, the seed, the inputs as rows that select them, and *what was asked* folded away.
 
+**Remix, takes on the field, looks, frames** (`state/remix.ts`, `graph/looks.ts`) — Visual Electric's good ideas in a graph's terms (it spread a set of four on a canvas instead of a chat, offered one-click styles, and let you remix any image). **Remix** (a generated image's right-click menu, or *Where this came from*): a new generator appears under the one that made it, fed by the same things port for port, the same settings, that image's **seed held** and Fixed, its first take the image itself, and a Remix print beside it — a branch, the original untouched (`makerOf()` finds the generator by its outputs). **Pull a take out**: drag a take out of a bloom (past 6 px it follows the pointer as a small print, `.take-ghost`; a click still chooses it) and let go on the field — it is a card of its own there (`setOnField`, *Explore*, its record of where it came from with it) to lay beside the others. **Looks**: a style node starts from one of twelve (Marker, Risograph, Classic animation, 3D render, Airbrush, Stained glass, Watercolour, Film noir, Woodblock, Polaroid, Blueprint, Claymation) — the *Start from* pop-up fills description, palette and lighting, still yours to change (a `select` field's `fills`). **Frame**: a generator's shape is a choice (1:1 · 4:5 · 3:2 · 16:9 · 9:16, long side 1024, `FRAMES` in `kinds.ts`), not two steppers; an old graph's width and height become the nearest frame on load.
+
+**Thumbnails** (`src-tauri/src/thumbs.rs`, `thumbFor()` in `state/assets.ts`, plan §10.2). Every asset gets a derivative per size — 256, 512, 1024 on the long side — made once by Rust off the main thread, kept in `thumbs/<hash>-<size>.<jpg|png>` beside `assets/` (a cache: never archived, remade if gone; transparency stays PNG; an image already small is its own). An image still in memory is drawn small by the webview. Bloom takes, faces and History read 256; a location's view, the contact sheet and media 512; a preview card 1024; the print on its page reads the original. The fixture bear: 1.6 MB → 76 KB on its card.
+
 **Jobs** (`state/jobs.ts`). One at a time; `requestFor`/`textRequestFor` read through the wires (scene, then character, then style, then the bible); a generator renders `count` candidates (next seed along each), outputs to `assets/` via `write_asset` when the graph has a home, bloom under the rows, the take flows on; a **writer streams** (`job.partial`, shown on the page it feeds — card and document — as *arriving*, read-only, never the document until the end) and then **lays its words on pages** (`graph.layOnPages`: `paginate()` cuts at `PAGE_WORDS` 350 by paragraph, then by sentence; the page it feeds first, then the empty pages after it, then new pages made to the right — a page with its own words is never written over). The mock writer gives twelve paragraphs for `Length: Chapter`, one sentence for `Beat`; History (bar clock) lists runs, retries failed ones. Runs persist in `jobs.json`; in-flight at close → cancelled.
 
 **Welcome** (`shell/Welcome.tsx`). The whole window before there is anything to look at, and on ⌘N: the DD mark, **Start** (the four templates) and **Lately** (the graphs this machine has opened — `recent()` keeps eight in `doodle.recent.v1`, a missing one is forgotten when picked) with *Open a graph…*. Escape closes it when something is already open. Only a strip at the title line carries `data-tauri-drag-region` — on the whole panel it **swallows the clicks** of everything inside it.
@@ -56,17 +60,17 @@ A recursively zoomable creative document. On the field it is a node graph — Mo
 src/app.css             the app on top of soft-machine.css (roles + lit tones, signal, stage, card, paper, page, panes, map, welcome)
 src/App.tsx             launch (restore last, else the welcome), Tab for panes, file drops
 src/canvas/  camera view Canvas Node Wires layout Doc Read mentions ContextMenu
-src/graph/   kinds templates
-src/state/   store graph history doc nav jobs drafts shots assets anchors prov reading ui
+src/graph/   kinds templates looks
+src/state/   store graph history doc nav jobs drafts shots assets anchors prov reading remix ui
 src/writer/  schema markup (+ markup.test) Editor
 src/providers/ types mock ollama codex registry fixtures
 src/platform/ fs (invoke wrappers, dialogs, confirmAsk) menu (the window's menu listener, devKeys)
 src/shell/   Head Navigator(Outline) Inspector Fields Foot Minimap Bar History QueueMenu Settings Welcome Palette Shortcuts
-src-tauri/src/ lib.rs menu.rs commands.rs (graph, records, assets, duplicate, write_text) archive.rs (+ tests) codex.rs
+src-tauri/src/ lib.rs menu.rs commands.rs (graph, records, assets, duplicate, write_text) archive.rs (+ tests) thumbs.rs (+ tests) codex.rs
 public/fixtures/black-bear.png
 ```
 
-`pnpm test` — the writer's round trips (vitest). `cd src-tauri && cargo test` — three tests, all on the archive. Rules kept: no `border:` anywhere (paper's edge is a `box-shadow` hairline) (`grep -rn "border[a-z-]*:" src/ | grep -v border-radius | grep -v "border: 0"` → nothing); `pnpm check` clean; ink for the selection ring only; the signal for the play, the wires and connected dots only; roles are grounds; hover is the tint; keys never animate.
+`pnpm test` — the writer's round trips (vitest). `cd src-tauri && cargo test` — six: the archive's three, the thumbnails' three. Rules kept: no `border:` anywhere (paper's edge is a `box-shadow` hairline) (`grep -rn "border[a-z-]*:" src/ | grep -v border-radius | grep -v "border: 0"` → nothing); `pnpm check` clean; ink for the selection ring only; the signal for the play, the wires and connected dots only; roles are grounds; hover is the tint; keys never animate.
 
 ## Working
 
@@ -89,10 +93,10 @@ public/fixtures/black-bear.png
 
 ## Next, in the order I would take them
 
-Spec standing (plan §25, MVP targets): export/import 3 ✓, provenance 3 ✓, recursive focus 3 ✓, typed hierarchy 3 ✓, ghost suggestions 3 ✓, canon 3 ✓, undo 3 ✓, text-to-beat 2 ✓ (anchors), living characters/locations/styles 2 ✓, minimap ✓. Writer ✓ (prose and screenplay, anchors on the plain words, runtime). Short of target: **search** (no tags), **image pipeline** (no thumbnails), **video** (not even the mock).
+Spec standing (plan §25, MVP targets): export/import 3 ✓, provenance 3 ✓, recursive focus 3 ✓, typed hierarchy 3 ✓, ghost suggestions 3 ✓, canon 3 ✓, undo 3 ✓, text-to-beat 2 ✓ (anchors), living characters/locations/styles 2 ✓, minimap ✓. Writer ✓ (prose and screenplay, anchors on the plain words, runtime). Short of target: **search** (no tags), **image pipeline** (thumbnails ✓; no region edits, no upscale), **video** (not even the mock).
 
-1. **Thumbnails** (§10.2): a 512 px derivative per asset in Rust, the canvas and bloom read those, the page and the print read the original.
-2. **Vision** — a character's or location's picture into the writer and the generator (`localImage` on `turn/start`).
-3. **Doodle as an MCP server** for Codex — `add_beat`, `propose_shots`, `set_state`, `read_scene`… so the agent works the document with tools.
-4. Fountain and Markdown **import** (a `.fountain` or `.md` onto pages, cut by `paginate`) and screenplay-aware pagination; a Focus mode for the writer (plan S3.1).
+1. **Vision** — a character's or location's picture into the writer and the generator (`localImage` on `turn/start`).
+2. **Doodle as an MCP server** for Codex — `add_beat`, `propose_shots`, `set_state`, `read_scene`… so the agent works the document with tools.
+3. Fountain and Markdown **import** (a `.fountain` or `.md` onto pages, cut by `paginate`) and screenplay-aware pagination; a Focus mode for the writer (plan S3.1).
+4. **From Plumb** (a node-based AI pipeline builder, shut 2025-10-31): **recipes** — mark a graph's inputs as exposed and it can be *used* as a form (those fields, a run key, the outputs) without seeing the wiring, the way Plumb published a pipeline as a page; **structured outputs** as ports (a writer or an ask that returns fields, each field its own output, Plumb's JSON steps); `{{port}}` names inside a prompt as well as `@` names. **From Visual Electric** still to take: a **touch-up brush** (paint a region, regenerate only it — needs a provider with masks; the mock can fake it), **upscale** a take, prompt **suggestions** from your own kept prompts (provenance is the corpus), a dominant **colour**.
 5. Tags (and search over them); a video mock adapter; a persisted queue that resumes real jobs; Claude via API key + keychain; port the roles and lit tones to v00v as an optional extension.
