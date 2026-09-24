@@ -15,11 +15,32 @@ import { findNodes } from "./search";
 import { timeSave } from "./doc";
 import { say, hush } from "./notice";
 import { log, painted } from "../platform/log";
+import { setRead } from "./ui";
 
 const frame = () => new Promise<number>((r) => requestAnimationFrame(r));
-/** a move the field makes, and when it has arrived — or three seconds */
-const arrive = (go: (done: () => void) => void) => Promise.race([new Promise<void>((r) => go(r)), new Promise<void>((r) => setTimeout(r, 3000))]);
 const ms = (x: number) => `${x.toFixed(1)} ms`;
+
+/** until something is so, a frame at a time — or three seconds */
+async function until(ok: () => boolean) {
+  const t = performance.now();
+  while (!ok() && performance.now() - t < 3000) await frame();
+}
+
+/** `n` frames of the document scrolling 60 px a frame */
+async function scroll(n: number) {
+  const stage = document.querySelector<HTMLElement>(".stage.reading");
+  const gaps: number[] = [];
+  if (!stage) return { fps: 0, slow: 0 };
+  let last = await frame();
+  for (let i = 0; i < n; i++) {
+    stage.scrollTop += 60;
+    const now = await frame();
+    gaps.push(now - last);
+    last = now;
+  }
+  const total = gaps.reduce((a, b) => a + b, 0) || 1;
+  return { fps: Math.round((n / total) * 1000), slow: gaps.filter((x) => x > 25).length };
+}
 
 /** `n` frames of the field moving `step` px a frame: frames a second, and
  *  how many took long enough to be seen as a stutter (> 25 ms) */
@@ -79,17 +100,46 @@ export async function measure() {
     const far = await pan(120, 12);
     camera.set(view);
     lines.push(`pan here ${near.fps} fps (p95 ${ms(near.p95)}, ${near.long} slow), far view ${far.fps} fps (p95 ${ms(far.p95)}, ${far.long} slow)`);
-    // into the first chapter, and back
+    // into the first chapter — its manuscript, one document (D1) — scrolling it, and back
     const ch = g.order.map((id) => g.nodes[id]).find((n) => n.kind === "chapter" && n.parent === focus);
     if (ch) {
       const t = performance.now();
-      await arrive((r) => enter(ch.id, r));
+      enter(ch.id);
+      await until(() => !!document.querySelector(".docpage .pm"));
       await painted();
       const into = performance.now() - t;
-      const inside = await pan(90, 6);
-      lines.push(`enter a chapter ${ms(into)} (with its move), pan inside ${inside.fps} fps (${inside.long} slow)`);
-      await arrive((r) => riseTo(focus, r));
+      const doc = await scroll(90);
+      lines.push(`open a chapter ${ms(into)} (${(g.nodes[ch.id].data.text as string | undefined)?.split(/\s+/).length ?? 0} words), scroll it ${doc.fps} fps (${doc.slow} slow)`);
+      riseTo(focus);
+      await painted();
       camera.set(view);
+    }
+    // the manuscript: the whole book as one column, and scrolling through it
+    if (!focus && g.order.some((id) => g.nodes[id].kind === "chapter")) {
+      const t = performance.now();
+      setRead(true);
+      await painted();
+      const open = performance.now() - t;
+      const read = await scroll(120);
+      // a keystroke in a chapter mid-book, from the store to the screen —
+      // what writing in the manuscript costs (the journal left out of it)
+      const chs = g.order.map((id) => g.nodes[id]).filter((n) => n.kind === "chapter");
+      const mid = chs[Math.floor(chs.length / 2)];
+      const was = String(mid.data.text ?? "");
+      const keys: number[] = [];
+      for (let i = 0; i < 20; i++) {
+        // the frame a keystroke lands in: from the frame before it to the
+        // frame after — one frame (16.7 ms at 60 Hz) means it cost nothing seen
+        const t0 = await frame();
+        graph.set((x) => ({ ...x, nodes: { ...x.nodes, [mid.id]: { ...x.nodes[mid.id], data: { ...x.nodes[mid.id].data, text: was + " x".repeat(i + 1) } } } }));
+        keys.push((await frame()) - t0);
+      }
+      graph.set((x) => ({ ...x, nodes: { ...x.nodes, [mid.id]: { ...x.nodes[mid.id], data: { ...x.nodes[mid.id].data, text: was } } } }));
+      const key = [...keys].sort((a, b) => a - b)[10];
+      setRead(false);
+      await painted();
+      camera.set(view);
+      lines.push(`manuscript opens ${ms(open)}, scrolls ${read.fps} fps (${read.slow} slow), a keystroke lands in a ${ms(key)} frame`);
     }
     for (const l of lines) log("bench", `${size}: ${l}`);
     hush(measuring);

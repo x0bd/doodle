@@ -79,7 +79,7 @@ export function Head() {
 
       <div className="tools">
         {place && (
-          <button className={`pill-icon${read ? " on" : ""}`} aria-label="Read" aria-pressed={read} title={read ? "Back to the field" : "Read as one — every page in order"} onClick={toggleRead}>
+          <button className={`pill-icon${read ? " on" : ""}`} aria-label="Manuscript" aria-pressed={read} title={read ? "Back to the field" : "The manuscript — every chapter in one column, to read and write in"} onClick={toggleRead}>
             <Icon icon={ChapterIcon} size={15} strokeWidth={2} />
           </button>
         )}

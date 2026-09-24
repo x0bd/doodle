@@ -41,3 +41,21 @@ test("a graph never saved: Versions says to save first, and Settings says who an
   await page.getByRole("button", { name: "Providers" }).click();
   await expect(page.getByText("Always here.")).toBeVisible();
 });
+
+test("the manuscript: every chapter in one column, a jump to any, writing in it", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /The keeper's daughter/ }).click();
+  await page.getByRole("button", { name: "Manuscript" }).click();
+  await expect(page.locator(".read-chapter")).toHaveCount(2);
+  const key = page.locator(".read-jump-key");
+  await expect(key).toHaveText("One");
+  await key.click();
+  await page.getByRole("menuitem", { name: /Two/ }).click();
+  await expect(key).toHaveText("Two");
+  // write at the end of chapter two, in the manuscript
+  const two = page.locator("#read-ch2 .pm");
+  await two.click();
+  await page.keyboard.press("Meta+ArrowDown");
+  await page.keyboard.type(" The name on the last line is hers.");
+  await expect(two).toContainText("The name on the last line is hers.");
+});

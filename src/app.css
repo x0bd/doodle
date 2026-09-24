@@ -388,6 +388,15 @@ html, body, #root { height: 100%; }
 .read-chapter-head + .read-page { margin-top: 0; }
 .read-folio { display: block; margin-bottom: 6px; color: var(--fg-faint); }
 .read .prose { min-height: 60px; }
+/* the manuscript's jump list: which chapter is in view, and any other */
+.read-jump { position: sticky; top: 58px; z-index: 5; display: flex; align-items: flex-start; justify-content: flex-end; max-width: 680px; margin: -40px auto 0; height: 0; }
+.read-jump-key { gap: 6px; max-width: 240px; }
+.read-jump-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.read-jump-menu { top: 36px; right: 0; max-height: 60vh; overflow-y: auto; }
+.read-jump-n { width: 22px; flex: none; color: var(--fg-faint); font-size: var(--t-micro); }
+.read-chapter { scroll-margin-top: 72px; }
+/* room under the last chapter, so any chapter can come to the top */
+.docpage.read { padding-bottom: 70vh; }
 /* the turn of the page: under the words, quiet until the pointer is near */
 .paper-turn { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 28px; min-height: 28px; }
 .turn {
