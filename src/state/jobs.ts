@@ -4,7 +4,7 @@
  * journal entry so it can be undone like anything else.
  */
 import { createStore } from "./store";
-import { graph, childrenOf, layOnPages, type GraphNode } from "./graph";
+import { graph, layOnPages, type GraphNode } from "./graph";
 import { commit } from "./history";
 import { pick } from "../providers/registry";
 import { doc, bibleText } from "./doc";
@@ -74,11 +74,6 @@ function describe(n: GraphNode | undefined, bare = false): string {
   if (n.kind === "character" || n.kind === "location") return [d.name, d.description].filter(Boolean).join(": ");
   if (n.kind === "style") return [d.description, d.palette && `palette: ${d.palette}`, d.lighting && `lighting: ${d.lighting}`].filter(Boolean).join(", ");
   if (n.kind === "shot") return [expandMentions(String(d.description ?? "")), `${d.shotSize} shot`, `${d.lensMm}mm`, `${d.movement}`].filter(Boolean).join(", ");
-  if (n.kind === "chapter") {
-    const g = graph.get();
-    const pages = childrenOf(g, n.id).map((id) => g.nodes[id]).filter((p) => p.kind === "page" && p.status !== "rejected").sort((a, b) => a.seq - b.seq);
-    return pages.map((p) => words(String(p.data.text ?? ""), p)).filter(Boolean).join("\n\n");
-  }
   return words(String(d.text ?? ""), n);
 }
 
@@ -313,7 +308,11 @@ async function run(id: string) {
           const n = graph.get().nodes[t];
           if (!n) continue;
           if (n.kind === "page") layOnPages(t, text, id);
-          else graph.set((x) => ({ ...x, nodes: { ...x.nodes, [t]: { ...x.nodes[t], data: { ...x.nodes[t].data, text }, from: id } } }));
+          // a chapter is added to, never written over: the words come after its own
+          else if (n.kind === "chapter") {
+            const had = String(n.data.text ?? "").trim();
+            graph.set((x) => ({ ...x, nodes: { ...x.nodes, [t]: { ...x.nodes[t], data: { ...x.nodes[t].data, text: had ? `${had}\n\n${text.trim()}` : text }, from: id } } }));
+          } else graph.set((x) => ({ ...x, nodes: { ...x.nodes, [t]: { ...x.nodes[t], data: { ...x.nodes[t].data, text }, from: id } } }));
         }
       });
     } else {

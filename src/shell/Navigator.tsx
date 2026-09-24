@@ -51,16 +51,16 @@ export function Navigator() {
   const into = (id: string) => enter(id, () => requestAnimationFrame(fitAll), { x: window.innerWidth / 2, y: window.innerHeight / 2 });
   const home = () => riseTo(null, () => requestAnimationFrame(fitAll), { x: window.innerWidth / 2, y: window.innerHeight / 2 });
 
-  /** add under what is chosen — a page in a chapter, a note in a page, else here */
+  /** add under what is chosen — a beat in a chapter or a brief, a note in a page, else a chapter here */
   const add = () => {
     const chosen = g.selection.length === 1 ? g.nodes[g.selection[0]] : undefined;
     const parent = chosen && (chosen.kind === "chapter" || chosen.kind === "page" || chosen.kind === "prompt") ? chosen : focus ? g.nodes[focus] : undefined;
     const under = parent?.id ?? null;
     const there = kids(g, under);
     const last = there.reduce<GraphNode | undefined>((m, s) => (!m || s.x + s.w > m.x + m.w ? s : m), undefined);
-    const kind = !parent ? "chapter" : parent.kind === "chapter" ? "page" : parent.kind === "prompt" ? "note" : "note";
+    const kind = !parent ? "chapter" : "note";
     const n = there.filter((s) => s.kind === kind).length + 1;
-    const title = kind === "page" ? `Page ${n}` : kind === "chapter" ? `Chapter ${n}` : parent?.kind === "prompt" ? `Beat ${n}` : `Note ${n}`;
+    const title = kind === "chapter" ? `Chapter ${n}` : parent?.kind === "prompt" || parent?.kind === "chapter" ? `Beat ${n}` : `Note ${n}`;
     const node = makeNode(kind, last ? last.x + last.w + 40 : 60, last ? last.y : 60, { parent: under, title });
     addNode(node);
     if (parent) setOpen((o) => new Set(o).add(parent.id));

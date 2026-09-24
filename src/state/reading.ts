@@ -1,7 +1,7 @@
 /**
- * A place read in order: the chapters under it and their pages, loose
- * pages where they fall. One answer for the reading view and for what
- * leaves the app, so what you read is what you export.
+ * A place read in order: the chapters under it, each its own words (D1),
+ * and loose pages where they fall. One answer for the reading view and for
+ * what leaves the app, so what you read is what you export.
  */
 import { childrenOf, type GraphNode, type GraphState } from "./graph";
 
@@ -26,13 +26,7 @@ export function sections(g: GraphState, id: string | null): Section[] {
     if (n.kind === "page") loose.push(n);
     else if (n.kind === "chapter") {
       flush();
-      out.push({
-        chapter: n,
-        pages: childrenOf(g, n.id)
-          .map((c) => g.nodes[c])
-          .filter((p) => p.kind === "page" && p.status !== "rejected")
-          .sort((a, b) => a.seq - b.seq),
-      });
+      out.push({ chapter: n, pages: [] });
     }
   }
   flush();
@@ -41,8 +35,8 @@ export function sections(g: GraphState, id: string | null): Section[] {
 
 export { countWords } from "../writer/markup";
 
-/** every page under a place, in reading order */
-export const pagesOf = (g: GraphState, id: string | null) => sections(g, id).flatMap((s) => s.pages);
+/** the words of a section: a chapter's own, or its loose pages' */
+export const sectionWords = (s: Section) => (s.chapter ? [String(s.chapter.data.text ?? "")] : s.pages.map((p) => String(p.data.text ?? ""))).map((t) => t.trim()).filter(Boolean);
 
 /** The place as Markdown: the title, each chapter a heading, its pages
  *  run on in order with a blank line between them. Empty pages are left
@@ -53,7 +47,7 @@ export function asMarkdown(g: GraphState, id: string | null, name: string): stri
   const line = String(node?.data.summary ?? "").trim();
   if (line) lines.push(`*${line}*`);
   for (const sec of sections(g, id)) {
-    const words = sec.pages.map((p) => String(p.data.text ?? "").trim()).filter(Boolean);
+    const words = sectionWords(sec);
     if (sec.chapter) {
       lines.push(`## ${sec.chapter.title}`);
       const sum = String(sec.chapter.data.summary ?? "").trim();

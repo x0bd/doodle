@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("a first run reaches writing: the sample, a chapter, a page, words", async ({ page }) => {
+test("a first run reaches writing: the sample, a chapter, its words", async ({ page }) => {
   await page.goto("/");
   // the first run's welcome leads with the sample book and says what it found
   await expect(page.getByText("What it can use")).toBeVisible();
@@ -9,18 +9,16 @@ test("a first run reaches writing: the sample, a chapter, a page, words", async 
   // the book, as a field of cards
   await expect(page.locator('[data-node="start"]')).toBeVisible();
   const one = page.locator('[data-node="ch1"]');
-  await expect(one).toContainText("3 pages");
+  await expect(one).toContainText("1 page · 301 words"); // laid out, not cards
 
-  // into the chapter: its pages
+  // into the chapter: the manuscript — the whole chapter, one document (D1)
   await one.dblclick({ position: { x: 60, y: 14 } });
-  const first = page.locator('[data-node="pg1"]');
-  await expect(first).toBeVisible();
-  await expect(first).toContainText("The ship is there at first light");
-
-  // into the page: the writer, with the caret in the words
-  await first.dblclick({ position: { x: 60, y: 12 } });
   const writer = page.locator(".docpage .pm").first();
-  await expect(writer).toContainText("Mara counts the gulls");
+  await expect(writer).toContainText("The ship is there at first light");
+  await expect(writer).toContainText("“Not yet,” he says."); // page 3's words, same document
+  // the beat is tied to its words, marked under them
+  await expect(page.locator(".docpage .tie").first()).toContainText("No sail set");
+  // and writing at the end of the chapter
   await writer.click();
   await page.keyboard.press("Meta+ArrowDown");
   await page.keyboard.type(" She goes down to wake him.");

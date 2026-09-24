@@ -26,17 +26,20 @@ pub fn read_backup(dir: String, name: String) -> Result<String, String> {
     fs::read_to_string(Path::new(&dir).join("backups").join(name)).map_err(|e| e.to_string())
 }
 
-/// The file that could not be read, kept beside the graph under another
-/// name — the next save must not be the end of it. Says what it is called.
+/// The file as it was, kept beside the graph under another name — the next
+/// save must not be the end of it: `graph-damaged-<secs>.json` when it
+/// could not be read, `graph-before-<secs>.json` when it was mended or
+/// brought up to a newer format. Says what it is called.
 #[tauri::command]
-pub fn set_aside(dir: String) -> Result<Option<String>, String> {
+pub fn set_aside(dir: String, why: String) -> Result<Option<String>, String> {
+    let why = if why == "damaged" { "damaged" } else { "before" };
     let dir = PathBuf::from(dir);
     let from = dir.join("graph.json");
     if !from.is_file() {
         return Ok(None);
     }
     let stamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
-    let name = format!("graph-damaged-{stamp}.json");
+    let name = format!("graph-{why}-{stamp}.json");
     fs::copy(&from, dir.join(&name)).map_err(|e| e.to_string())?;
     Ok(Some(name))
 }
@@ -65,7 +68,8 @@ pub struct Unused {
 }
 
 /// The pictures in `assets/` that nothing names: not the graph, its runs,
-/// its versions, nor the recovery log of what is not saved yet.
+/// its versions, its backups and kept copies, nor the recovery log of what
+/// is not saved yet.
 pub fn unused_in(dir: &Path) -> Unused {
     let mut used = HashSet::new();
     for f in ["graph.json", "jobs.json", "recovery.log"] {
@@ -73,10 +77,24 @@ pub fn unused_in(dir: &Path) -> Unused {
             refs_in(&t, &mut used);
         }
     }
-    if let Ok(r) = fs::read_dir(dir.join("versions")) {
+    // every version, every backup, and every copy kept aside (graph-before-…,
+    // graph-damaged-…): going back to any of them must find its pictures
+    for sub in ["versions", "backups"] {
+        if let Ok(r) = fs::read_dir(dir.join(sub)) {
+            for e in r.filter_map(|e| e.ok()) {
+                if let Ok(t) = fs::read_to_string(e.path()) {
+                    refs_in(&t, &mut used);
+                }
+            }
+        }
+    }
+    if let Ok(r) = fs::read_dir(dir) {
         for e in r.filter_map(|e| e.ok()) {
-            if let Ok(t) = fs::read_to_string(e.path()) {
-                refs_in(&t, &mut used);
+            let n = e.file_name().to_string_lossy().into_owned();
+            if n.starts_with("graph-") && n.ends_with(".json") {
+                if let Ok(t) = fs::read_to_string(e.path()) {
+                    refs_in(&t, &mut used);
+                }
             }
         }
     }
@@ -144,6 +162,8 @@ mod tests {
         fs::write(root.join("graph.json"), format!(r#"{{"asset":"assets/{}.png"}}"#, h('a'))).unwrap();
         fs::write(root.join("versions/v1.json"), format!(r#"{{"outputs":["assets/{}.png"]}}"#, h('b'))).unwrap();
         fs::write(root.join("recovery.log"), format!("{{\"asset\":\"assets/{}.png\"}}\n", h('c'))).unwrap();
+        fs::write(root.join("assets").join(format!("{}.png", h('e'))), b"xx").unwrap();
+        fs::write(root.join("graph-before-1.json"), format!(r#"{{"asset":"assets/{}.png"}}"#, h('e'))).unwrap();
         let u = unused_in(&root);
         assert_eq!(u.files, vec![format!("{}.png", h('d'))]);
         assert_eq!(u.bytes, 2);

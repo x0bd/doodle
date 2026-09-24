@@ -55,11 +55,20 @@ const PROMPTS: Record<Ask, string> = {
   ask: "",
 };
 
-/** what came before: the chapter's line, and the tail of the page before
- *  this one — so a page continues the book, not just itself */
+/** what came before: for a chapter, the chapter before it — its line and
+ *  how it ends; for a page, its chapter's line and the page before — so the
+ *  words continue the book, not just themselves */
 function before(nodeId: string): string {
   const g = graph.get();
   const node = g.nodes[nodeId];
+  if (node?.kind === "chapter") {
+    const all = g.order.map((id) => g.nodes[id]).filter((n) => n.parent === node.parent && n.kind === "chapter" && n.status !== "rejected").sort((a, b) => a.seq - b.seq);
+    const prev = all[all.findIndex((c) => c.id === nodeId) - 1];
+    if (!prev) return "";
+    const line = String(prev.data.summary ?? "").trim();
+    const tail = String(prev.data.text ?? "").trim().slice(-900);
+    return [`The chapter before is "${prev.title}"${line ? `: ${line}` : ""}.`, tail && `It ends:\n…${tail}`].filter(Boolean).join("\n");
+  }
   if (!node || node.kind !== "page") return "";
   const parts: string[] = [];
   const parent = node.parent ? g.nodes[node.parent] : undefined;
@@ -127,7 +136,7 @@ export function cancel(id: string) {
 }
 
 /** where a kind keeps its words */
-export const proseKey = (kind: string) => (kind === "character" || kind === "location" || kind === "style" || kind === "shot" ? "description" : kind === "chapter" ? "summary" : "text");
+export const proseKey = (kind: string) => (kind === "character" || kind === "location" || kind === "style" || kind === "shot" ? "description" : "text");
 
 export function accept(id: string) {
   const d = drafts.get()[id];

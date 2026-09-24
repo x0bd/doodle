@@ -49,7 +49,7 @@ export function Bar() {
   const entered = focus ? g.nodes[focus] : undefined;
   // a document gets the ask; a place (a chapter) is a field and gets the prompt bar for what runs there
   if (entered && !PLACES.has(entered.kind)) {
-    const prose = entered.kind === "prompt" || entered.kind === "note" || entered.kind === "page";
+    const prose = entered.kind === "prompt" || entered.kind === "note" || entered.kind === "page" || entered.kind === "chapter";
     const described = entered.kind === "character" || entered.kind === "location" || entered.kind === "style";
     const send = () => {
       if (!ask.trim()) return;

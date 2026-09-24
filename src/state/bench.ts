@@ -13,7 +13,7 @@ import { camera, panBy } from "../canvas/camera";
 import { nav, enter, riseTo } from "./nav";
 import { findNodes } from "./search";
 import { timeSave } from "./doc";
-import { say } from "./notice";
+import { say, hush } from "./notice";
 import { log, painted } from "../platform/log";
 
 const frame = () => new Promise<number>((r) => requestAnimationFrame(r));
@@ -56,7 +56,7 @@ export async function measure() {
   const size = `${g.order.length} nodes, ~${Math.round(words / 1000)}k words`;
   const lines: string[] = [];
   try {
-    say("Measuring — the view will move for a few seconds.");
+    const measuring = say("Measuring — the view will move for a few seconds.");
     // save
     const saves = [];
     for (let i = 0; i < 3; i++) {
@@ -92,6 +92,7 @@ export async function measure() {
       camera.set(view);
     }
     for (const l of lines) log("bench", `${size}: ${l}`);
+    hush(measuring);
     say(`${size} — ${lines.join(" · ")}. In the log too.`);
   } catch (e) {
     log("bench", `failed: ${String(e).slice(0, 200)}`, "warn");

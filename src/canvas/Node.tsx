@@ -1,9 +1,9 @@
-import { memo, useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
+import { memo, useEffect, useMemo, useRef, type PointerEvent as ReactPointerEvent } from "react";
 import { Icon, PopUpIcon, ChevronRightIcon, ImageIcon } from "../icons";
 import { thumbFor, assets } from "../state/assets";
 import { KINDS } from "../graph/kinds";
 import { FieldRow } from "../shell/Fields";
-import { graph, inputs, outputs, updateData, childCount, childrenOf, measure, setWidth, takeOutput, type GraphNode, type PortRef } from "../state/graph";
+import { graph, inputs, outputs, updateData, childCount, childrenOf, measure, setWidth, takeOutput, paginate, type GraphNode, type PortRef } from "../state/graph";
 import { camera, toWorld } from "./camera";
 import { setOnField, giveLook } from "../state/remix";
 import { jobs, jobFor, partialFor } from "../state/jobs";
@@ -391,26 +391,27 @@ function PageBody({ node }: { node: GraphNode }) {
 }
 
 /** A chapter on the field: a sheet with its pages stacked under it — its
- *  summary, its contents in order, and the count. Enter it and the pages
- *  are the field. */
+ *  summary, then its contents the way a book lists them: the pages its
+ *  words lay out into (D1: pages are a layout, never cards), how each
+ *  opens, where it falls; and the count. Enter it to write. */
 const SHOWN = 5;
 function ChapterBody({ node }: { node: GraphNode }) {
-  const g = graph.use();
-  const pages = childrenOf(g, node.id).map((id) => g.nodes[id]).filter((n) => n.kind === "page").sort((a, b) => a.seq - b.seq);
-  const words = pages.reduce((n, p) => n + countWords(String(p.data.text ?? ""), formOf(p.data)), 0);
+  const j = jobs.use();
+  const partial = partialFor(j, node.id);
+  const text = String(node.data.text ?? "") + (partial ? `\n\n${partial}` : "");
+  const pages = useMemo(() => paginate(text), [text]);
+  const words = countWords(text);
   const summary = String(node.data.summary ?? "");
   return (
     <div className="node-body node-stack">
       {summary && <p className="stack-line selectable">{summary}</p>}
       {pages.length ? (
-        // its contents, the way a book lists them: the page's name, how it
-        // opens, and where it falls
         <ol className="toc">
           {pages.slice(0, SHOWN).map((p, i) => (
-            <li key={p.id} className="toc-row">
+            <li key={i} className="toc-row">
               <span className="toc-what">
-                <b>{p.title}</b>
-                <span>{plain(String(p.data.text ?? ""), formOf(p.data)).trim().split("\n")[0] || "Not begun"}</span>
+                <b>Page {i + 1}</b>
+                <span>{plain(p).trim().split("\n")[0] || "…"}</span>
               </span>
               <span className="toc-n px">{i + 1}</span>
             </li>
@@ -418,10 +419,10 @@ function ChapterBody({ node }: { node: GraphNode }) {
           {pages.length > SHOWN && <li className="toc-more">and {pages.length - SHOWN} more</li>}
         </ol>
       ) : (
-        <div className="stack-none">No pages yet. Enter it to begin one.</div>
+        <div className="stack-none">Not begun. Enter it to write.</div>
       )}
       <div className="sheet-foot px">
-        <span>{pages.length ? `${pages.length} ${pages.length === 1 ? "page" : "pages"}${words ? ` · ${fmtCount(words)} words` : ""}` : ""}</span>
+        <span>{partial !== undefined ? "writing…" : pages.length ? `${pages.length} ${pages.length === 1 ? "page" : "pages"} · ${fmtCount(words)} words` : ""}</span>
       </div>
     </div>
   );

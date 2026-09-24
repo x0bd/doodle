@@ -12,7 +12,10 @@ export type NodeKind = "model" | "prompt" | "generate" | "preview" | "character"
  *  into on the field, they open */
 export const WRITTEN = new Set<NodeKind>(["page", "chapter", "prompt", "note"]);
 /** the kinds that are a place — entered, they are a field of what they hold */
-export const PLACES = new Set<NodeKind>(["chapter"]);
+/** Kinds that are a field when entered, rather than a document. The book is
+ *  one (the root); since D1 a chapter is written in, not walked around —
+ *  the set waits for the inspiration board (M3.3). */
+export const PLACES = new Set<NodeKind>([]);
 export type PortType = "model" | "text" | "image";
 
 export interface Port {
@@ -250,11 +253,11 @@ export const KINDS: Record<NodeKind, KindDef> = {
   chapter: {
     kind: "chapter",
     title: "Chapter",
-    note: "Pages, in order. Enter it and they are the field.",
-    inputs: [],
+    note: "A chapter of the book: its words, and what it holds. Enter it to write.",
+    inputs: [{ id: "text", name: "text", type: "text" }],
     outputs: [{ id: "text", name: "text", type: "text" }],
     size: { w: 280, h: 236 },
-    data: { summary: "" },
+    data: { summary: "", text: "" },
     groups: [{ name: "Chapter", fields: [{ key: "summary", label: "In a line", type: "text", rows: 3 }] }],
   },
 };

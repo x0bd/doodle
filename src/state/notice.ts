@@ -17,8 +17,13 @@ export interface Notice {
 export const notices = createStore<Notice[]>([]);
 let seq = 0;
 
-export function say(text: string, action?: Notice["action"]) {
-  notices.set((l) => (l.some((n) => n.text === text) ? l : [...l, { id: ++seq, text, action }].slice(-4)));
+/** Say it; the id takes it back (`hush(id)`) when it stops being true. */
+export function say(text: string, action?: Notice["action"]): number {
+  const had = notices.get().find((n) => n.text === text);
+  if (had) return had.id;
+  const id = ++seq;
+  notices.set((l) => [...l, { id, text, action }].slice(-4));
+  return id;
 }
 
 /** put away the one showing (or, by id, that one) */

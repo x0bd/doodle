@@ -558,7 +558,7 @@ async function readSound(path: string): Promise<(Checked & { said?: string }) | 
   try {
     const got = check(await loadGraph(path));
     if (!got.fixes.length) return got;
-    const kept = await setAside(path).catch(() => null);
+    const kept = await setAside(path, "before").catch(() => null);
     const list = got.fixes.length > 1 ? `${got.fixes.slice(0, -1).join(", ")}, and ${got.fixes.at(-1)}` : got.fixes[0];
     return { ...got, said: `“${name}” was mended as it opened — ${list}.${kept ? " The file as it was is kept beside it." : ""}` };
   } catch (e) {
@@ -571,7 +571,7 @@ async function readSound(path: string): Promise<(Checked & { said?: string }) | 
   for (const b of await listBackups(path).catch(() => [] as string[])) {
     try {
       const got = check(await readBackup(path, b));
-      const kept = await setAside(path).catch(() => null);
+      const kept = await setAside(path, "damaged").catch(() => null);
       const at = new Date(Number(/graph-(\d+)/.exec(b)?.[1] ?? 0) * 1000);
       const when = at.toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" });
       return {

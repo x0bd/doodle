@@ -44,7 +44,7 @@ export const versionRead = (dir: string, id: string) => invoke<string>("version_
  *  kept aside, the pictures nothing uses. */
 export const listBackups = (dir: string) => invoke<string[]>("list_backups", { dir });
 export const readBackup = (dir: string, name: string) => invoke<string>("read_backup", { dir, name });
-export const setAside = (dir: string) => invoke<string | null>("set_aside", { dir });
+export const setAside = (dir: string, why: "damaged" | "before") => invoke<string | null>("set_aside", { dir, why });
 export const unusedAssets = (dir: string) => invoke<{ files: string[]; bytes: number }>("unused_assets", { dir });
 export const trashUnusedAssets = (dir: string) => invoke<number>("trash_unused_assets", { dir });
 

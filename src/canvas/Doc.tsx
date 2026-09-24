@@ -233,11 +233,11 @@ export function Doc({ id }: { id: string }) {
           </section>
         ))}
 
-        {node.kind === "page" && <Turn node={node} />}
+        {(node.kind === "page" || node.kind === "chapter") && <Turn node={node} />}
 
         <footer className="paper-below">
           <Section
-            name={node.kind === "prompt" ? "Beats" : "Notes"}
+            name={node.kind === "prompt" || node.kind === "chapter" ? "Beats" : "Notes"}
             note={kids.length ? (node.kind === "prompt" ? "In order. Each opens as its own page." : "Each opens as its own page.") : undefined}
             action={
               <button className="pill-icon sm" aria-label={node.kind === "prompt" ? "Add a beat" : "Add a note"} title={node.kind === "prompt" ? "A beat" : "A note"} onClick={addNote}>
@@ -279,11 +279,11 @@ function Turn({ node }: { node: GraphNode }) {
   const n = siblings().length;
   const go = (dir: 1 | -1) => step(dir, () => requestAnimationFrame(fitAll));
   const newPage = () => {
-    const pages = childrenOf(g, node.parent).map((id) => g.nodes[id]).filter((p) => p.kind === "page");
-    const last = pages.reduce<GraphNode | undefined>((m, p) => (!m || p.x > m.x ? p : m), undefined);
-    const page = makeNode("page", last ? last.x + last.w + 40 : 60, last ? last.y : 60, { parent: node.parent, title: `Page ${pages.length + 1}` });
-    addNode(page);
-    enter(page.id, () => requestAnimationFrame(fitAll));
+    const same = childrenOf(g, node.parent).map((id) => g.nodes[id]).filter((p) => p.kind === node.kind);
+    const last = same.reduce<GraphNode | undefined>((m, p) => (!m || p.x > m.x ? p : m), undefined);
+    const next = makeNode(node.kind, last ? last.x + last.w + 40 : 60, last ? last.y : 60, { parent: node.parent, title: node.kind === "chapter" ? `Chapter ${same.length + 1}` : `Page ${same.length + 1}` });
+    addNode(next);
+    enter(next.id, () => requestAnimationFrame(fitAll));
   };
   return (
     <nav className="paper-turn" aria-label="Pages">
@@ -300,9 +300,9 @@ function Turn({ node }: { node: GraphNode }) {
           <Icon icon={ChevronRightIcon} size={12} strokeWidth={2.2} />
         </button>
       ) : (
-        <button className="turn" onClick={newPage} title="A new page after this one">
+        <button className="turn" onClick={newPage} title={`A new ${node.kind} after this one`}>
           <Icon icon={PlusIcon} size={12} strokeWidth={2.4} />
-          New page
+          New {node.kind}
         </button>
       )}
     </nav>
@@ -402,6 +402,7 @@ function Body({ node }: { node: GraphNode }) {
     case "prompt":
     case "note":
     case "page":
+    case "chapter":
       return <Prose node={node} />;
     case "location":
     case "character":
@@ -551,8 +552,12 @@ function Body({ node }: { node: GraphNode }) {
 export function Prose({ node, field = "text", focus = true }: { node: GraphNode; field?: string; focus?: boolean }) {
   const j = jobs.use();
   const g = graph.use();
-  const partial = node.kind === "page" ? partialFor(j, node.id) : undefined;
-  const value = partial ?? String(node.data[field] ?? "");
+  // a writer at work: a page shows its words as they come; a chapter shows
+  // them after its own, where they will land
+  const arriving = node.kind === "page" || node.kind === "chapter" ? partialFor(j, node.id) : undefined;
+  const own = String(node.data[field] ?? "");
+  const partial = arriving === undefined ? undefined : node.kind === "chapter" && own.trim() ? `${own.trim()}\n\n${arriving}` : arriving;
+  const value = partial ?? own;
   const form = field === "text" ? formOf(node.data) : "prose";
   const set = (v: string) => updateData(node.id, { [field]: v });
   const [sel, setSel] = useState<Picked | null>(null);
@@ -599,7 +604,7 @@ export function Prose({ node, field = "text", focus = true }: { node: GraphNode;
       placeholder={
         form === "screenplay"
           ? "INT. SOMEWHERE — NIGHT"
-          : node.kind === "page"
+          : node.kind === "page" || node.kind === "chapter"
             ? "Start writing…"
             : "Write it the way you would say it. @ names a character, a style, a shot. Expand it from the bar when it is enough."
       }
