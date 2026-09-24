@@ -26,6 +26,8 @@ export interface UiState {
   read: boolean;
   /** Focus: only the words (M2.4) — never remembered */
   focusing: boolean;
+  /** find and replace across the book (M2.6) — never remembered */
+  find: boolean;
   /** in Focus, the paragraphs around the caret's step back */
   dim: boolean;
   /** the map, in the corner of the field */
@@ -36,12 +38,12 @@ export interface UiState {
 }
 
 const KEY = "doodle.ui.v1";
-const base: UiState = { navigator: true, inspector: true, theme: "dark", motion: "full", settings: false, chooser: false, palette: false, lens: false, shortcuts: false, bar: true, ask: false, read: false, focusing: false, dim: true, map: false, drawWith: "mock", writeWith: "mock" };
+const base: UiState = { navigator: true, inspector: true, theme: "dark", motion: "full", settings: false, chooser: false, palette: false, lens: false, shortcuts: false, bar: true, ask: false, read: false, focusing: false, find: false, dim: true, map: false, drawWith: "mock", writeWith: "mock" };
 
 function load(): UiState {
   try {
     const raw = localStorage.getItem(KEY);
-    return raw ? { ...base, ...JSON.parse(raw), settings: false, chooser: false, palette: false, lens: false, shortcuts: false, bar: true, ask: false, read: false, focusing: false } : base;
+    return raw ? { ...base, ...JSON.parse(raw), settings: false, chooser: false, palette: false, lens: false, shortcuts: false, bar: true, ask: false, read: false, focusing: false, find: false } : base;
   } catch {
     return base;
   }
@@ -60,7 +62,7 @@ dark.addEventListener("change", apply);
 apply();
 
 ui.subscribe(() => {
-  const { settings: _settings, chooser: _chooser, palette: _palette, lens: _lens, shortcuts: _shortcuts, bar: _bar, ask: _ask, read: _read, focusing: _focusing, ...rest } = ui.get();
+  const { settings: _settings, chooser: _chooser, palette: _palette, lens: _lens, shortcuts: _shortcuts, bar: _bar, ask: _ask, read: _read, focusing: _focusing, find: _find, ...rest } = ui.get();
   try {
     localStorage.setItem(KEY, JSON.stringify(rest));
   } catch {
@@ -105,3 +107,5 @@ export const toggleMap = () => ui.set((s) => ({ ...s, map: !s.map }));
 /** Focus is for writing: in and out, the caret and the scroll where they were */
 export const setFocusing = (focusing: boolean) => ui.set((s) => ({ ...s, focusing }));
 export const setDim = (dim: boolean) => ui.set((s) => ({ ...s, dim }));
+export const openFind = () => ui.set((s) => ({ ...s, find: true }));
+export const closeFind = () => ui.set((s) => ({ ...s, find: false }));

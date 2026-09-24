@@ -399,7 +399,7 @@ function ChapterBody({ node }: { node: GraphNode }) {
   const j = jobs.use();
   const partial = partialFor(j, node.id);
   const text = String(node.data.text ?? "") + (partial ? `\n\n${partial}` : "");
-  const pages = useMemo(() => paginate(text), [text]);
+  const pages = useMemo(() => (text.trim() ? paginate(text) : []), [text]);
   const words = countWords(text);
   const summary = String(node.data.summary ?? "");
   return (

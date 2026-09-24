@@ -4,7 +4,7 @@
  * the platform already did the work.
  */
 import { listen } from "@tauri-apps/api/event";
-import { openChooser, openPalette, openSettings, openShortcuts, toggleInspector, toggleNavigator, togglePanes, toggleTheme, ui, setFocusing } from "../state/ui";
+import { openChooser, openPalette, openSettings, openShortcuts, toggleInspector, toggleNavigator, togglePanes, toggleTheme, ui, setFocusing, openFind } from "../state/ui";
 import { say } from "../state/notice";
 
 /** View › Focus: only while writing — elsewhere it says where it works */
@@ -59,6 +59,7 @@ export const actions: Record<string, () => void> = {
   "edit.redo": () => editorRedo() || (typing() ? document.execCommand("redo") : redo()),
   "edit.duplicate": () => !typing() && duplicateSelected(),
   "edit.delete": () => !typing() && deleteSelected(),
+  "edit.find": openFind,
   "edit.select-all": () => (typing() ? document.execCommand("selectAll") : selectAll()),
   "graph.run": () => enqueue(),
   "graph.stop": clearQueue,
@@ -117,6 +118,7 @@ function devKeys() {
       : k === "a" ? "edit.select-all"
       : k === "e" && e.shiftKey ? "file.export"
       : k === "f" && e.shiftKey ? "view.focus"
+      : k === "f" ? "edit.find"
       : k === "s" ? "file.save"
       : k === "n" ? "file.new"
       : k === "k" ? "view.search"

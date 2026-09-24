@@ -17,6 +17,7 @@ import { Palette } from "./shell/Palette";
 import { Shortcuts } from "./shell/Shortcuts";
 import { Notice } from "./shell/Notice";
 import { Versions } from "./shell/Versions";
+import { Find } from "./shell/Find";
 import { onFileDrop, onOpened } from "./platform/fs";
 import { attachFiles, attachTo } from "./state/assets";
 import { nav, reading } from "./state/nav";
@@ -109,6 +110,7 @@ export function App() {
       <Palette />
       <Shortcuts />
       <Versions />
+      <Find />
       <Notice />
     </div>
   );

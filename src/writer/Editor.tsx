@@ -228,6 +228,9 @@ interface Props {
   gutter?: boolean;
   /** Focus (M2.4): the caret's line kept at the same height as you write */
   typewriter?: boolean;
+  /** a passage to select and bring into view, by its place in the plain
+   *  words — a find's hit (M2.6); a new `key` asks again */
+  reveal?: { start: number; end: number; key: number };
 }
 
 /** Keep the caret's line two fifths of the way down the page that scrolls
@@ -435,6 +438,20 @@ export function Editor(props: Props) {
     const v = view.current;
     if (v) v.dispatch(v.state.tr.setMeta("outside", true));
   }, [props.ties, props.lit, props.names, props.readOnly, props.placeholder]);
+
+  // a passage asked for: selected, in view, the caret in the words
+  useEffect(() => {
+    const v = view.current;
+    const r = props.reveal;
+    if (!v || !r) return;
+    const pl = plainOf(v.state.doc);
+    const a = toPos(pl, r.start);
+    const b = toPos(pl, r.end);
+    v.dispatch(v.state.tr.setSelection(TextSelection.create(v.state.doc, a, Math.max(a, b))).scrollIntoView().setMeta("outside", true));
+    v.focus();
+    requestAnimationFrame(() => v.dom.querySelector(".ProseMirror-selectednode, .here")?.scrollIntoView({ block: "center" }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.reveal?.key]);
 
   // into Focus or out of it, the caret's line where the eye is
   useEffect(() => {

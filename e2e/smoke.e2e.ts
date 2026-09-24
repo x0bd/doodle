@@ -106,3 +106,31 @@ test("goals: today's words follow the writing; a daily goal fills the ring", asy
   const dash = await page.locator(".goal-fill").getAttribute("stroke-dasharray");
   expect(Number(dash!.split(" ")[0])).toBeGreaterThan(0);
 });
+
+test("find and replace across the book: a rename everywhere, one undo, a hit shown in its words", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /The keeper's daughter/ }).click();
+  await page.keyboard.press("Meta+f");
+  await page.getByLabel("Find", { exact: true }).fill("Mara");
+  await page.getByRole("button", { name: "Whole words" }).click();
+  await page.getByRole("button", { name: "Aa" }).click();
+  const count = Number(await page.locator(".find-n").textContent());
+  expect(count).toBeGreaterThan(3);
+  await page.getByLabel("Replace with").fill("Maren");
+  await page.getByRole("button", { name: "Replace all" }).click();
+  await expect(page.locator(".find-n")).toHaveText("0");
+  await expect(page.locator(".notice")).toContainText(`Replaced ${count}`);
+  await expect(page.locator('[data-node="c1"]')).toContainText("Maren");
+  // one step back puts every one of them back
+  await page.keyboard.press("Escape");
+  await page.locator(".stage").click({ position: { x: 20, y: 400 } });
+  await page.keyboard.press("Meta+z");
+  await expect(page.locator('[data-node="c1"]')).toContainText("Mara");
+  await expect(page.locator('[data-node="c1"]')).not.toContainText("Maren");
+  // a hit goes to its words, selected
+  await page.keyboard.press("Meta+f");
+  await page.getByLabel("Find", { exact: true }).fill("tarred string");
+  await page.locator(".find-go").first().click();
+  await expect(page.locator(".docpage .pm").first()).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.getSelection()?.toString())).toBe("tarred string");
+});

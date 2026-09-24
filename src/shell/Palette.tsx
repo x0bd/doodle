@@ -5,7 +5,7 @@ import { nav, enter, riseTo } from "../state/nav";
 import { fitRect } from "../canvas/camera";
 import { screenRect, fitAll } from "../canvas/view";
 import { painted } from "../platform/log";
-import { ui, closePalette, openChooser, openSettings, showBar } from "../state/ui";
+import { ui, closePalette, openChooser, openSettings, showBar, openFind } from "../state/ui";
 import { enqueue } from "../state/jobs";
 import { exportText, exportArchiveFile, importArchiveFile, tidyAssets, openSample } from "../state/doc";
 import { openVersions, keepVersionHere } from "../state/versions";
@@ -48,6 +48,7 @@ export function Palette() {
       { kind: "cmd", id: "versions", label: "Versions…", icon: PageIcon, run: () => openVersions() },
       { kind: "cmd", id: "keep-version", label: "Keep a version", icon: SaveIcon, run: () => void keepVersionHere() },
       { kind: "cmd", id: "tidy", label: "Tidy unused pictures…", icon: SaveIcon, run: () => void tidyAssets() },
+      { kind: "cmd", id: "find", label: "Find and replace…", icon: SearchIcon, run: openFind },
       { kind: "cmd", id: "sample", label: "Open the sample book", icon: PageIcon, run: () => void openSample().then(() => painted()).then(fitAll) },
       { kind: "cmd", id: "measure", label: "Measure performance", icon: FitIcon, run: () => void measure() },
     ];

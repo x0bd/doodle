@@ -8,6 +8,7 @@ import { ideas, ideasFor, keepIdea, keepAllIdeas, dropIdea, dismissIdeas } from 
 import { KINDS, type NodeKind } from "../graph/kinds";
 import { graph, updateData, rename, childrenOf, makeNode, addNode, takeOutput, type GraphNode } from "../state/graph";
 import { ui } from "../state/ui";
+import { reveal } from "../state/reveal";
 import { drafts, draftsFor, accept, reject, cancel, proseKey } from "../state/drafts";
 import { urlFor, thumbFor, assets } from "../state/assets";
 import { enter, step, sibling, siblings } from "../state/nav";
@@ -573,6 +574,21 @@ function Body({ node }: { node: GraphNode }) {
 export function Prose({ node, field = "text", focus = true }: { node: GraphNode; field?: string; focus?: boolean }) {
   const j = jobs.use();
   const focusing = ui.use((u) => u.focusing);
+  // a find's hit in these words: where it falls in the plain words, for the writer
+  const asked = reveal.use((r) => (r && r.node === node.id && field === "text" ? r : null));
+  const shown = useMemo(() => {
+    if (!asked) return undefined;
+    const raw = String(node.data.text ?? "");
+    const form = formOf(node.data);
+    const start = plain(raw.slice(0, asked.start), form).length;
+    const hit = plain(raw.slice(asked.start, asked.end), form).trim();
+    const words = plain(raw, form);
+    // the hit, found again near where it should be in the plain words
+    const at = words.indexOf(hit, Math.max(0, start - 8));
+    const from = at < 0 ? start : at;
+    return { start: from, end: from + hit.length, key: asked.key };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [asked?.key]);
   const g = graph.use();
   // a writer at work: a page shows its words as they come; a chapter shows
   // them after its own, where they will land
@@ -632,6 +648,7 @@ export function Prose({ node, field = "text", focus = true }: { node: GraphNode;
       }
       focusKey={focus ? node.id : false}
       typewriter={focusing}
+      reveal={shown}
       ties={ties}
       lit={lit}
       names={names}
