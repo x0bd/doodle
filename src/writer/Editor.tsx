@@ -226,6 +226,20 @@ interface Props {
   bubble?: (p: Picked) => ReactNode;
   /** the key in the margin naming the caret's block */
   gutter?: boolean;
+  /** Focus (M2.4): the caret's line kept at the same height as you write */
+  typewriter?: boolean;
+}
+
+/** Keep the caret's line two fifths of the way down the page that scrolls
+ *  it — the paper moves, the eye does not. */
+function typewrite(v: EditorView) {
+  if (!v.hasFocus()) return;
+  const stage = v.dom.closest<HTMLElement>(".stage.reading");
+  if (!stage) return;
+  const at = v.coordsAtPos(v.state.selection.head);
+  const box = stage.getBoundingClientRect();
+  const want = box.top + stage.clientHeight * 0.4;
+  stage.scrollTop += at.top - want;
 }
 
 interface Over {
@@ -329,6 +343,12 @@ export function Editor(props: Props) {
         decorations(state) {
           const { ties, lit, names, placeholder } = p.current;
           const out: Decoration[] = [];
+          // the paragraph the caret is in — what Focus leaves lit
+          const $h = state.selection.$head;
+          if ($h.depth >= 1) {
+            const start = $h.before(1);
+            out.push(Decoration.node(start, start + $h.node(1).nodeSize, { class: "here" }));
+          }
           const first = state.doc.firstChild;
           if (placeholder && state.doc.childCount === 1 && first?.isTextblock && !first.content.size)
             out.push(Decoration.node(0, first.nodeSize, { class: "is-empty", "data-placeholder": placeholder }));
@@ -384,6 +404,7 @@ export function Editor(props: Props) {
           }
         }
         report(vv);
+        if (p.current.typewriter && (tr.docChanged || tr.selectionSet)) requestAnimationFrame(() => typewrite(vv));
       },
     });
     view.current = v;
@@ -414,6 +435,12 @@ export function Editor(props: Props) {
     const v = view.current;
     if (v) v.dispatch(v.state.tr.setMeta("outside", true));
   }, [props.ties, props.lit, props.names, props.readOnly, props.placeholder]);
+
+  // into Focus or out of it, the caret's line where the eye is
+  useEffect(() => {
+    const v = view.current;
+    if (v && props.typewriter) requestAnimationFrame(() => requestAnimationFrame(() => typewrite(v)));
+  }, [props.typewriter]);
 
   // the caret in the words, at the end — nothing to click first
   useEffect(() => {

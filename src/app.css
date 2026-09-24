@@ -2007,3 +2007,25 @@ html, body, #root { height: 100%; }
 .v-back { background: var(--tint-2); color: var(--fg); border-radius: 3px; padding: 0 1px; }
 .v-since { color: var(--fg-faint); text-decoration: line-through; text-decoration-thickness: 1px; }
 .vkey { margin: 0; }
+
+/* ── Focus (M2.4): only the words. Everything else steps out of the way —
+   faded, never moved, so the words stay where they were ── */
+.win .head, .win .pane, .win .foot-l, .win .bar, .win .bar-key, .win .paper-meta, .win .paper-below, .win .paper-turn, .win .read-jump, .win .writer-gutter {
+  transition: opacity var(--base) var(--ease);
+}
+.win.focusing .head,
+.win.focusing .pane,
+.win.focusing .foot-l,
+.win.focusing .bar,
+.win.focusing .bar-key,
+.win.focusing .paper-meta,
+.win.focusing .paper-below,
+.win.focusing .paper-turn,
+.win.focusing .read-jump,
+.win.focusing .writer-gutter {
+  opacity: 0;
+  pointer-events: none;
+}
+/* the paragraph you are in, lit; the rest a step back */
+.win.focusing.dim .pm > * { transition: opacity var(--base) var(--ease); opacity: 0.28; }
+.win.focusing.dim .ProseMirror-focused > .here { opacity: 1; }

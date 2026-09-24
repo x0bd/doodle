@@ -6,7 +6,7 @@ import { Inspector } from "./shell/Inspector";
 import { Foot } from "./shell/Foot";
 import { Settings } from "./shell/Settings";
 import { Bar } from "./shell/Bar";
-import { ui, togglePanes, openChooser } from "./state/ui";
+import { ui, togglePanes, openChooser, setFocusing } from "./state/ui";
 import { listenToMenu } from "./platform/menu";
 import { listenForAgent } from "./agent/tools";
 import { doc, launch, openHandedOver, recentMenu } from "./state/doc";
@@ -26,6 +26,24 @@ export function App() {
   const focus = nav.use((n) => n.focus);
   const read = ui.use((u) => u.read);
   const writing = reading(focus, read);
+  // Focus only while writing: leaving the words leaves Focus too
+  const focusing = ui.use((u) => u.focusing) && writing;
+  const dim = ui.use((u) => u.dim);
+  useEffect(() => {
+    if (!writing && ui.get().focusing) setFocusing(false);
+  }, [writing]);
+  useEffect(() => {
+    if (!focusing) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !e.defaultPrevented) {
+        e.preventDefault();
+        e.stopPropagation();
+        setFocusing(false);
+      }
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [focusing]);
   useEffect(listenToMenu, []);
   useEffect(listenForAgent, []);
   // what the Finder opened Doodle with; else a graph that was never saved
@@ -79,7 +97,7 @@ export function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
   return (
-    <div className={`win${writing ? " writing" : ""}${navigator ? " nav-on" : ""}${inspector ? " ins-on" : ""}`}>
+    <div className={`win${writing ? " writing" : ""}${focusing ? ` focusing${dim ? " dim" : ""}` : `${navigator ? " nav-on" : ""}${inspector ? " ins-on" : ""}`}`}>
       <Canvas />
       <Head />
       {navigator && <Navigator />}

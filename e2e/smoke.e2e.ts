@@ -59,3 +59,31 @@ test("the manuscript: every chapter in one column, a jump to any, writing in it"
   await page.keyboard.type(" The name on the last line is hers.");
   await expect(two).toContainText("The name on the last line is hers.");
 });
+
+test("Focus: only the words, the line held where the eye is, and back without losing the caret", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /The keeper's daughter/ }).click();
+  await page.locator('[data-node="ch1"]').dblclick({ position: { x: 60, y: 14 } });
+  const writer = page.locator(".docpage .pm").first();
+  await writer.click();
+  await page.keyboard.press("Meta+ArrowDown");
+  await page.keyboard.press("Meta+Shift+f");
+  await expect(page.locator(".win.focusing")).toHaveCount(1);
+  await expect(page.locator(".head")).toHaveCSS("opacity", "0");
+  // the paragraph with the caret is lit, the rest stepped back
+  await expect(page.locator(".ProseMirror-focused > .here")).toHaveCSS("opacity", "1");
+  // typing keeps going, and the caret's line sits about two fifths down
+  await page.keyboard.type(" He was already awake.");
+  await page.waitForTimeout(200);
+  const where = await page.evaluate(() => {
+    const r = window.getSelection()!.getRangeAt(0).getBoundingClientRect();
+    return r.top / window.innerHeight;
+  });
+  expect(where).toBeGreaterThan(0.25);
+  expect(where).toBeLessThan(0.55);
+  // out again with Escape: the chrome back, the caret where it was
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".win.focusing")).toHaveCount(0);
+  await page.keyboard.type(" Then the stairs.");
+  await expect(writer).toContainText("He was already awake. Then the stairs.");
+});

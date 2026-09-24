@@ -87,6 +87,7 @@ pub fn build(app: &App) -> tauri::Result<Menu<Wry>> {
         .item(&item("view.navigator", "Navigator", Some("Alt+CmdOrCtrl+1"))?)
         .item(&item("view.inspector", "Inspector", Some("Alt+CmdOrCtrl+2"))?)
         .item(&item("view.panes", "Hide Panes", None)?)
+        .item(&item("view.focus", "Focus", Some("Shift+CmdOrCtrl+F"))?)
         .separator()
         .item(&item("view.theme", "Light Appearance", None)?)
         .separator()

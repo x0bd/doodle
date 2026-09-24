@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Icon, CloseIcon, CheckIcon, GeneralIcon, AppearanceIcon, AboutIcon, ProvidersIcon } from "../icons";
-import { ui, closeSettings, setTheme, setMotion, openShortcuts, type Theme } from "../state/ui";
+import { ui, closeSettings, setTheme, setMotion, setDim, openShortcuts, type Theme } from "../state/ui";
 import { providers } from "../providers/registry";
 import { probe, type Found } from "../providers/found";
 import { inTauri } from "../platform/fs";
@@ -76,6 +76,7 @@ export function Settings() {
 
 function General() {
   const motion = ui.use((s) => s.motion);
+  const dim = ui.use((s) => s.dim);
   return (
     <>
     <section className="grp">
@@ -87,6 +88,21 @@ function General() {
             <p className="group-note">Every key Doodle answers to, on one sheet.</p>
           </div>
           <button className="pill" onClick={() => (closeSettings(), openShortcuts())}>Show</button>
+        </div>
+      </div>
+    </section>
+    <section className="grp">
+      <p className="group-head">Writing</p>
+      <div className="group">
+        <div className="group-row">
+          <div className="group-what">
+            <p className="group-name">Focus</p>
+            <p className="group-note">⇧⌘F while writing: only the words, the line you are on held where your eye is. The paragraphs around yours can step back.</p>
+          </div>
+          <div className="seg" role="radiogroup" aria-label="In Focus">
+            <button className={`seg-btn${dim ? " on" : ""}`} role="radio" aria-checked={dim} onClick={() => setDim(true)}>Dim the rest</button>
+            <button className={`seg-btn${!dim ? " on" : ""}`} role="radio" aria-checked={!dim} onClick={() => setDim(false)}>All lit</button>
+          </div>
         </div>
       </div>
     </section>

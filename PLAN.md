@@ -160,7 +160,7 @@ Built on **D1** (decided: the chapter is the manuscript).
 | M2.1 ✅ | **Chapter as manuscript** (D1): one continuous document per chapter; scenes as sections (scene break `* * *` and `##`); migration of existing page-books | Migrate the sample book; no word lost (round-trip test); beats still tied. |
 | M2.2 ✅ | **Manuscript view**: the whole book as one scrolling, *editable* column (not only Read): chapter headings, jump list, virtualised so 120k words scroll smoothly | Type in Chapter 12 while scrolled from Chapter 1; 60 fps scroll. |
 | M2.3 ✅ | **Pages as layout**: pages computed from the words (for the field's sheets, Read, PDF), never edited as nodes; page numbers stable for a given layout | Zoom out on a chapter: its sheets show; edit a word: the sheets reflow. |
-| M2.4 | **Focus mode**: only the words; typewriter scrolling; dim everything but the paragraph (optional); ⌘⇧F | Toggle in and out without losing caret or scroll. |
+| M2.4 ✅ | **Focus mode**: only the words; typewriter scrolling; dim everything but the paragraph (optional); ⌘⇧F | Toggle in and out without losing caret or scroll. |
 | M2.5 | **Goals and stats**: words today, per chapter, per book; a daily goal; a streak; reading time | Goal ring fills as you write; resets at midnight local. |
 | M2.6 | **Find and replace across the book** with regex, whole word, case; preview of every hit; one journal entry | Replace a name in 40 places, undo in one step. |
 | M2.7 | **Comments** in the margin, tied to passages (anchors); resolve/reopen | A comment survives edits around its passage. |

@@ -24,6 +24,10 @@ export interface UiState {
   ask: boolean;
   /** a place read as one column instead of a field — never remembered */
   read: boolean;
+  /** Focus: only the words (M2.4) — never remembered */
+  focusing: boolean;
+  /** in Focus, the paragraphs around the caret's step back */
+  dim: boolean;
   /** the map, in the corner of the field */
   map: boolean;
   /** who draws and who writes when Queue is pressed */
@@ -32,12 +36,12 @@ export interface UiState {
 }
 
 const KEY = "doodle.ui.v1";
-const base: UiState = { navigator: true, inspector: true, theme: "dark", motion: "full", settings: false, chooser: false, palette: false, lens: false, shortcuts: false, bar: true, ask: false, read: false, map: false, drawWith: "mock", writeWith: "mock" };
+const base: UiState = { navigator: true, inspector: true, theme: "dark", motion: "full", settings: false, chooser: false, palette: false, lens: false, shortcuts: false, bar: true, ask: false, read: false, focusing: false, dim: true, map: false, drawWith: "mock", writeWith: "mock" };
 
 function load(): UiState {
   try {
     const raw = localStorage.getItem(KEY);
-    return raw ? { ...base, ...JSON.parse(raw), settings: false, chooser: false, palette: false, lens: false, shortcuts: false, bar: true, ask: false, read: false } : base;
+    return raw ? { ...base, ...JSON.parse(raw), settings: false, chooser: false, palette: false, lens: false, shortcuts: false, bar: true, ask: false, read: false, focusing: false } : base;
   } catch {
     return base;
   }
@@ -56,7 +60,7 @@ dark.addEventListener("change", apply);
 apply();
 
 ui.subscribe(() => {
-  const { settings: _settings, chooser: _chooser, palette: _palette, lens: _lens, shortcuts: _shortcuts, bar: _bar, ask: _ask, read: _read, ...rest } = ui.get();
+  const { settings: _settings, chooser: _chooser, palette: _palette, lens: _lens, shortcuts: _shortcuts, bar: _bar, ask: _ask, read: _read, focusing: _focusing, ...rest } = ui.get();
   try {
     localStorage.setItem(KEY, JSON.stringify(rest));
   } catch {
@@ -98,3 +102,6 @@ export const toggleBar = () => ui.set((s) => ({ ...s, bar: !s.bar }));
 export const toggleRead = () => ui.set((s) => ({ ...s, read: !s.read, bar: s.read }));
 export const setRead = (read: boolean) => ui.set((s) => ({ ...s, read, bar: !read }));
 export const toggleMap = () => ui.set((s) => ({ ...s, map: !s.map }));
+/** Focus is for writing: in and out, the caret and the scroll where they were */
+export const setFocusing = (focusing: boolean) => ui.set((s) => ({ ...s, focusing }));
+export const setDim = (dim: boolean) => ui.set((s) => ({ ...s, dim }));

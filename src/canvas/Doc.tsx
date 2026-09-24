@@ -7,6 +7,7 @@ import { shots, proposalsFor, keepShot, keepAll, dropShot, dismiss } from "../st
 import { ideas, ideasFor, keepIdea, keepAllIdeas, dropIdea, dismissIdeas } from "../state/ideas";
 import { KINDS, type NodeKind } from "../graph/kinds";
 import { graph, updateData, rename, childrenOf, makeNode, addNode, takeOutput, type GraphNode } from "../state/graph";
+import { ui } from "../state/ui";
 import { drafts, draftsFor, accept, reject, cancel, proseKey } from "../state/drafts";
 import { urlFor, thumbFor, assets } from "../state/assets";
 import { enter, step, sibling, siblings } from "../state/nav";
@@ -551,6 +552,7 @@ function Body({ node }: { node: GraphNode }) {
 
 export function Prose({ node, field = "text", focus = true }: { node: GraphNode; field?: string; focus?: boolean }) {
   const j = jobs.use();
+  const focusing = ui.use((u) => u.focusing);
   const g = graph.use();
   // a writer at work: a page shows its words as they come; a chapter shows
   // them after its own, where they will land
@@ -609,6 +611,7 @@ export function Prose({ node, field = "text", focus = true }: { node: GraphNode;
             : "Write it the way you would say it. @ names a character, a style, a shot. Expand it from the bar when it is enough."
       }
       focusKey={focus ? node.id : false}
+      typewriter={focusing}
       ties={ties}
       lit={lit}
       names={names}

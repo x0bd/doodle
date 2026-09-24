@@ -4,10 +4,17 @@
  * the platform already did the work.
  */
 import { listen } from "@tauri-apps/api/event";
-import { openChooser, openPalette, openSettings, openShortcuts, toggleInspector, toggleNavigator, togglePanes, toggleTheme } from "../state/ui";
+import { openChooser, openPalette, openSettings, openShortcuts, toggleInspector, toggleNavigator, togglePanes, toggleTheme, ui, setFocusing } from "../state/ui";
+import { say } from "../state/notice";
+
+/** View › Focus: only while writing — elsewhere it says where it works */
+function toggleFocus() {
+  if (!reading(nav.get().focus, ui.get().read)) return void say("Focus is for writing — open a chapter or a page, or the manuscript, first.");
+  setFocusing(!ui.get().focusing);
+}
 import { fitAll, zoomActual, zoomIn, zoomOut } from "../canvas/view";
 import { painted } from "./log";
-import { step } from "../state/nav";
+import { step, nav, reading } from "../state/nav";
 import { openDialog, save, saveAs, duplicate, reveal, exportText, exportArchiveFile, importArchiveFile, openRecent, clearRecent, tidyAssets, openSample } from "../state/doc";
 import { redo, undo } from "../state/history";
 import { deleteSelected, duplicateSelected, selectAll } from "../state/graph";
@@ -62,6 +69,7 @@ export const actions: Record<string, () => void> = {
   "view.navigator": toggleNavigator,
   "view.inspector": toggleInspector,
   "view.panes": togglePanes,
+  "view.focus": toggleFocus,
   "view.theme": toggleTheme,
 };
 
@@ -108,6 +116,7 @@ function devKeys() {
       : k === "d" ? "edit.duplicate"
       : k === "a" ? "edit.select-all"
       : k === "e" && e.shiftKey ? "file.export"
+      : k === "f" && e.shiftKey ? "view.focus"
       : k === "s" ? "file.save"
       : k === "n" ? "file.new"
       : k === "k" ? "view.search"
