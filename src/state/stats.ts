@@ -56,6 +56,15 @@ export function noted(s: Stats, total: number, today = dayKey()): Stats {
   return { ...s, days };
 }
 
+/** Words that came into the book without being written today (an import):
+ *  today's base rises with them, so they do not count toward the goal.
+ *  Tally first (`noted`) with the book as it stood before they came. */
+export function brought(s: Stats, words: number, today = dayKey()): Stats {
+  const had = s.days[today];
+  if (!had || !words) return s;
+  return { ...s, days: { ...s.days, [today]: { base: had.base + words, end: had.end + words } } };
+}
+
 export const written = (d: Day | undefined) => (d ? Math.max(0, d.end - d.base) : 0);
 
 /** words written on a day */

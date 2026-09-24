@@ -70,6 +70,20 @@ export async function pickOpenFile(ext: string, title: string): Promise<string |
   return typeof p === "string" ? p : null;
 }
 
+/** What Doodle can import into chapters (PLAN.md M2.9). */
+export const IMPORTS = ["md", "markdown", "txt", "fountain", "docx"];
+export const importable = (path: string) => /\.(md|markdown|mdown|txt|text|fountain|spmd|docx)$/i.test(path);
+
+/** Ask for a manuscript to import. */
+export async function pickImport(): Promise<string | null> {
+  const p = await open({ multiple: false, title: "Import", filters: [{ name: "A manuscript", extensions: IMPORTS }] });
+  return typeof p === "string" ? p : null;
+}
+
+export interface ImportedText { name: string; kind: string; text: string }
+/** A file's words as Markdown (Fountain as it is), read by `import.rs`. */
+export const readImport = (path: string) => invoke<ImportedText>("read_import", { path });
+
 /** Ask where to put a file that is not the document — an export. */
 export async function pickSaveFile(name: string, ext: string, title: string): Promise<string | null> {
   const p = await save({ defaultPath: `${name}.${ext}`, title, filters: [{ name: ext.toUpperCase(), extensions: [ext] }] });

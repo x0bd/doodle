@@ -17,6 +17,7 @@ import { painted } from "./log";
 import { step, nav, reading } from "../state/nav";
 import { openDialog, save, saveAs, duplicate, reveal, exportText, exportArchiveFile, importArchiveFile, openRecent, clearRecent, tidyAssets, openSample } from "../state/doc";
 import { redo, undo } from "../state/history";
+import { importDialog } from "../state/importing";
 import { deleteSelected, duplicateSelected, selectAll } from "../state/graph";
 import { clearQueue, enqueue } from "../state/jobs";
 import { inTauri, revealPath } from "./fs";
@@ -38,6 +39,7 @@ export const actions: Record<string, () => void> = {
   "file.open": () => void openDialog(),
   "file.save": () => void save(),
   "file.save-as": () => void saveAs(),
+  "file.import": () => void importDialog(),
   "file.export": () => void exportText(),
   "file.archive": () => void exportArchiveFile(),
   "file.unarchive": () => void importArchiveFile(),

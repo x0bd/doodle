@@ -165,7 +165,7 @@ Built on **D1** (decided: the chapter is the manuscript).
 | M2.6 ✅ | **Find and replace across the book** with regex, whole word, case; preview of every hit; one journal entry | Replace a name in 40 places, undo in one step. |
 | M2.7 ✅ | **Comments** in the margin, tied to passages (anchors); resolve/reopen | A comment survives edits around its passage. |
 | M2.8 ✅ | **Spelling and grammar**: macOS spellcheck in the editor (on), a per-book dictionary (character and place names added automatically) | Character names are never flagged. |
-| M2.9 ◐ | **Import into chapters** (from M3.1's readers): Markdown, `.docx`, `.fountain`, `.txt` → chapters split at headings | A 30-chapter Markdown file becomes 30 chapters. |
+| M2.9 ✅ | **Import into chapters** (from M3.1's readers): Markdown, `.docx`, `.fountain`, `.txt` → chapters split at headings | A 30-chapter Markdown file becomes 30 chapters. |
 
 ### M3 — Material in: import and the inspiration board — *L*
 

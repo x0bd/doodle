@@ -26,8 +26,14 @@ export const zoomActual = () => zoomAt(screenCentre(), 1);
 
 export function fitAll() {
   const g = graph.get();
-  const focus = nav.get().focus;
-  const ids = g.selection.length ? g.selection : childrenOf(g, focus);
+  fitIds(g.selection.length ? g.selection : childrenOf(g, nav.get().focus));
+}
+
+/** everything at this level, whatever is selected */
+export const fitLevel = () => fitIds(childrenOf(graph.get(), nav.get().focus));
+
+function fitIds(ids: string[]) {
+  const g = graph.get();
   const rects: Rect[] = ids.map((id) => g.nodes[id]).filter(Boolean);
   const b = bounds(rects);
   if (b) fitRect(b, screenRect(), 120);

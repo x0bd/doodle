@@ -53,6 +53,7 @@ const GROUPS: { name: string; keys: [string, string][] }[] = [
       ["⌘K", "Search"],
       ["⌘Z · ⇧⌘Z", "Undo · redo"],
       ["⌘S · ⌘O · ⌘N", "Save · open · new"],
+      ["⇧⌘I", "Import a manuscript into chapters"],
       ["⇧⌘E", "Export as Markdown"],
       ["Tab · ⌘,", "Panes · settings"],
       ["@ in a page", "Name a thing"],

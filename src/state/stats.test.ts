@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dayKey, noted, readingTime, streak, wordsOn, type Stats } from "./stats";
+import { brought, dayKey, noted, readingTime, streak, wordsOn, type Stats } from "./stats";
 
 const on = (y: number, m: number, d: number) => new Date(y, m - 1, d, 12);
 
@@ -39,5 +39,16 @@ describe("goals and stats", () => {
     expect(readingTime(100)).toBe("1 min");
     expect(readingTime(4600)).toBe("20 min");
     expect(readingTime(134000)).toBe("9 h 43 min");
+  });
+});
+
+describe("words brought in", () => {
+  it("an import raises the day's base, so it is not today's writing", () => {
+    let s = noted({ goal: 0, days: {} }, 1000, "2026-09-24");
+    s = noted(s, 1200, "2026-09-24"); // 200 written
+    s = brought(s, 13500, "2026-09-24");
+    expect(wordsOn(s, "2026-09-24")).toBe(200);
+    s = noted(s, 14700 + 50, "2026-09-24"); // and 50 more written after
+    expect(wordsOn(s, "2026-09-24")).toBe(250);
   });
 });

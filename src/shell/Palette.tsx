@@ -9,6 +9,7 @@ import { ui, closePalette, openChooser, openSettings, showBar, openFind } from "
 import { enqueue } from "../state/jobs";
 import { exportText, exportArchiveFile, importArchiveFile, tidyAssets, openSample } from "../state/doc";
 import { openVersions, keepVersionHere } from "../state/versions";
+import { importDialog } from "../state/importing";
 import { findNodes } from "../state/search";
 import { measure } from "../state/bench";
 import { GLYPH } from "../canvas/Doc";
@@ -41,6 +42,7 @@ export function Palette() {
       { kind: "cmd", id: "new", label: "New graph…", icon: PlusIcon, run: openChooser },
       { kind: "cmd", id: "fit", label: "Fit to view", icon: FitIcon, run: fitAll },
       { kind: "cmd", id: "bar", label: "The prompt bar", icon: RunIcon, run: showBar },
+      { kind: "cmd", id: "import", label: "Import a manuscript…", icon: PageIcon, run: () => void importDialog() },
       { kind: "cmd", id: "export", label: "Export as Markdown…", icon: PageIcon, run: () => void exportText() },
       { kind: "cmd", id: "archive", label: "Archive project…", icon: SaveIcon, run: () => void exportArchiveFile() },
       { kind: "cmd", id: "unarchive", label: "Open archive…", icon: SaveIcon, run: () => void importArchiveFile() },

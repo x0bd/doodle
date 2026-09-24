@@ -18,7 +18,8 @@ import { Shortcuts } from "./shell/Shortcuts";
 import { Notice } from "./shell/Notice";
 import { Versions } from "./shell/Versions";
 import { Find } from "./shell/Find";
-import { onFileDrop, onOpened } from "./platform/fs";
+import { onFileDrop, onOpened, importable } from "./platform/fs";
+import { importFiles } from "./state/importing";
 import { attachFiles, attachTo } from "./state/assets";
 import { nav, reading } from "./state/nav";
 
@@ -69,7 +70,8 @@ export function App() {
     onOpened(() => void openHandedOver()).then((f) => (off = f));
     return () => off?.();
   }, []);
-  // images dropped on the window: onto the node under them, or onto the page being written
+  // a manuscript dropped on the window is imported into chapters; images go
+  // onto the node under them, or onto the page being written
   useEffect(() => {
     let off: (() => void) | undefined;
     onFileDrop(async (paths, at) => {
@@ -78,8 +80,11 @@ export function App() {
       const under = el?.closest<HTMLElement>("[data-node]")?.dataset.node;
       const focus = nav.get().focus;
       const target = under ?? focus;
-      if (!target) return;
-      const refs = await attachFiles(paths.filter((p) => /\.(png|jpe?g|webp|gif|avif)$/i.test(p)));
+      const pictures = paths.filter((p) => /\.(png|jpe?g|webp|gif|avif)$/i.test(p));
+      const texts = paths.filter(importable);
+      if (texts.length) await importFiles(texts);
+      if (!target || !pictures.length) return;
+      const refs = await attachFiles(pictures);
       attachTo(target, refs);
     }).then((f) => (off = f));
     return () => off?.();

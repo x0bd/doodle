@@ -10,7 +10,7 @@ import { camera } from "../canvas/camera";
 import { history, reset as resetHistory, commit, undo } from "./history";
 import { nav, resetNav } from "./nav";
 import { restoreJobs, forgetJobs } from "./jobs";
-import { inTauri, askThree, listBackups, readBackup, setAside, unusedAssets, trashUnusedAssets, recoveryAppend, recoveryRead, recoveryClear, takeOpened, setRecentMenu, loadGraph, pickOpenDir, pickOpenFile, pickSaveDir, pickSaveFile, saveGraph, graphExists, writeAsset, duplicateGraph, revealPath, writeText, exportArchive, importArchive, confirmAsk } from "../platform/fs";
+import { inTauri, importable, askThree, listBackups, readBackup, setAside, unusedAssets, trashUnusedAssets, recoveryAppend, recoveryRead, recoveryClear, takeOpened, setRecentMenu, loadGraph, pickOpenDir, pickOpenFile, pickSaveDir, pickSaveFile, saveGraph, graphExists, writeAsset, duplicateGraph, revealPath, writeText, exportArchive, importArchive, confirmAsk } from "../platform/fs";
 import { templateById, type TemplateId } from "../graph/templates";
 import { PLACES } from "../graph/kinds";
 import { prov, resetProv, rekey } from "./prov";
@@ -22,6 +22,7 @@ import { say, hushAll } from "./notice";
 import { keepDaily, loadVersions, versions } from "./versions";
 import { stats, noted as tally, bookWords } from "./stats";
 import { learned, ignored } from "./lexicon";
+import { importFiles } from "./importing";
 const versionsDir = () => versions.get().dir;
 
 export type SaveState = "idle" | "saving" | "saved" | "failed";
@@ -293,10 +294,20 @@ export async function importArchiveFile() {
   if (from) await importArchiveFrom(from);
 }
 
-/** A project or an archive the Finder handed over — the last of them, as
- *  there is one window. Says whether there was one. */
+/** What the Finder handed over while Doodle runs: a project or an archive
+ *  (the last of them, as there is one window), and any manuscripts, which
+ *  are imported into what is then open. Says whether a project was opened. */
 export async function openHandedOver(): Promise<boolean> {
   const paths = await takeOpened().catch(() => [] as string[]);
+  const texts = paths.filter(importable);
+  const opened = await openPaths(paths.filter((p) => !importable(p)));
+  if (texts.length) await importFiles(texts);
+  return opened;
+}
+
+/** The last of these projects or archives, opened. (At launch a manuscript
+ *  waits until the book it goes into is open — see `launch`.) */
+async function openPaths(paths: string[]): Promise<boolean> {
   const path = paths.at(-1);
   if (!path) return false;
   if (path.endsWith(".doodlebox")) await importArchiveFrom(path);
@@ -678,13 +689,24 @@ export function newGraph(template: TemplateId = "images") {
  *  on; else the last graph. Says whether anything opened. */
 let launched: Promise<boolean> | undefined;
 export function launch(): Promise<boolean> {
-  return (launched ??= openHandedOver().then(async (handed) => {
-    if (!handed) return (await recoverUntitled()) || restoreLast();
-    // the Finder's choice wins, but unsaved work is never hidden
-    const kept = await untitledWaiting();
-    if (kept) say(`“${kept.state.name}”, which was never saved, is kept.`, { label: "Open it", run: () => void openUntitled() });
-    return true;
-  }));
+  return (launched ??= takeOpened()
+    .catch(() => [] as string[])
+    .then(async (paths) => {
+      const texts = paths.filter(importable);
+      const handed = await openPaths(paths.filter((p) => !importable(p)));
+      let placed = true;
+      if (!handed) placed = (await recoverUntitled()) || (await restoreLast());
+      else {
+        // the Finder's choice wins, but unsaved work is never hidden
+        const kept = await untitledWaiting();
+        if (kept) say(`“${kept.state.name}”, which was never saved, is kept.`, { label: "Open it", run: () => void openUntitled() });
+      }
+      if (texts.length) {
+        await painted();
+        await importFiles(texts);
+      }
+      return placed || texts.length > 0;
+    }));
 }
 
 /** the kept never-saved graph, in place of what is open */

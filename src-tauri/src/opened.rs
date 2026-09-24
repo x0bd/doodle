@@ -1,5 +1,6 @@
 //! What the Finder hands Doodle: a project double-clicked, an archive
-//! dropped on the Dock icon, *Open With*. The platform says so through the
+//! dropped on the Dock icon, *Open With* — and a manuscript, which the page
+//! imports into chapters. The platform says so through the
 //! app delegate (`RunEvent::Opened`) — often before the page is listening,
 //! at launch — so the paths wait here until the page takes them; the `opened`
 //! event only tells it there is something to take.
@@ -15,9 +16,10 @@ use tauri::{AppHandle, Emitter, Manager, Wry};
 
 static WAITING: Mutex<Vec<String>> = Mutex::new(Vec::new());
 
-/// a project or an archive, by its name
+/// a project, an archive, or a manuscript to import, by its name
 fn ours(p: &PathBuf) -> bool {
-    matches!(p.extension().and_then(|e| e.to_str()), Some("doodle") | Some("doodlebox"))
+    let ext = p.extension().and_then(|e| e.to_str()).unwrap_or("").to_lowercase();
+    matches!(ext.as_str(), "doodle" | "doodlebox" | "md" | "markdown" | "mdown" | "txt" | "text" | "fountain" | "spmd" | "docx")
 }
 
 pub fn arrived(app: &AppHandle, paths: Vec<PathBuf>) {

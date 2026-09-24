@@ -135,3 +135,41 @@ export function chaptersFrom(kind: string, text: string, name: string): Split {
   if (kind === "txt") return { chapters: fromText(text, name), form: "prose" };
   return { chapters: fromMarkdown(text, name), form: "prose" };
 }
+
+/** the grid imported chapters are laid on: six to a row */
+export const COL = 320;
+export const ROW = 300;
+export const PER_ROW = 6;
+
+interface Box {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+const hits = (a: Box, b: Box) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+
+/**
+ * Where `count` new chapters go at the book's root: on with the book's own
+ * grid — six to a row from its first chapter, the new ones after the ones
+ * there — if nothing at the root stands in the way and they come after the
+ * last chapter in reading order; else a block of their own below
+ * everything, under the first chapter (or at the root's left).
+ */
+export function placeAt(root: (Box & { kind: string })[], count: number, size = { w: 280, h: 236 }): { x: number; y: number }[] {
+  const grid = (ox: number, oy: number, from = 0) =>
+    Array.from({ length: count }, (_, k) => ({ x: ox + ((from + k) % PER_ROW) * COL, y: oy + Math.floor((from + k) / PER_ROW) * ROW }));
+  const clear = (at: { x: number; y: number }[]) => at.every((p) => !root.some((n) => hits({ ...p, ...size }, n)));
+  const chapters = root.filter((n) => n.kind === "chapter");
+  const first = chapters[0];
+  const last = chapters.at(-1);
+  if (first && last) {
+    const on = grid(first.x, first.y, chapters.length);
+    const after = on[0].y > last.y + last.h / 2 || (Math.abs(on[0].y - last.y) < size.h / 2 && on[0].x > last.x);
+    if (after && clear(on)) return on;
+  }
+  if (!root.length) return grid(0, 0);
+  const left = chapters.length ? Math.min(...chapters.map((n) => n.x)) : Math.min(...root.map((n) => n.x));
+  const foot = Math.max(...root.map((n) => n.y + n.h));
+  return grid(left, foot + 80);
+}

@@ -44,6 +44,7 @@ pub fn build(app: &App) -> tauri::Result<Menu<Wry>> {
         .item(&item("file.keep-version", "Keep a Version", Some("Alt+CmdOrCtrl+S"))?)
         .item(&item("file.versions", "Versions…", None)?)
         .separator()
+        .item(&item("file.import", "Import…", Some("Shift+CmdOrCtrl+I"))?)
         .item(&item("file.export", "Export as Markdown…", Some("Shift+CmdOrCtrl+E"))?)
         .item(&item("file.archive", "Archive Project…", None)?)
         .item(&item("file.unarchive", "Open Archive…", None)?)
