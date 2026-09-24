@@ -7,6 +7,7 @@ mod mcp;
 mod menu;
 mod opened;
 mod recovery;
+mod spell;
 mod versions;
 mod thumbs;
 
@@ -31,6 +32,8 @@ pub fn run() {
             mcp::mcp_reply,
             opened::take_opened,
             opened::set_recent,
+            spell::spell_check,
+            spell::spell_guesses,
             recovery::recovery_append,
             recovery::recovery_read,
             recovery::recovery_clear,

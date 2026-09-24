@@ -37,6 +37,8 @@ export interface FileGraph {
   provenance?: Record<string, Prov>;
   /** the daily goal and the days written (M2.5) */
   stats?: Stats;
+  /** the words taught to the book's spelling (M2.8) */
+  words?: string[];
 }
 
 export class Unreadable extends Error {
@@ -268,6 +270,7 @@ export function check(text: string): Checked {
     bible: isObj(f.bible) ? (f.bible as unknown as Bible) : undefined,
     provenance: isObj(f.provenance) ? (f.provenance as FileGraph["provenance"]) : undefined,
     stats: isObj(f.stats) && isObj(f.stats.days) ? { goal: num(f.stats.goal, 0), days: f.stats.days as Stats["days"] } : undefined,
+    words: Array.isArray(f.words) ? f.words.filter((w): w is string => typeof w === "string") : undefined,
   };
   return { file, fixes };
 }

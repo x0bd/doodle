@@ -8,8 +8,10 @@ import { ideas, ideasFor, keepIdea, keepAllIdeas, dropIdea, dismissIdeas } from 
 import { KINDS, type NodeKind } from "../graph/kinds";
 import { graph, updateData, rename, childrenOf, makeNode, addNode, takeOutput, type GraphNode } from "../state/graph";
 import { ui } from "../state/ui";
+import { saveSoon } from "../state/doc";
 import { reveal } from "../state/reveal";
 import { picked, addComment } from "../state/comments";
+import { learned, ignored, lexicon, knows, learn, ignore } from "../state/lexicon";
 import { Margin } from "./Margin";
 import { drafts, draftsFor, accept, reject, cancel, proseKey } from "../state/drafts";
 import { urlFor, thumbFor, assets } from "../state/assets";
@@ -612,6 +614,17 @@ export function Prose({ node, field = "text", focus = true }: { node: GraphNode;
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [tieKey],
   );
+  // spelling: the Mac's checker, the book's own words left alone (M2.8)
+  const spellOn = ui.use((u) => u.spell);
+  const taught = learned.use();
+  const passed = ignored.use();
+  const words = useMemo(() => lexicon(g, taught, passed), [g, taught, passed]);
+  const wordsKey = useMemo(() => [...words].sort().join(" "), [words]);
+  const spell = useMemo(
+    () => (spellOn && field === "text" ? { known: (w: string) => knows(words, w), learn: (w: string) => (learn(w), saveSoon()), ignore, key: wordsKey } : undefined),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [spellOn, field, wordsKey],
+  );
   const nameKey = mentionables().map((n) => n.title).join("\u0000");
   const names = useMemo(() => (nameKey ? nameKey.split("\u0000") : []), [nameKey]);
   const beatFrom = (p: Picked) => {
@@ -653,6 +666,7 @@ export function Prose({ node, field = "text", focus = true }: { node: GraphNode;
       focusKey={focus ? node.id : false}
       typewriter={focusing}
       reveal={shown}
+      spell={spell}
       ties={ties}
       lit={lit}
       names={names}

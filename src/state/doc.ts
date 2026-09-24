@@ -21,6 +21,7 @@ import { delta, replay, type Tracked } from "./recovery";
 import { say, hushAll } from "./notice";
 import { keepDaily, loadVersions, versions } from "./versions";
 import { stats, noted as tally, bookWords } from "./stats";
+import { learned, ignored } from "./lexicon";
 const versionsDir = () => versions.get().dir;
 
 export type SaveState = "idle" | "saving" | "saved" | "failed";
@@ -137,6 +138,7 @@ function serialize(): string {
     bible: doc.get().bible,
     provenance: prov.get(),
     stats: stats.get(),
+    words: learned.get(),
   };
   return JSON.stringify(file, null, 2);
 }
@@ -538,6 +540,8 @@ function load(file: FileGraph, path: string | null) {
   resetHistory();
   resetProv(file.provenance ?? {});
   stats.set(tally(file.stats ?? { goal: 0, days: {} }, bookWords(graph.get())));
+  learned.set(file.words ?? []);
+  ignored.set([]);
   doc.set({ path, name: file.name ?? (path ? nameOf(path) : "Untitled"), dirty: false, save: path ? "saved" : "idle", bible: { ...EMPTY_BIBLE, ...(file.bible ?? {}) } });
 }
 
@@ -661,6 +665,8 @@ export function newGraph(template: TemplateId = "images") {
   forgetJobs();
   resetProv();
   stats.set(tally({ goal: 0, days: {} }, bookWords(graph.get())));
+  learned.set([]);
+  ignored.set([]);
   doc.set({ path: null, name: template === "sample" ? t.name : `Untitled ${t.name.toLowerCase()}`, dirty: false, save: "idle", bible: EMPTY_BIBLE });
   logUntitled();
 }

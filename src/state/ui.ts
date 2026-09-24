@@ -30,6 +30,8 @@ export interface UiState {
   find: boolean;
   /** in Focus, the paragraphs around the caret's step back */
   dim: boolean;
+  /** spelling marked as you write (M2.8) */
+  spell: boolean;
   /** the map, in the corner of the field */
   map: boolean;
   /** who draws and who writes when Queue is pressed */
@@ -38,7 +40,7 @@ export interface UiState {
 }
 
 const KEY = "doodle.ui.v1";
-const base: UiState = { navigator: true, inspector: true, theme: "dark", motion: "full", settings: false, chooser: false, palette: false, lens: false, shortcuts: false, bar: true, ask: false, read: false, focusing: false, find: false, dim: true, map: false, drawWith: "mock", writeWith: "mock" };
+const base: UiState = { navigator: true, inspector: true, theme: "dark", motion: "full", settings: false, chooser: false, palette: false, lens: false, shortcuts: false, bar: true, ask: false, read: false, focusing: false, find: false, dim: true, spell: true, map: false, drawWith: "mock", writeWith: "mock" };
 
 function load(): UiState {
   try {
@@ -107,5 +109,6 @@ export const toggleMap = () => ui.set((s) => ({ ...s, map: !s.map }));
 /** Focus is for writing: in and out, the caret and the scroll where they were */
 export const setFocusing = (focusing: boolean) => ui.set((s) => ({ ...s, focusing }));
 export const setDim = (dim: boolean) => ui.set((s) => ({ ...s, dim }));
+export const setSpell = (spell: boolean) => ui.set((s) => ({ ...s, spell }));
 export const openFind = () => ui.set((s) => ({ ...s, find: true }));
 export const closeFind = () => ui.set((s) => ({ ...s, find: false }));

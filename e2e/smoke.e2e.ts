@@ -153,6 +153,8 @@ test("comments: in the margin by their words, through an edit before them, resol
   await expect(card.locator("textarea")).toHaveValue("Why does he say it twice?");
   const passage = page.locator(".tie.remark").first();
   await expect(passage).toBeVisible();
+  const words = (await passage.textContent())!.trim();
+  expect(words.length).toBeGreaterThan(2);
   // in the margin, level with its words
   const [p, c] = [await passage.boundingBox(), await card.boundingBox()];
   expect(c!.x).toBeGreaterThan(p!.x + p!.width);
@@ -161,7 +163,7 @@ test("comments: in the margin by their words, through an edit before them, resol
   await pm.click({ position: { x: 5, y: 5 } });
   await page.keyboard.press("Meta+ArrowUp");
   await page.keyboard.type("Before anything, ");
-  await expect(page.locator(".tie.remark").first()).toContainText("he says");
+  await expect(page.locator(".tie.remark").first()).toHaveText(words); // the same words, where they now are
   await expect(card).toBeVisible();
   // resolved: put away; shown on asking; reopened
   await card.getByRole("button", { name: "Resolve" }).click();

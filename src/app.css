@@ -2102,3 +2102,11 @@ html, body, #root { height: 100%; }
 .margin-resolved { position: absolute; top: -30px; right: 0; height: 22px; padding: 0 10px; border-radius: 999px; font-size: var(--t-micro); color: var(--fg-faint); white-space: nowrap; z-index: 4; }
 .margin-resolved:hover { background: var(--tint); color: var(--fg); }
 .win.focusing .margin { opacity: 0; pointer-events: none; transition: opacity var(--base) var(--ease); }
+
+/* ── spelling (M2.8): the platform's own mark for a word it does not know —
+   the red dots are the Mac's, the one colour here that is not ours ── */
+.misspelt { text-decoration: underline dotted rgb(255 69 58); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+.writer-spell { position: absolute; z-index: 30; width: 240px; }
+.spell-note { padding: 6px 10px; font-size: var(--t-label); color: var(--fg-faint); }
+.spell-gap { height: 6px; }
+.win.focusing .misspelt { text-decoration-color: rgb(255 69 58 / 0.5); }

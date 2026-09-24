@@ -13,6 +13,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { EditorState, Plugin, TextSelection, type Command, type Transaction } from "prosemirror-state";
 import { EditorView, Decoration, DecorationSet } from "prosemirror-view";
+import { misspelt, spellTick, guesses } from "./spell";
 import { keymap } from "prosemirror-keymap";
 import { history, undo as pmUndo, redo as pmRedo } from "prosemirror-history";
 import { baseKeymap, toggleMark, setBlockType, wrapIn, lift, splitBlock } from "prosemirror-commands";
@@ -233,6 +234,18 @@ interface Props {
   /** a passage to select and bring into view, by its place in the plain
    *  words — a find's hit (M2.6); a new `key` asks again */
   reveal?: { start: number; end: number; key: number };
+  /** spelling (M2.8): the Mac's checker, with the book's own words left
+   *  alone; a new `key` (the book's words changed) marks again */
+  spell?: { known: (word: string) => boolean; learn: (word: string) => void; ignore: (word: string) => void; key: string };
+}
+
+interface SpellMenu {
+  x: number;
+  y: number;
+  from: number;
+  to: number;
+  word: string;
+  guesses: string[] | null;
 }
 
 /** Keep the caret's line two fifths of the way down the page that scrolls
@@ -262,6 +275,7 @@ export function Editor(props: Props) {
   p.current = props;
   const [over, setOver] = useState<Over>({});
   const [menu, setMenu] = useState(false);
+  const [spell, setSpell] = useState<SpellMenu | null>(null);
   const [hl, setHl] = useState(0);
   const form = props.form ?? "prose";
 
@@ -371,6 +385,19 @@ export function Editor(props: Props) {
               }
             }
           }
+          // words the Mac does not know and the book does not either
+          const sp = p.current.spell;
+          if (sp) {
+            state.doc.descendants((node, pos) => {
+              if (!node.isTextblock) return true;
+              const text = node.textBetween(0, node.content.size, undefined, "\n");
+              for (const [s, l] of misspelt(text) ?? []) {
+                const w = text.slice(s, s + l);
+                if (!sp.known(w)) out.push(Decoration.inline(pos + 1 + s, pos + 1 + s + l, { class: "misspelt", "data-word": w }));
+              }
+              return false;
+            });
+          }
           return DecorationSet.create(state.doc, out);
         },
       },
@@ -379,7 +406,8 @@ export function Editor(props: Props) {
     const v = new EditorView({ mount: mount.current! }, {
       state: EditorState.create({ doc: parse(p.current.value, f), plugins: [history(), rules(f), keys(f), keymap(baseKeymap), decorations] }),
       editable: () => !p.current.readOnly,
-      attributes: { class: `pm ${p.current.className ?? ""}`, spellcheck: "true" },
+      // Doodle does the checking when it can (so the book's names are known); else WebKit
+      attributes: { class: `pm ${p.current.className ?? ""}`, spellcheck: p.current.spell ? "false" : "true" },
       handleKeyDown(_v, e) {
         const list = itemsRef.current;
         if (!overRef.current.mention || !list.length) return false;
@@ -390,6 +418,18 @@ export function Editor(props: Props) {
         return false;
       },
       handleDOMEvents: {
+        contextmenu: (vv, e) => {
+          const el = (e.target as HTMLElement).closest<HTMLElement>(".misspelt");
+          const h = host.current;
+          if (!el || !h || !p.current.spell) return false;
+          e.preventDefault();
+          const from = vv.posAtDOM(el, 0);
+          const word = el.dataset.word ?? el.textContent ?? "";
+          const box = h.getBoundingClientRect();
+          setSpell({ x: e.clientX - box.left, y: e.clientY - box.top, from, to: from + word.length, word, guesses: null });
+          void guesses(word).then((g) => setSpell((m) => (m && m.word === word ? { ...m, guesses: g } : m)));
+          return true;
+        },
         focus: (vv) => ((focused = vv), report(vv), false),
         blur: (vv) => {
           if (focused === vv) focused = null;
@@ -455,6 +495,33 @@ export function Editor(props: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.reveal?.key]);
 
+  // the Mac answered, or the book's words changed: mark again
+  const tick = spellTick.use();
+  useEffect(() => {
+    const v = view.current;
+    if (v && props.spell) v.dispatch(v.state.tr.setMeta("outside", true));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tick, props.spell?.key]);
+  // the spelling menu goes on a click elsewhere, or Escape
+  useEffect(() => {
+    if (!spell) return;
+    const away = (e: PointerEvent) => !(e.target as HTMLElement).closest(".writer-spell") && setSpell(null);
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setSpell(null);
+    window.addEventListener("pointerdown", away, true);
+    window.addEventListener("keydown", esc, true);
+    return () => {
+      window.removeEventListener("pointerdown", away, true);
+      window.removeEventListener("keydown", esc, true);
+    };
+  }, [spell]);
+  const replaceWith = (g: string) => {
+    const v = view.current;
+    if (!v || !spell) return;
+    v.dispatch(v.state.tr.insertText(g, spell.from, spell.to));
+    setSpell(null);
+    v.focus();
+  };
+
   // into Focus or out of it, the caret's line where the eye is
   useEffect(() => {
     const v = view.current;
@@ -517,6 +584,26 @@ export function Editor(props: Props) {
               {props.bubble(over.bubble.picked)}
             </>
           )}
+        </div>
+      )}
+      {spell && (
+        <div className="cmenu card writer-spell" role="menu" style={{ left: spell.x, top: spell.y + 8 }}>
+          <div className="list">
+            {spell.guesses === null && <p className="spell-note">Looking…</p>}
+            {spell.guesses?.length === 0 && <p className="spell-note">No guesses for “{spell.word}”.</p>}
+            {spell.guesses?.map((g) => (
+              <button key={g} className="list-row" role="menuitem" onMouseDown={(e) => e.preventDefault()} onClick={() => replaceWith(g)}>
+                <span className="list-word">{g}</span>
+              </button>
+            ))}
+            <div className="spell-gap" />
+            <button className="list-row" role="menuitem" onClick={() => (props.spell?.learn(spell.word), setSpell(null))}>
+              <span className="list-word">Add “{spell.word}” to the book's words</span>
+            </button>
+            <button className="list-row" role="menuitem" onClick={() => (props.spell?.ignore(spell.word), setSpell(null))}>
+              <span className="list-word">Ignore it while this is open</span>
+            </button>
+          </div>
         </div>
       )}
       {over.mention && items.length > 0 && (

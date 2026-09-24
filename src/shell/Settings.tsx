@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Icon, CloseIcon, CheckIcon, GeneralIcon, AppearanceIcon, AboutIcon, ProvidersIcon } from "../icons";
-import { ui, closeSettings, setTheme, setMotion, setDim, openShortcuts, type Theme } from "../state/ui";
+import { ui, closeSettings, setTheme, setMotion, setDim, setSpell, openShortcuts, type Theme } from "../state/ui";
 import { providers } from "../providers/registry";
 import { probe, type Found } from "../providers/found";
 import { inTauri } from "../platform/fs";
@@ -77,6 +77,7 @@ export function Settings() {
 function General() {
   const motion = ui.use((s) => s.motion);
   const dim = ui.use((s) => s.dim);
+  const spell = ui.use((s) => s.spell);
   return (
     <>
     <section className="grp">
@@ -102,6 +103,16 @@ function General() {
           <div className="seg" role="radiogroup" aria-label="In Focus">
             <button className={`seg-btn${dim ? " on" : ""}`} role="radio" aria-checked={dim} onClick={() => setDim(true)}>Dim the rest</button>
             <button className={`seg-btn${!dim ? " on" : ""}`} role="radio" aria-checked={!dim} onClick={() => setDim(false)}>All lit</button>
+          </div>
+        </div>
+        <div className="group-row">
+          <div className="group-what">
+            <p className="group-name">Spelling</p>
+            <p className="group-note">The Mac's own checker. The names of the book's people and places are never marked; right-click a word to teach it to the book.</p>
+          </div>
+          <div className="seg" role="radiogroup" aria-label="Spelling">
+            <button className={`seg-btn${spell ? " on" : ""}`} role="radio" aria-checked={spell} onClick={() => setSpell(true)}>Check</button>
+            <button className={`seg-btn${!spell ? " on" : ""}`} role="radio" aria-checked={!spell} onClick={() => setSpell(false)}>Off</button>
           </div>
         </div>
       </div>
