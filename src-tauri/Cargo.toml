@@ -25,6 +25,7 @@ zip = { version = "8.6.0", default-features = false, features = ["deflate"] }
 image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp", "gif"] }
 tiny_http = "0.12"
 trash = "5.2.9"
+quick-xml = "0.42.0"
 
 # the Mac's own spelling (M2.8): NSSpellChecker, for Doodle to draw with
 [target.'cfg(target_os = "macos")'.dependencies]

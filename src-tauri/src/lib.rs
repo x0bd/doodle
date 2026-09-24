@@ -1,5 +1,6 @@
 mod archive;
 mod codex;
+mod import;
 mod integrity;
 mod logs;
 mod commands;
@@ -32,6 +33,7 @@ pub fn run() {
             mcp::mcp_reply,
             opened::take_opened,
             opened::set_recent,
+            import::read_import,
             spell::spell_check,
             spell::spell_guesses,
             recovery::recovery_append,
