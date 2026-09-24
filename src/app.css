@@ -1882,6 +1882,7 @@ html, body, #root { height: 100%; }
 .tpl-film   { --role: var(--role-blue); }
 .tpl-manga  { --role: var(--role-orange); }
 .tpl-book   { --role: var(--role-violet); }
+.tpl-material { --role: var(--role-khaki); }
 
 /* ⌘K: a console at the top, the input as its head, the hits as a list */
 .pal-veil { align-items: start; padding-top: 12vh; }

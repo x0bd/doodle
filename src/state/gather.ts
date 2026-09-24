@@ -9,7 +9,10 @@
 import { graph, makeNode, childrenOf, type GraphNode } from "./graph";
 import { commit } from "./history";
 import { say, retell, hush } from "./notice";
-import { doc, save } from "./doc";
+import { doc, save, mayLeave, newGraph } from "./doc";
+import { closeChooser } from "./ui";
+import { enter } from "./nav";
+import { fitAll } from "../canvas/view";
 import { layOut, pictureSource, type Gathered, type Item } from "./board";
 import { readMaterial } from "../readers";
 import { importAsset, keepSource, readThumb, pickGather, PICTURES, importable } from "../platform/fs";
@@ -173,4 +176,26 @@ export function clipPassage(docId: string, text: string, page: number): string |
   });
   commit("Clip", () => graph.set((x) => ({ ...x, nodes: { ...x.nodes, [node.id]: node }, order: [...x.order, node.id] })));
   return node.id;
+}
+
+/**
+ * Start from material (PLAN.md M3.5): a new book with a board, and these
+ * files — or those asked for — laid on it; then the board, entered. A book
+ * of files needs a home first, so it is saved (the one question asked).
+ */
+export async function startFromMaterial(paths?: string[]) {
+  if (!(await mayLeave())) return;
+  const files = paths ?? (await pickGather());
+  if (!files.length) return;
+  try {
+    localStorage.setItem("doodle.welcomed.v1", String(Date.now()));
+  } catch {
+    /* a private window */
+  }
+  newGraph("material");
+  closeChooser();
+  const board = boardHere();
+  if (!(await save())) return void say("The book is not saved yet — its material needs a home. Save it, then drop the files on its board.");
+  await gatherInto(board, files, { x: 0, y: 0 });
+  enter(board, () => requestAnimationFrame(fitAll));
 }

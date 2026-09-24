@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Icon, CloseIcon, BookIcon, MangaIcon, FilmIcon, ImageIcon, GraphIcon, type IconSvgElement } from "../icons";
+import { Icon, CloseIcon, BookIcon, MangaIcon, FilmIcon, ImageIcon, GraphIcon, BoardIcon, type IconSvgElement } from "../icons";
+import { startFromMaterial } from "../state/gather";
 import { TEMPLATES, SAMPLE, type TemplateId } from "../graph/templates";
 import { providers } from "../providers/registry";
 import { probe, type Found } from "../providers/found";
@@ -9,7 +10,7 @@ import { graph } from "../state/graph";
 import { fitAll } from "../canvas/view";
 import { graphExists, inTauri } from "../platform/fs";
 
-const GLYPH: Record<TemplateId, IconSvgElement> = { images: ImageIcon, film: FilmIcon, manga: MangaIcon, book: BookIcon, sample: BookIcon };
+const GLYPH: Record<TemplateId, IconSvgElement> = { images: ImageIcon, film: FilmIcon, manga: MangaIcon, book: BookIcon, sample: BookIcon, material: BoardIcon };
 
 /** The first time Doodle opens on a Mac — nothing opened before, never
  *  welcomed — the welcome leads with the sample book and says what it
@@ -135,6 +136,16 @@ export function Welcome() {
                   </span>
                 </button>
               )}
+              {/* from what you have: documents, notes, pictures — onto a board in a new book */}
+              <button className="welcome-row list-row tpl-material" onClick={() => void (inTauri ? startFromMaterial() : undefined)} disabled={!inTauri}>
+                <span className="welcome-glyph">
+                  <Icon icon={BoardIcon} size={15} strokeWidth={1.7} />
+                </span>
+                <span className="welcome-what">
+                  <span className="welcome-title">Start from material…</span>
+                  <span className="welcome-sub">Your notes, drafts, research and pictures, laid on a board in a new book — or drop them here.</span>
+                </span>
+              </button>
               {TEMPLATES.map((t) => (
                 <button key={t.id} className={`welcome-row list-row tpl-${t.id}`} onClick={() => void pick(t.id)}>
                   <span className="welcome-glyph">

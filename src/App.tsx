@@ -20,7 +20,7 @@ import { Versions } from "./shell/Versions";
 import { Find } from "./shell/Find";
 import { onFileDrop, onOpened, importable, PICTURES } from "./platform/fs";
 import { importFiles } from "./state/importing";
-import { gatherInto, freeSpot } from "./state/gather";
+import { gatherInto, freeSpot, startFromMaterial } from "./state/gather";
 import { graph } from "./state/graph";
 import { camera, toWorld } from "./canvas/camera";
 import { attachFiles, attachTo } from "./state/assets";
@@ -82,6 +82,8 @@ export function App() {
       const el = document.elementFromPoint(at.x / scale, at.y / scale) as HTMLElement | null;
       const under = el?.closest<HTMLElement>("[data-node]")?.dataset.node;
       const focus = nav.get().focus;
+      // onto the welcome: a book begun from them
+      if (ui.get().chooser) return void startFromMaterial(paths);
       // onto a board — the one open, or a board's card — everything is gathered on it
       const nodes = graph.get().nodes;
       if (under && nodes[under]?.kind === "board") return void gatherInto(under, paths, freeSpot(under));

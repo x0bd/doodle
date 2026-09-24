@@ -5,7 +5,7 @@
 import { makeNode, type Edge, type GraphNode } from "../state/graph";
 import { FIXTURES } from "../providers/fixtures";
 
-export type TemplateId = "images" | "film" | "manga" | "book" | "sample";
+export type TemplateId = "images" | "film" | "manga" | "book" | "sample" | "material";
 
 export interface Template {
   id: TemplateId;
@@ -208,4 +208,22 @@ export const SAMPLE: Template = {
   },
 };
 
-export const templateById = (id: TemplateId) => (id === "sample" ? SAMPLE : TEMPLATES.find((t) => t.id === id)!);
+/**
+ * A book begun from what you gathered (PLAN.md M3.5): nothing of anyone
+ * else's in it — a board for the material and a first chapter, empty. The
+ * cast, the places and the voice come from the board (M3.6).
+ */
+export const MATERIAL: Template = {
+  id: "material",
+  name: "From material",
+  note: "A board of what you gathered, and a first chapter.",
+  build() {
+    const nodes = [
+      makeNode("board", 60, 40, { id: "b1", title: "Material" }),
+      makeNode("chapter", 420, 40, { id: "ch1", title: "One", data: { summary: "", text: "" } }),
+    ];
+    return { nodes: nodes.map((n) => ({ ...n, status: "canon" as const })), edges: [] };
+  },
+};
+
+export const templateById = (id: TemplateId) => (id === "sample" ? SAMPLE : id === "material" ? MATERIAL : TEMPLATES.find((t) => t.id === id)!);
