@@ -134,7 +134,7 @@ Long-plan stages, honestly: S0–S4 are done in our own way; **S5 (MVP hardening
 
 Each milestone ends in something usable. Sizes: **S** ≈ a session, **M** ≈ 2–4 sessions, **L** ≈ a week or more. Every task lists its acceptance test; nothing is done until it passes in the **installed build** (from M1 on), checked in the real window, in both light and dark.
 
-### M1 — A build I can live in (the foundation of trust) — *L*
+### M1 — A build I can live in (the foundation of trust) — *L* · **v0.2.0 built and installed 2026-09-24**
 
 The point: from here on, Doodle is opened from Applications, and it never loses words.
 
