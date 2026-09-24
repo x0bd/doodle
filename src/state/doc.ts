@@ -23,6 +23,9 @@ import { keepDaily, loadVersions, versions } from "./versions";
 import { stats, noted as tally, bookWords } from "./stats";
 import { learned, ignored } from "./lexicon";
 import { importFiles } from "./importing";
+import { gatherInto, freeSpot, boardHere } from "./gather";
+import { enter } from "./nav";
+import { fitAll } from "../canvas/view";
 const versionsDir = () => versions.get().dir;
 
 export type SaveState = "idle" | "saving" | "saved" | "failed";
@@ -691,7 +694,9 @@ let launched: Promise<boolean> | undefined;
 export function launch(): Promise<boolean> {
   return (launched ??= takeOpened()
     .catch(() => [] as string[])
-    .then(async (paths) => {
+    .then(async (all) => {
+      const gathered = all.filter((p) => p.startsWith("gather:")).map((p) => p.slice(7));
+      const paths = all.filter((p) => !p.startsWith("gather:"));
       const texts = paths.filter(importable);
       const handed = await openPaths(paths.filter((p) => !importable(p)));
       let placed = true;
@@ -705,7 +710,14 @@ export function launch(): Promise<boolean> {
         await painted();
         await importFiles(texts);
       }
-      return placed || texts.length > 0;
+      // DOODLE_GATHER: onto the book's board, into it, and framed
+      if (gathered.length) {
+        await painted();
+        const board = boardHere();
+        await gatherInto(board, gathered, freeSpot(board));
+        enter(board, () => requestAnimationFrame(fitAll));
+      }
+      return placed || texts.length > 0 || gathered.length > 0;
     }));
 }
 

@@ -9,6 +9,7 @@ import { commit } from "./history";
 import { say, retell, hush } from "./notice";
 import { nav, riseTo } from "./nav";
 import { closeChooser } from "./ui";
+import { gatherDialog } from "./gather";
 import { chaptersFrom, placeAt } from "./importer";
 import { stats, noted, brought, bookWords } from "./stats";
 import { inTauri, pickImport } from "../platform/fs";
@@ -20,9 +21,11 @@ import { fitLevel } from "../canvas/view";
 
 const many = (n: number) => n.toLocaleString("en-US");
 
-/** Ask for a file, then import it. */
+/** Ask for a file, then import it — inside a board, lay things on it instead. */
 export async function importDialog() {
   if (!inTauri) return;
+  const focus = nav.get().focus;
+  if (focus && graph.get().nodes[focus]?.kind === "board") return gatherDialog(focus);
   const path = await pickImport();
   if (path) await importFrom(path);
 }

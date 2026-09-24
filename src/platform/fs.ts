@@ -86,6 +86,15 @@ export interface ImportedText { name: string; kind: string; text: string; pictur
 /** A file's words as Markdown (Fountain as it is), read by `import.rs`;
  *  with `dir`, a Word document's pictures are kept in the project. */
 export const readImport = (path: string, dir: string | null = null) => invoke<ImportedText>("read_import", { path, dir });
+/** Keep a document in the project (`assets/…`, by its hash); its path. */
+export const keepSource = (dir: string, path: string) => invoke<string>("keep_source", { dir, path });
+/** Open a file kept in the project in the Mac's own app for it. */
+export const openKept = (dir: string, rel: string) => invoke<void>("open_kept", { dir, rel });
+/** Ask for things to lay on a board: documents and pictures, several at once. */
+export async function pickGather(): Promise<string[]> {
+  const p = await open({ multiple: true, title: "Add to the board", filters: [{ name: "Documents and pictures", extensions: [...IMPORTS, "png", "jpg", "jpeg", "webp", "gif", "heic", "heif", "tif", "tiff"] }] });
+  return Array.isArray(p) ? p : typeof p === "string" ? [p] : [];
+}
 /** A file's bytes (a PDF, for pdf.js). */
 export const readBytes = async (path: string) => new Uint8Array(await invoke<ArrayBuffer>("read_bytes", { path }));
 

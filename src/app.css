@@ -102,6 +102,8 @@
 .k-preview   { --role: var(--role-green); --lit: var(--lit-green); }
 .k-page      { --role: var(--role-green); --lit: var(--lit-green); }
 .k-chapter   { --role: var(--role-green); --lit: var(--lit-green); }
+.k-board     { --role: var(--role-khaki); --lit: var(--lit-khaki); }
+.k-clip      { --role: var(--role-slate); --lit: var(--lit-slate); }
 /* what flows through a wire */
 .t-model { --flow: var(--role-slate); }
 .t-text  { --flow: var(--role-blue); }
@@ -557,7 +559,7 @@ html, body, #root { height: 100%; }
    Below 0.4 a card is its title. Bodies and port words go; the title
    grows so it reads at that size; wires thicken to stay visible. */
 .lod-map .node-body, .lod-map .ins, .lod-map .node-progress { display: none; }
-.lod-map .node { min-height: 0 !important; height: auto !important; gap: 4px; }
+.lod-map .node:not(.group-frame) { min-height: 0 !important; height: auto !important; gap: 4px; }
 .lod-map .node-head { height: 36px; }
 .lod-map .node-name { font-size: 22px; }
 .lod-map .node-inside { display: none; }
@@ -2110,3 +2112,91 @@ html, body, #root { height: 100%; }
 .spell-note { padding: 6px 10px; font-size: var(--t-label); color: var(--fg-faint); }
 .spell-gap { height: 6px; }
 .win.focusing .misspelt { text-decoration-color: rgb(255 69 58 / 0.5); }
+
+/* ── the inspiration board (M3.3) ────────────────────────────────────── */
+
+/* a board on the field: its pictures in a mosaic, else its documents by name */
+.board-body { display: flex; flex-direction: column; gap: 10px; min-height: 140px; }
+.board-mosaic { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; border-radius: var(--r-plate); overflow: hidden; }
+.board-mosaic.n1 { grid-template-columns: 1fr; }
+.board-mosaic.n2, .board-mosaic.n4 { grid-template-columns: repeat(2, 1fr); }
+.board-mosaic span { aspect-ratio: 1; background: var(--surface); }
+.board-mosaic.n1 span { aspect-ratio: 16 / 10; }
+.board-mosaic img { display: block; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.board-docs { list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: var(--t-body); color: var(--fg); }
+.board-docs li { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* a clipping: as tall as the layout says (board.ts) — a document 196, a
+   passage 168, a picture its shape and a line under it, no head */
+.node.k-clip.what-document { height: 196px; }
+.node.k-clip.what-passage { height: 168px; }
+.node.k-clip.what-picture { padding: 0; overflow: hidden; }
+.node.k-clip.what-picture .node-head { display: none; }
+.clip-picture { display: flex; flex-direction: column; border-radius: 0; }
+.clip-img { width: 100%; background: var(--surface); overflow: hidden; }
+.clip-foot {
+  flex-shrink: 0;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  font-size: var(--t-micro);
+  color: var(--fg-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.clip-picture .clip-foot { padding: 0 12px; display: block; line-height: 30px; }
+.clip-doc, .clip-passage { display: flex; flex-direction: column; gap: 6px; border-radius: 0; }
+.clip-kind { font-size: var(--t-micro); color: var(--fg-muted); }
+.clip-first, .clip-words {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  font-size: var(--t-body);
+  line-height: 1.5;
+  color: var(--fg);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  font-variant-numeric: normal;
+}
+.clip-first { -webkit-line-clamp: 5; color: var(--fg-muted); }
+.clip-words { -webkit-line-clamp: 5; font-size: 14px; }
+.clip-doc .clip-foot, .clip-passage .clip-foot { height: 18px; }
+
+/* a group: not a card — a quiet ground behind what it holds, its name above them */
+.node.group-frame {
+  padding: 0;
+  border-radius: 20px;
+  background: var(--tint);
+  box-shadow: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .node.group-frame:hover { box-shadow: none; background: color-mix(in srgb, var(--tint), var(--fg) 3%); }
+}
+.node.group-frame.sel, .node.group-frame.sel:hover { box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--ink); z-index: 0; }
+.frame-name {
+  position: absolute;
+  left: 20px;
+  top: 12px;
+  max-width: calc(100% - 40px);
+  font-size: var(--t-label);
+  font-weight: var(--w-declare);
+  letter-spacing: var(--tr-label);
+  color: var(--fg-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.frame-grip { position: absolute; right: 0; bottom: 0; width: 24px; height: 24px; cursor: nwse-resize; background: none; border-radius: 0 0 20px 0; }
+
+/* a clipping opened: its source, read-only */
+.source-from { display: flex; align-items: center; gap: 12px; margin-top: 6px; }
+.source-file { display: inline-flex; align-items: center; gap: 6px; min-width: 0; font-size: var(--t-label); color: var(--fg-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.source-file svg { flex-shrink: 0; color: var(--fg-faint); }
+.source-page { scroll-margin-top: 72px; }
+.source-picture img { display: block; max-width: 100%; max-height: 78vh; margin: 8px auto 0; border-radius: var(--r-plate); }
+.source-whole { margin-top: 20px; }
+/* far out, a board is still its pictures: a picture keeps itself (not its line), a group's name grows */
+.lod-map .k-clip.what-picture .node-body { display: flex; }
+.lod-map .k-clip.what-picture .clip-foot { display: none; }
+.lod-map .frame-name { font-size: 26px; top: -38px; left: 6px; color: var(--fg); }

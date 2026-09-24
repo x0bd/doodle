@@ -402,6 +402,15 @@ export function measure(id: string, h: number) {
 
 /** How wide a card is, set by hand. A document fact, so it is journalled
  *  — one entry for a drag, coalesced by the card it is about. */
+/** a group's size, both ways (a group is not measured: it is as big as it is set) */
+export function setSize(id: string, w: number, h: number) {
+  commit(
+    "Size",
+    () => graph.set((g) => (g.nodes[id] ? { ...g, nodes: { ...g.nodes, [id]: { ...g.nodes[id], w: Math.round(w), h: Math.round(h) } } } : g)),
+    `size:${id}`,
+  );
+}
+
 export function setWidth(id: string, w: number) {
   const next = Math.round(Math.max(200, Math.min(760, w)));
   commit(

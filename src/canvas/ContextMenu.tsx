@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Icon, PlusIcon, type IconSvgElement } from "../icons";
 import { KINDS, type NodeKind } from "../graph/kinds";
+import { gatherDialog } from "../state/gather";
 import { graph, select, addNode, makeNode, duplicateSelected, deleteSelected, setStatus, childCount, addInput, dropInput, connect, edgeInto, inputs, outputs, type Canon, type GraphNode } from "../state/graph";
 import { enter, nav } from "../state/nav";
 import { enqueue, RUNNABLE } from "../state/jobs";
@@ -16,7 +17,9 @@ export interface Menu {
   node?: string;
 }
 
-const ADDABLE: NodeKind[] = ["page", "chapter", "prompt", "note", "character", "location", "style", "shot", "generate", "preview", "write", "model"];
+const ADDABLE: NodeKind[] = ["page", "chapter", "board", "prompt", "note", "character", "location", "style", "shot", "generate", "preview", "write", "model"];
+/** on a board: what you gathered is added from files; by hand, a note or a group */
+const ON_BOARD: NodeKind[] = ["note", "group"];
 /** what can be given to a node that takes words: the kind, and the name
  *  its port gets. A writer can hold as many of these as the work needs. */
 const GIVEABLE: { kind: NodeKind; port: string; word: string }[] = [
@@ -70,10 +73,12 @@ export function ContextMenu({ menu, onClose }: { menu: Menu; onClose: () => void
     addNode(makeNode(kind, Math.round(menu.world.x - def.size.w / 2), Math.round(menu.world.y - 20), { parent: focus }));
     onClose();
   };
+  const onBoard = !!focus && g.nodes[focus]?.kind === "board";
+  const addable = onBoard ? ON_BOARD : ADDABLE;
   const ids = node ? (g.selection.includes(node.id) ? g.selection : [node.id]) : [];
   const many = ids.length > 1;
 
-  const rows = 2 + (node ? (takesWords(node) ? 15 : 8) : ADDABLE.length + 1);
+  const rows = 2 + (node ? (takesWords(node) ? 15 : 8) : addable.length + (onBoard ? 2 : 1));
   const h = 20 + rows * 30;
   const left = Math.min(menu.at.x + 4, window.innerWidth - 236);
   const top = menu.at.y + h > window.innerHeight - 24 ? Math.max(70, menu.at.y - h) : menu.at.y + 4;
@@ -125,7 +130,12 @@ export function ContextMenu({ menu, onClose }: { menu: Menu; onClose: () => void
         ) : (
           <>
             <div className="list-head">Add here</div>
-            {ADDABLE.map((k) => (
+            {onBoard && (
+              <Row icon={PlusIcon} key_="⇧⌘I" onClick={() => (onClose(), void gatherDialog(focus!, menu.world))}>
+                Documents or pictures…
+              </Row>
+            )}
+            {addable.map((k) => (
               <Row key={k} icon={GLYPH[k]} onClick={() => add(k)}>
                 {KINDS[k].title}
               </Row>

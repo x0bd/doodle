@@ -31,3 +31,12 @@ describe("the PDF reader", () => {
     expect(pageText([run("north-", 20, 700), run("East wind", 20, 686)])).toBe("north- East wind");
   });
 });
+
+import { titleOf } from "./index";
+describe("a document's own name", () => {
+  it("front matter, else an opening heading, else the file", () => {
+    expect(titleOf("---\ntitle: The Harbour\n---\n\n# Something", "harbour")).toBe("The Harbour");
+    expect(titleOf("# Letters from the Lamp\n\n# The Crossing", "letters")).toBe("Letters from the Lamp");
+    expect(titleOf("Words first.", "notes")).toBe("notes");
+  });
+});

@@ -7,6 +7,7 @@
  */
 import { readImport, readBytes, importAsset, PICTURES } from "../platform/fs";
 import { readPdf, pagePictures, type PdfPage } from "./pdf";
+import { cleanMarkdown } from "../state/importer";
 import { ocrModels, ocrImage } from "./ocr";
 
 export type MaterialKind = "md" | "txt" | "fountain" | "docx" | "pdf" | "image";
@@ -24,6 +25,16 @@ export interface Material {
 }
 
 const stem = (path: string) => (path.split("/").pop() ?? path).replace(/\.[^.]+$/, "");
+
+/** A document's own name for itself: its front matter's title, else a
+ *  heading it opens with — else the file's name, which is only a name. */
+export function titleOf(text: string, fallback: string): string {
+  const front = text.match(/^\uFEFF?---\n([\s\S]*?)\n---/);
+  const named = front?.[1].match(/^title:\s*["']?(.+?)["']?\s*$/m)?.[1];
+  if (named) return named.trim();
+  const head = text.replace(/^\uFEFF?---\n[\s\S]*?\n---\n/, "").trimStart().match(/^#{1,2} (.+)/)?.[1];
+  return head?.replace(/\s+#*\s*$/, "").trim() || fallback;
+}
 
 export interface Reading {
   /** each scanned page as OCR reaches it: which of how many, and by what */
@@ -64,7 +75,9 @@ export async function readMaterial(path: string, dir: string | null = null, how:
     return { name: stem(path), path, kind: "image", text: "", pictures: [a.rel] };
   }
   const got = await readImport(path, dir);
-  return { name: got.name, path, kind: got.kind as MaterialKind, text: got.text, pictures: got.pictures ?? [] };
+  // Markdown as Doodle writes it: front matter, tags and outside pictures gone (the kept ones stay)
+  const text = got.kind === "md" ? cleanMarkdown(got.text, true) : got.text;
+  return { name: got.kind === "fountain" ? got.name : titleOf(got.text, got.name), path, kind: got.kind as MaterialKind, text, pictures: got.pictures ?? [] };
 }
 
 /** a PDF made only of pictures of its pages, none of them read — no OCR model here */

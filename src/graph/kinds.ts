@@ -6,16 +6,16 @@
  */
 import { LOOKS } from "./looks";
 
-export type NodeKind = "model" | "prompt" | "generate" | "preview" | "character" | "location" | "style" | "write" | "page" | "note" | "shot" | "chapter" | "comment";
+export type NodeKind = "model" | "prompt" | "generate" | "preview" | "character" | "location" | "style" | "write" | "page" | "note" | "shot" | "chapter" | "comment" | "board" | "clip" | "group";
 
 /** the kinds that are written in — entered, they are a document; zoomed
  *  into on the field, they open */
-export const WRITTEN = new Set<NodeKind>(["page", "chapter", "prompt", "note"]);
+export const WRITTEN = new Set<NodeKind>(["page", "chapter", "prompt", "note", "clip"]);
 /** the kinds that are a place — entered, they are a field of what they hold */
 /** Kinds that are a field when entered, rather than a document. The book is
- *  one (the root); since D1 a chapter is written in, not walked around —
- *  the set waits for the inspiration board (M3.3). */
-export const PLACES = new Set<NodeKind>([]);
+ *  one (the root); since D1 a chapter is written in, not walked around; the
+ *  inspiration board (M3.3) is one. */
+export const PLACES = new Set<NodeKind>(["board"]);
 export type PortType = "model" | "text" | "image";
 
 export interface Port {
@@ -258,6 +258,37 @@ export const KINDS: Record<NodeKind, KindDef> = {
     outputs: [],
     size: { w: 240, h: 120 },
     data: { text: "", resolved: 0 },
+    groups: [],
+  },
+  board: {
+    kind: "board",
+    title: "Board",
+    note: "What you gathered to start from — documents, passages, pictures — laid out as you like. Enter it; drop files on it.",
+    inputs: [],
+    outputs: [],
+    size: { w: 300, h: 220 },
+    data: {},
+    groups: [],
+  },
+  clip: {
+    kind: "clip",
+    title: "Clipping",
+    note: "Something gathered on a board — a picture, a passage, a whole document — and where it came from. Open it to see its source.",
+    inputs: [],
+    outputs: [],
+    size: { w: 260, h: 160 },
+    // what: picture | passage | document; source: the project's copy (assets/…); from: the file's name; page: where in it
+    data: { what: "passage", text: "", source: "", from: "", page: 0, pages: 0 },
+    groups: [{ name: "Clipping", fields: [{ key: "note", label: "A note", type: "text", rows: 3 }] }],
+  },
+  group: {
+    kind: "group",
+    title: "Group",
+    note: "A few things on a board that belong together. Drag it and they come with it.",
+    inputs: [],
+    outputs: [],
+    size: { w: 560, h: 360 },
+    data: {},
     groups: [],
   },
   chapter: {

@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { camera, panBy, toWorld, zoomAt, fitRect, type Point, type Rect } from "./camera";
+import { within } from "../state/board";
+import { Source } from "./Source";
 import {
   graph, clearSelection, select, toggleSelect, moveNodes, raise, intersects, deleteSelected,
   connectNow, canConnect, disconnectNow, edgeInto, moveInto, portOf, addNode, makeNode, connect, type PortRef,
@@ -90,7 +92,7 @@ export function Canvas() {
   const read = ui.use((u) => u.read);
   const place = !focused || PLACES.has(focused.kind);
   // a document, or a place read as one: the wheel is the platform's
-  const writing = (!!focused && !PLACES.has(focused.kind)) || (place && read);
+  const writing = (!!focused && !PLACES.has(focused.kind)) || (place && read && focused?.kind !== "board");
   const ref = useRef<HTMLDivElement>(null);
   const drag = useRef<Drag | null>(null);
   const handlersNow = useRef<NodeHandlers | null>(null);
@@ -301,7 +303,16 @@ export function Canvas() {
       }
       const before = journalBegin();
       raise(sel);
-      begin(e, { mode: "move", last: { x: e.clientX, y: e.clientY }, ids: sel, before });
+      // a group picked up carries what lies inside it
+      const all = graph.get();
+      const carried = new Set(sel);
+      for (const id of sel) {
+        const n = all.nodes[id];
+        if (n?.kind !== "group") continue;
+        const others = childrenOf(all, n.parent).filter((o) => o !== id).map((o) => ({ ...all.nodes[o], id: o }));
+        for (const o of within(n, others)) carried.add(o);
+      }
+      begin(e, { mode: "move", last: { x: e.clientX, y: e.clientY }, ids: [...carried], before });
     },
     onPortDown(e, portRef, dir) {
       if (space || e.button !== 0) return;
@@ -375,6 +386,8 @@ export function Canvas() {
     const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
     if (!el || el.closest("textarea, input, [data-port]")) return;
     const id = el.closest<HTMLElement>("[data-node]")?.dataset.node;
+    // a group is not entered: it is only where things lie
+    if (id && graph.get().nodes[id]?.kind === "group") return;
     if (id) {
       const r = el.closest<HTMLElement>("[data-node]")!.getBoundingClientRect();
       enter(id, () => requestAnimationFrame(fitAll), { x: r.left + r.width / 2, y: r.top + r.height / 2 });
@@ -434,7 +447,10 @@ export function Canvas() {
     () => (
       <>
         <Wires live={live} liveType={liveType} lit={lit} />
-        {childrenOf(g, focus).map((id) => (
+        {/* a board's groups lie under what they hold */}
+        {childrenOf(g, focus)
+          .sort((a, b) => Number(g.nodes[b].kind === "group") - Number(g.nodes[a].kind === "group"))
+          .map((id) => (
           <Node key={id} node={g.nodes[id]} selected={g.selection.includes(id)} into={into === id} dim={!!lit && !lit.has(id)} handlers={stableHandlers} />
         ))}
       </>
@@ -449,7 +465,7 @@ export function Canvas() {
   if (writing) {
     return (
       <div ref={ref} className={`stage reading${arriveClass}`} style={arriveStyle} onAnimationEnd={(e) => e.target === e.currentTarget && clearArrival()}>
-        {place ? <Read id={focus} /> : <Doc id={focus!} />}
+        {place ? <Read id={focus} /> : focused?.kind === "clip" ? <Source id={focus!} /> : <Doc id={focus!} />}
       </div>
     );
   }

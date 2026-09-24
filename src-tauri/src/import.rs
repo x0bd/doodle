@@ -69,6 +69,36 @@ pub fn read_bytes(path: String) -> Result<tauri::ipc::Response, String> {
     Ok(tauri::ipc::Response::new(fs::read(&path).map_err(|e| e.to_string())?))
 }
 
+/// A document laid on the board is kept in the project (`assets/`, by its
+/// hash), so its clippings open it wherever the original went. Its path.
+#[tauri::command]
+pub fn keep_source(dir: String, path: String) -> Result<String, String> {
+    let p = Path::new(&path);
+    if fs::metadata(p).map_err(|e| e.to_string())?.len() > MAX_BYTES {
+        return Err("Larger than 256 MB".into());
+    }
+    let ext = p.extension().and_then(|e| e.to_str()).unwrap_or("").to_lowercase();
+    if !matches!(ext.as_str(), "md" | "markdown" | "mdown" | "txt" | "text" | "fountain" | "spmd" | "docx" | "pdf") {
+        return Err(format!("Not a document: .{ext}"));
+    }
+    store(Path::new(&dir), &fs::read(p).map_err(|e| e.to_string())?, &ext)
+}
+
+/// A file kept in the project, opened in the Mac's own app for it (a PDF in
+/// Preview) — only what is in `assets/`, nothing named from outside it.
+#[tauri::command]
+pub fn open_kept(dir: String, rel: String) -> Result<(), String> {
+    if !rel.starts_with("assets/") || rel.contains("..") {
+        return Err("Not a file kept in the project".into());
+    }
+    let p = Path::new(&dir).join(&rel);
+    if !p.is_file() {
+        return Err("That file is not in the project any more".into());
+    }
+    std::process::Command::new("/usr/bin/open").arg(&p).status().map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 /// A Word document's words as Markdown, and the pictures kept from it.
 pub fn docx(p: &Path, dir: Option<&Path>) -> Result<(String, Vec<String>), String> {
     let file = fs::File::open(p).map_err(|e| e.to_string())?;

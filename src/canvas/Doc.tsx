@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import {
-  Icon, PlusIcon, CheckIcon, CloseIcon, ImageIcon, ModelIcon, TextIcon, GenerateIcon, CharacterIcon, LocationIcon, StyleIcon, WriteIcon, PageIcon, ChapterIcon, NoteIcon, CommentIcon, ShotIcon, ChevronRightIcon, ChevronLeftIcon,
+  Icon, PlusIcon, CheckIcon, CloseIcon, ImageIcon, ModelIcon, TextIcon, GenerateIcon, CharacterIcon, LocationIcon, StyleIcon, WriteIcon, PageIcon, ChapterIcon, NoteIcon, CommentIcon, ShotIcon, BoardIcon, ClipIcon, GroupIcon, ChevronRightIcon, ChevronLeftIcon,
   type IconSvgElement,
 } from "../icons";
 import { shots, proposalsFor, keepShot, keepAll, dropShot, dismiss } from "../state/shots";
@@ -29,6 +29,7 @@ import { formOf, countWords, plain } from "../writer/markup";
 export const GLYPH: Record<NodeKind, IconSvgElement> = {
   model: ModelIcon, prompt: TextIcon, generate: GenerateIcon, preview: ImageIcon,
   character: CharacterIcon, location: LocationIcon, style: StyleIcon, write: WriteIcon, page: PageIcon, note: NoteIcon, shot: ShotIcon, chapter: ChapterIcon, comment: CommentIcon,
+  board: BoardIcon, clip: ClipIcon, group: GroupIcon,
 };
 
 /** how long a screenplay runs: a page a minute, some 180 words a page */

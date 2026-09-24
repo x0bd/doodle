@@ -20,6 +20,9 @@ import { Versions } from "./shell/Versions";
 import { Find } from "./shell/Find";
 import { onFileDrop, onOpened, importable, PICTURES } from "./platform/fs";
 import { importFiles } from "./state/importing";
+import { gatherInto, freeSpot } from "./state/gather";
+import { graph } from "./state/graph";
+import { camera, toWorld } from "./canvas/camera";
 import { attachFiles, attachTo } from "./state/assets";
 import { nav, reading } from "./state/nav";
 
@@ -79,6 +82,10 @@ export function App() {
       const el = document.elementFromPoint(at.x / scale, at.y / scale) as HTMLElement | null;
       const under = el?.closest<HTMLElement>("[data-node]")?.dataset.node;
       const focus = nav.get().focus;
+      // onto a board — the one open, or a board's card — everything is gathered on it
+      const nodes = graph.get().nodes;
+      if (under && nodes[under]?.kind === "board") return void gatherInto(under, paths, freeSpot(under));
+      if (!under && focus && nodes[focus]?.kind === "board") return void gatherInto(focus, paths, toWorld(camera.get(), { x: at.x / scale, y: at.y / scale }));
       const target = under ?? focus;
       const pictures = paths.filter((p) => PICTURES.test(p));
       const texts = paths.filter(importable);

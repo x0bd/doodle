@@ -52,4 +52,8 @@ export {
   PaintBoardIcon as AppearanceIcon,
   InformationCircleIcon as AboutIcon,
   PlugSocketIcon as ProvidersIcon,
+  PinIcon as BoardIcon,
+  Scissor01Icon as ClipIcon,
+  SquareIcon as GroupIcon,
+  File02Icon as SourceIcon,
 } from "@hugeicons/core-free-icons";

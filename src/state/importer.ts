@@ -28,10 +28,11 @@ const NUMBER = "(?:\\d+|[ivxlcdm]+|one|two|three|four|five|six|seven|eight|nine|
 const CHAPTER_LINE = new RegExp(`^\\s*(?:chapter|part|book)\\s+${NUMBER}\\b.*$`, "i");
 
 /** Markdown as Doodle's writer reads it: what it cannot hold, gone */
-export function cleanMarkdown(md: string): string {
+export function cleanMarkdown(md: string, kept = false): string {
   let s = md.replace(/^﻿/, "");
   s = s.replace(/^---\n[\s\S]*?\n---\n/, ""); // front matter
-  s = s.replace(/!\[[^\]]*\]\([^)]*\)/g, ""); // pictures
+  // pictures (one kept in the project stays, when `kept` says it may)
+  s = s.replace(/!\[[^\]]*\]\(([^)]*)\)/g, (m, src: string) => (kept && src.startsWith("assets/") ? m : ""));
   s = s.replace(/\[([^\]]+)\]\([^)]*\)/g, "$1"); // links keep their words
   s = s.replace(/<\/?[a-z][^>]*>/gi, ""); // tags
   s = s.replace(/^[ \t]*(?:[-*_][ \t]*){3,}$/gm, "* * *"); // a rule is a scene break

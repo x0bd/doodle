@@ -19,6 +19,8 @@ const STATE_NOTE: Record<Canon, string> = {
 const BIBLE_HINT = { tone: "Quiet, cold, patient. Nothing is explained twice.", rules: "Robots never lie. Plants are the only colour.", avoid: "Text in frame, crowds, sentiment." };
 
 /** The right pane: what the selection is, and its every setting. */
+const GATHERED = new Set(["board", "clip", "group"]);
+
 export function Inspector() {
   const g = graph.use();
   const focus = nav.use((n) => n.focus);
@@ -43,7 +45,8 @@ export function Inspector() {
           </div>
         </div>
       </div>
-      {(node || ids.length > 1) && (
+      {/* gathered things (a board, its clippings and groups) are not canon or a draft */}
+      {(node ? !GATHERED.has(node.kind) : ids.length > 1) && (
         <div className="pane-body">
           <div className="group-head">State</div>
           <div className="group">
@@ -88,7 +91,7 @@ export function Inspector() {
               </div>
             </div>
           ))}
-          {KINDS[node.kind].groups.length === 0 && <p className="pane-empty">Nothing to set. It shows what it is given.</p>}
+          {KINDS[node.kind].groups.length === 0 && <p className="pane-empty">{node.kind === "preview" ? "Nothing to set. It shows what it is given." : KINDS[node.kind].note}</p>}
         </div>
       )}
       {node && <Source node={node} />}

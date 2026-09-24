@@ -3,7 +3,7 @@ import { Icon, PopUpIcon, ChevronRightIcon, ImageIcon } from "../icons";
 import { thumbFor, assets } from "../state/assets";
 import { KINDS } from "../graph/kinds";
 import { FieldRow } from "../shell/Fields";
-import { graph, inputs, outputs, updateData, childCount, childrenOf, measure, setWidth, takeOutput, paginate, type GraphNode, type PortRef } from "../state/graph";
+import { graph, inputs, outputs, updateData, childCount, childrenOf, measure, setWidth, setSize, takeOutput, paginate, type GraphNode, type PortRef } from "../state/graph";
 import { camera, toWorld } from "./camera";
 import { setOnField, giveLook } from "../state/remix";
 import { jobs, jobFor, partialFor } from "../state/jobs";
@@ -21,7 +21,53 @@ export interface NodeHandlers {
  *  the field — not when another card does (the handlers never change). */
 export const Node = memo(Card);
 
-function Card({ node, selected, into, dim, handlers }: { node: GraphNode; selected: boolean; into?: boolean; dim?: boolean; handlers: NodeHandlers }) {
+function Card(props: { node: GraphNode; selected: boolean; into?: boolean; dim?: boolean; handlers: NodeHandlers }) {
+  return props.node.kind === "group" ? <Group {...props} /> : <Sheet {...props} />;
+}
+
+/** A group on a board: not a card but a quiet ground behind what it holds,
+ *  its name above them. Dragged, what lies inside comes with it (Canvas);
+ *  its corner sets its size. */
+function Group({ node, selected, dim, handlers }: { node: GraphNode; selected: boolean; dim?: boolean; handlers: NodeHandlers }) {
+  return (
+    <div
+      className={`node group-frame${selected ? " sel" : ""}${dim ? " dim" : ""}`}
+      style={{ left: node.x, top: node.y, width: node.w, height: node.h }}
+      data-node={node.id}
+      onPointerDown={(e) => handlers.onPointerDown(e, node)}
+      role="group"
+      aria-label={`${node.title}, a group`}
+    >
+      <span className="frame-name">{node.title}</span>
+      <button
+        className="frame-grip"
+        tabIndex={-1}
+        aria-label="Size"
+        title="Drag to size the group"
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          const from = { x: e.clientX, y: e.clientY };
+          const was = { w: node.w, h: node.h };
+          const move = (ev: PointerEvent) => {
+            const z = camera.get().zoom;
+            setSize(node.id, Math.max(200, was.w + (ev.clientX - from.x) / z), Math.max(120, was.h + (ev.clientY - from.y) / z));
+          };
+          const up = () => {
+            window.removeEventListener("pointermove", move);
+            window.removeEventListener("pointerup", up);
+            window.removeEventListener("pointercancel", up);
+          };
+          window.addEventListener("pointermove", move);
+          window.addEventListener("pointerup", up);
+          window.addEventListener("pointercancel", up);
+        }}
+      />
+    </div>
+  );
+}
+
+function Sheet({ node, selected, into, dim, handlers }: { node: GraphNode; selected: boolean; into?: boolean; dim?: boolean; handlers: NodeHandlers }) {
   const ins = inputs(node);
   const outs = outputs(node);
   const edges = graph.use((g) => g.edges);
@@ -58,7 +104,7 @@ function Card({ node, selected, into, dim, handlers }: { node: GraphNode; select
 
   return (
     <div
-      className={`node card k-${node.kind} st-${node.status}${selected ? " sel" : ""}${running ? " running" : ""}${into ? " into" : ""}${dim ? " dim" : ""}${sheet ? " leaf" : ""}`}
+      className={`node card k-${node.kind}${node.kind === "clip" ? ` what-${node.data.what}` : ""} st-${node.status}${selected ? " sel" : ""}${running ? " running" : ""}${into ? " into" : ""}${dim ? " dim" : ""}${sheet ? " leaf" : ""}`}
       ref={box}
       style={{ left: node.x, top: node.y, width: node.w }}
       data-node={node.id}
@@ -92,7 +138,7 @@ function Card({ node, selected, into, dim, handlers }: { node: GraphNode; select
         ) : (
           <span className="node-name">{node.title}</span>
         )}
-        {node.status !== "canon" && <span className="node-st">{STATE_WORD[node.status]}</span>}
+        {node.status !== "canon" && node.kind !== "clip" && node.kind !== "board" && <span className="node-st">{STATE_WORD[node.status]}</span>}
         {inside > 0 && <span className="node-inside badge" title={`${inside} inside — double-click to enter`}>{inside}</span>}
         {job && job.state !== "completed" && (
           <span className="node-state px">
@@ -301,7 +347,107 @@ function Body({ node }: { node: GraphNode }) {
       return <PageBody node={node} />;
     case "chapter":
       return <ChapterBody node={node} />;
+    case "board":
+      return <BoardBody node={node} />;
+    case "clip":
+      return <ClipBody node={node} />;
+    case "group":
+      return null;
   }
+}
+
+/** a document's kind, the way the Finder names it */
+const KIND_WORD: Record<string, string> = { pdf: "PDF", docx: "Word", md: "Markdown", markdown: "Markdown", txt: "Text", text: "Text", fountain: "Fountain" };
+export const kindWord = (from: string) => KIND_WORD[from.split(".").pop()?.toLowerCase() ?? ""] ?? "Document";
+
+/** A clipping on a board: a picture as itself, a passage in reading type, a
+ *  whole document folded to its first lines — each with where it came from. */
+function ClipBody({ node }: { node: GraphNode }) {
+  const what = String(node.data.what);
+  const from = String(node.data.from || "");
+  const page = Number(node.data.page) || 0;
+  if (what === "picture") {
+    const ratio = Math.min(2, Math.max(0.4, Number(node.data.ratio) || 1));
+    const url = thumbFor(node.asset, 512);
+    return (
+      <div className="node-body clip-picture">
+        <div className="clip-img" style={{ aspectRatio: `1 / ${ratio}` }}>
+          {url && <img className="node-img" src={url} alt="" draggable={false} />}
+        </div>
+        <div className="clip-foot px" title={from}>
+          {node.title}
+        </div>
+      </div>
+    );
+  }
+  const text = String(node.data.text ?? "");
+  if (what === "document") {
+    const pages = Number(node.data.pages) || 0;
+    const words = countWords(text.replaceAll("\f", " "));
+    const first = plain((text.split("\f").find((p) => p.trim()) ?? "").replace(/^!\[[^\]]*\]\([^)]*\)$/gm, ""))
+      .trim()
+      .split("\n")
+      .filter(Boolean)
+      .slice(0, 4)
+      .join(" ");
+    return (
+      <div className="node-body clip-doc">
+        <p className="clip-kind px">
+          {kindWord(from)}
+          {pages ? ` · ${pages} ${pages === 1 ? "page" : "pages"}` : ""}
+          {words ? ` · ${fmtCount(words)} words` : ""}
+        </p>
+        <p className="clip-first">{first || "No words in it."}</p>
+        <div className="clip-foot px" title={from}>
+          {from}
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="node-body clip-passage">
+      <p className="clip-words">{plain(text).trim()}</p>
+      <div className="clip-foot px" title={from}>
+        {page ? `p. ${page} · ` : ""}
+        {from}
+      </div>
+    </div>
+  );
+}
+
+/** A board on the field: what it holds at a glance — its pictures in a
+ *  mosaic, else the names of its documents — and how much there is. */
+function BoardBody({ node }: { node: GraphNode }) {
+  // (the graph whole: a selector must return the same thing for the same state)
+  const g = graph.use();
+  const clips = childrenOf(g, node.id)
+    .map((id) => g.nodes[id])
+    .filter((n) => n.kind === "clip");
+  const pics = clips.filter((c) => c.data.what === "picture" && c.asset).slice(0, 6);
+  const docs = clips.filter((c) => c.data.what === "document");
+  return (
+    <div className="node-body board-body">
+      {pics.length ? (
+        <div className={`board-mosaic n${Math.min(pics.length, 6)}`}>
+          {pics.map((c) => {
+            const url = thumbFor(c.asset, 256);
+            return <span key={c.id}>{url && <img src={url} alt="" draggable={false} />}</span>;
+          })}
+        </div>
+      ) : docs.length ? (
+        <ul className="board-docs">
+          {docs.slice(0, 4).map((d) => (
+            <li key={d.id}>{d.title}</li>
+          ))}
+        </ul>
+      ) : (
+        <div className="stack-none">Empty. Enter it and drop documents and pictures on it.</div>
+      )}
+      <div className="sheet-foot px">
+        <span>{clips.length ? `${clips.length} ${clips.length === 1 ? "clipping" : "clippings"}${docs.length ? ` · ${docs.length} ${docs.length === 1 ? "document" : "documents"}` : ""}` : ""}</span>
+      </div>
+    </div>
+  );
 }
 
 /** A take is chosen with a click and pulled out with a drag: out past a
