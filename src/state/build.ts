@@ -17,7 +17,7 @@ import { ui } from "./ui";
 import { placeAt } from "./importer";
 import { pick } from "../providers/registry";
 import { readThumb } from "../platform/fs";
-import { eyes, describe } from "../readers/vision";
+import { eyes, describe, seeStyle, type SeenStyle } from "../readers/vision";
 import { digest, parseBuild, BUILD_SYSTEM, BUILD_SCHEMA, type Built } from "./proposals";
 import { log, since } from "../platform/log";
 
@@ -161,4 +161,58 @@ export function keepProposals(boardId: string, ids: string[]) {
   const n = made.length;
   if (n) say(`Kept ${n === 1 ? "one" : n} from the board — beside it, each with the clippings it came from. ⌘Z takes ${n === 1 ? "it" : "them"} back.`);
   if (bible) say("The board's tone, rules and what to avoid are in the book's bible now (the Inspector, at the top of the book).");
+}
+
+/**
+ * Board → style (PLAN.md M3.7): pictures chosen on a board, looked at
+ * together by a model that sees, and made a style — its palette, light
+ * and medium in words, the pictures themselves its references
+ * (`attachments`, which ride into image requests with it: `jobs.ts`).
+ * It stands beside the board, remembering its clippings.
+ */
+export async function styleFromPictures(ids: string[]) {
+  const g = graph.get();
+  const pics = ids.map((id) => g.nodes[id]).filter((n) => n?.kind === "clip" && n.data.what === "picture" && n.asset);
+  if (!pics.length) return void say("Choose pictures on the board first — the style is made from them.");
+  const board = g.nodes[pics[0].parent ?? ""];
+  const dir = doc.get().path;
+  const by = await eyes();
+  let seen: SeenStyle | null = null;
+  if (by && dir) {
+    const note = say(`Looking at ${pics.length === 1 ? "the picture" : `${pics.length} pictures`} with ${by.name}…`);
+    try {
+      const images = await Promise.all(pics.slice(0, 6).map(async (p) => {
+        const url = await readThumb(dir, p.asset!, 512);
+        return url.slice(url.indexOf(",") + 1);
+      }));
+      seen = await seeStyle(images, by);
+    } catch (e) {
+      log("style", `failed: ${String(e).replace(/^Error: /, "")}`, "warn");
+    } finally {
+      hush(note);
+    }
+  }
+  // no eyes: what was seen of each, when the board was built, stands in
+  const fallback = pics.map((p) => String(p.data.seen ?? "")).filter(Boolean).join(" ");
+  const level = board?.parent ?? null;
+  const here = childrenOf(graph.get(), level).map((id) => graph.get().nodes[id]);
+  const x = board ? board.x + board.w + 60 : 0;
+  const y = board ? board.y : 0;
+  const clear = !here.some((n) => n.x < x + 300 && x < n.x + n.w && n.y < y + 260 && y < n.y + n.h);
+  const node = makeNode("style", x, clear ? y : Math.max(...here.map((n) => n.y + n.h)) + 60, {
+    title: seen?.name || "A style from the board",
+    parent: level,
+    status: "draft",
+    asset: pics[0].asset,
+    attachments: pics.map((p) => p.asset!),
+    data: {
+      description: [seen?.description, seen?.medium && `Medium: ${seen.medium}.`].filter(Boolean).join(" ") || fallback.slice(0, 400) || "The look of the pictures it was made from.",
+      palette: seen?.palette ?? "",
+      lighting: seen?.lighting ?? "",
+      clips: pics.map((p) => p.id).join(","),
+    },
+  });
+  commit("Make a style", () => graph.set((s) => ({ ...s, nodes: { ...s.nodes, [node.id]: node }, order: [...s.order, node.id] })));
+  log("style", `${pics.length} pictures${by ? ` seen by ${by.name}` : ", not looked at"}`);
+  say(`“${node.title}” is a style now, beside the board — its ${pics.length === 1 ? "picture rides" : `${pics.length} pictures ride`} with it into what it is wired to. ⌘Z takes it back.`);
 }

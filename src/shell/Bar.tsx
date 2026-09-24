@@ -8,7 +8,7 @@ import { propose } from "../state/drafts";
 import { proposeShots } from "../state/shots";
 import { KINDS, PLACES } from "../graph/kinds";
 import { gatherDialog } from "../state/gather";
-import { buildFromBoard } from "../state/build";
+import { buildFromBoard, styleFromPictures } from "../state/build";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { History } from "./History";
 
@@ -112,6 +112,7 @@ export function Bar() {
   // on a board, the bar is what a board does: gather, and build from it
   if (entered?.kind === "board") {
     const n = childrenOf(g, entered.id).filter((id) => g.nodes[id].kind === "clip").length;
+    const picked = g.selection.filter((id) => g.nodes[id]?.kind === "clip" && g.nodes[id].data.what === "picture").length;
     return (
       <div className="bar card k-board board-bar">
         <div className="bar-from">
@@ -126,6 +127,11 @@ export function Bar() {
           <button className="pill pill-sm" onClick={() => void gatherDialog(entered.id)} title="Documents or pictures — ⇧⌘I">
             Add…
           </button>
+          {picked > 0 && (
+            <button className="pill pill-sm" onClick={() => void styleFromPictures(g.selection)} title="The look the chosen pictures share, as a style — they ride with it as references">
+              Make a style from {picked === 1 ? "this" : `these ${picked}`}
+            </button>
+          )}
           <button className="pill" onClick={() => void buildFromBoard(entered.id)} disabled={!n} title="Read the board and propose what the book could be built from">
             Build from the board
           </button>

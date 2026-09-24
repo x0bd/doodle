@@ -45,3 +45,45 @@ export async function describe(image: string, by: Eyes, signal?: AbortSignal): P
   if (!r.ok) throw new Error(`${by.name} could not look (${r.status})`);
   return ((await r.json()) as { message: { content: string } }).message.content.trim();
 }
+
+export interface SeenStyle {
+  name: string;
+  description: string;
+  palette: string;
+  lighting: string;
+  medium: string;
+}
+
+const STYLE_SCHEMA = {
+  type: "object",
+  properties: { name: { type: "string" }, description: { type: "string" }, palette: { type: "string" }, lighting: { type: "string" }, medium: { type: "string" } },
+  required: ["name", "description", "palette", "lighting", "medium"],
+};
+
+/** The style a few pictures share (M3.7): its name, a sentence, its palette,
+ *  its light, its medium. Pictures as base64, no `data:` head. */
+export async function seeStyle(images: string[], by: Eyes, signal?: AbortSignal): Promise<SeenStyle> {
+  const r = await fetch(`${BASE}/api/chat`, {
+    method: "POST",
+    signal,
+    body: JSON.stringify({
+      model: by.id,
+      messages: [
+        {
+          role: "user",
+          content:
+            "These pictures are references for one visual style. Describe the style they all share, not any one picture. name: two or three words. description: one short sentence. palette: five colour names, separated by commas. lighting: a short phrase. medium: a short phrase. Answer as JSON.",
+          images,
+        },
+      ],
+      stream: false,
+      think: false,
+      format: STYLE_SCHEMA,
+      options: { temperature: 0.2, num_predict: 300 },
+    }),
+  });
+  if (!r.ok) throw new Error(`${by.name} could not look (${r.status})`);
+  const s = JSON.parse(((await r.json()) as { message: { content: string } }).message.content) as Partial<SeenStyle>;
+  const t = (v: unknown) => (typeof v === "string" ? v.trim() : "");
+  return { name: t(s.name), description: t(s.description), palette: t(s.palette), lighting: t(s.lighting), medium: t(s.medium) };
+}

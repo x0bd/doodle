@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Icon, PlusIcon, type IconSvgElement } from "../icons";
 import { KINDS, type NodeKind } from "../graph/kinds";
 import { gatherDialog } from "../state/gather";
+import { styleFromPictures } from "../state/build";
 import { graph, select, addNode, makeNode, duplicateSelected, deleteSelected, setStatus, childCount, addInput, dropInput, connect, edgeInto, inputs, outputs, type Canon, type GraphNode } from "../state/graph";
 import { enter, nav } from "../state/nav";
 import { enqueue, RUNNABLE } from "../state/jobs";
@@ -78,7 +79,7 @@ export function ContextMenu({ menu, onClose }: { menu: Menu; onClose: () => void
   const ids = node ? (g.selection.includes(node.id) ? g.selection : [node.id]) : [];
   const many = ids.length > 1;
 
-  const rows = 2 + (node ? (takesWords(node) ? 15 : 8) : addable.length + (onBoard ? 2 : 1));
+  const rows = 3 + (node ? (takesWords(node) ? 15 : 8) : addable.length + (onBoard ? 2 : 1));
   const h = 20 + rows * 30;
   const left = Math.min(menu.at.x + 4, window.innerWidth - 236);
   const top = menu.at.y + h > window.innerHeight - 24 ? Math.max(70, menu.at.y - h) : menu.at.y + 4;
@@ -115,6 +116,12 @@ export function ContextMenu({ menu, onClose }: { menu: Menu; onClose: () => void
                   </Row>
                 )}
               </>
+            )}
+            {/* pictures on a board: the look they share, as a style (M3.7) */}
+            {ids.some((i) => g.nodes[i]?.kind === "clip" && g.nodes[i].data.what === "picture") && (
+              <Row icon={GLYPH.style} onClick={() => (onClose(), void styleFromPictures(ids))}>
+                Make a style from {ids.filter((i) => g.nodes[i]?.data.what === "picture").length === 1 ? "this" : "these"}
+              </Row>
             )}
             <Row key_="⌘D" onClick={() => (select(ids), duplicateSelected(), onClose())}>Duplicate</Row>
             <div className="list-gap" />

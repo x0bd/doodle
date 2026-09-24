@@ -77,9 +77,13 @@ function describe(n: GraphNode | undefined, bare = false): string {
   return words(String(d.text ?? ""), n);
 }
 
+/** a style's references that ride with it — four at most */
+const STYLE_REFS = 4;
+
 /** The pictures a node is shown with its words: every character and place
  *  that feeds it and has one — through its own ports or given by hand —
- *  labelled so the model can tell which is whom. Rejected ones never. */
+ *  and a style's references (M3.7), labelled so the model can tell which
+ *  is whom and which is only the look. Rejected ones never. */
 function picturesFor(n: GraphNode): Picture[] {
   const g = graph.get();
   const seen = new Set<string>();
@@ -87,8 +91,14 @@ function picturesFor(n: GraphNode): Picture[] {
   for (const e of Object.values(g.edges)) {
     if (e.to.node !== n.id) continue;
     const from = g.nodes[e.from.node];
-    if (!from || from.status === "rejected" || !from.asset || seen.has(from.id)) continue;
-    if (from.kind !== "character" && from.kind !== "location") continue;
+    if (!from || from.status === "rejected" || seen.has(from.id)) continue;
+    if (from.kind === "style") {
+      seen.add(from.id);
+      for (const ref of (from.attachments ?? []).slice(0, STYLE_REFS))
+        out.push({ label: `${from.title} (a reference for the style — its palette, light and medium, not what is in it)`, ref });
+      continue;
+    }
+    if (!from.asset || (from.kind !== "character" && from.kind !== "location")) continue;
     seen.add(from.id);
     out.push({ label: `${String(from.data.name || from.title)} (${from.kind === "location" ? "a place" : "a character"})`, ref: from.asset });
   }

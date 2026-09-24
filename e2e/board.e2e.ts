@@ -113,3 +113,50 @@ test("built from the board: what is kept links back to the clippings it came fro
   await page.locator(".paper-clips .built-clip", { hasText: "The Keeper's Log" }).click();
   await expect(page.locator(".source .read-title")).toHaveText("The Keeper's Log");
 });
+
+// Board → style (PLAN.md M3.7): pictures chosen on a board become a style
+// whose references ride into the image requests it is wired to.
+test("a style made from pictures on the board carries them into image requests", async ({ page }) => {
+  const ids = await aBoard(page);
+  const pics = await page.evaluate(async (board) => {
+    const G = await import("/src/state/graph.ts" as string);
+    // two small pictures, as the page draws them (a data URL passes through the asset store)
+    const dot = (c: string) => {
+      const k = document.createElement("canvas");
+      k.width = k.height = 8;
+      const x = k.getContext("2d")!;
+      x.fillStyle = c;
+      x.fillRect(0, 0, 8, 8);
+      return k.toDataURL("image/png");
+    };
+    const a = G.makeNode("clip", 400, 0, { title: "harbour-02", parent: board, asset: dot("#e8a0d0"), data: { what: "picture", text: "", source: "", from: "harbour-02.jpg", page: 0, pages: 0, ratio: 1, note: "", seen: "A pink dusk over navy water." } });
+    const b = G.makeNode("clip", 700, 0, { title: "harbour-03", parent: board, asset: dot("#a0e0e0"), data: { what: "picture", text: "", source: "", from: "harbour-03.jpg", page: 0, pages: 0, ratio: 1, note: "", seen: "A pale sun over teal." } });
+    G.graph.set((g: any) => ({ ...g, nodes: { ...g.nodes, [a.id]: a, [b.id]: b }, order: [...g.order, a.id, b.id] }));
+    G.select([a.id, b.id]);
+    return [a.id, b.id];
+  }, ids.board);
+
+  await page.getByRole("button", { name: "Make a style from these 2" }).click();
+  await expect
+    .poll(() => page.evaluate(async () => Object.values((await import("/src/state/graph.ts" as string)).graph.get().nodes).some((n: any) => n.kind === "style")))
+    .toBe(true);
+  const made = await page.evaluate(async ({ board, pics }) => {
+    const G = await import("/src/state/graph.ts" as string);
+    const J = await import("/src/state/jobs.ts" as string);
+    const g = G.graph.get();
+    const style = Object.values(g.nodes).find((n: any) => n.kind === "style") as any;
+    // wire it into a generator at the book's level, and ask what that generator would send
+    const gen = G.makeNode("generate", 0, 600, { parent: null });
+    G.graph.set((s: any) => ({ ...s, nodes: { ...s.nodes, [gen.id]: gen }, order: [...s.order, gen.id] }));
+    G.connectNow({ node: style.id, port: "text" }, { node: gen.id, port: "style" });
+    const req = J.requestFor(G.graph.get().nodes[gen.id]);
+    return { parent: style.parent, board, attachments: style.attachments, clips: style.data.clips, pics, images: (req.images ?? []).map((p: any) => ({ label: p.label, ref: p.ref })), prompt: req.prompt };
+  }, { board: ids.board, pics });
+
+  expect(made.parent).toBeNull(); // beside the board, at the book's level
+  expect(made.clips.split(",")).toEqual(made.pics);
+  expect(made.images).toHaveLength(2);
+  expect(made.images.map((i: any) => i.ref)).toEqual(made.attachments);
+  expect(made.images[0].label).toContain("a reference for the style");
+  expect(made.prompt).toContain("Pictures attached");
+});

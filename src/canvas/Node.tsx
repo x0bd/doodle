@@ -325,7 +325,20 @@ function Body({ node }: { node: GraphNode }) {
         </div>
       );
     case "style":
-      return <Form node={node} />;
+      // its references (M3.7) across the top: they ride with it into what it is wired to
+      return node.attachments?.length ? (
+        <div className="node-body node-form">
+          <div className="style-refs" title="The pictures this style was made from — they go with it into image requests">
+            {node.attachments.slice(0, 4).map((r, i) => {
+              const url = thumbFor(r, 256);
+              return <span key={`${i}:${r}`}>{url && <img src={url} alt="" draggable={false} />}</span>;
+            })}
+          </div>
+          <Form node={node} bare />
+        </div>
+      ) : (
+        <Form node={node} />
+      );
     case "write":
       return <Form node={node} />;
     case "shot":
