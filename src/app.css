@@ -2247,3 +2247,15 @@ html, body, #root { height: 100%; }
 .style-refs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; margin: 2px 0 8px; border-radius: var(--r-plate); overflow: hidden; }
 .style-refs span { aspect-ratio: 1; background: var(--surface); }
 .style-refs img { display: block; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+
+/* tags (M3.8): chips in the Inspector, the board's filter on its bar, a clipping's in its line */
+.tag-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+.tag-chip { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 4px 0 9px; border-radius: 999px; background: var(--tint); font-size: var(--t-label); color: var(--fg); }
+.tag-n { font-size: var(--t-micro); color: var(--fg-faint); }
+.tag-off { width: 16px; height: 16px; display: grid; place-items: center; border-radius: 999px; color: var(--fg-faint); }
+.tag-off:hover { background: var(--tint-2); color: var(--fg); }
+.bar-tags { display: inline-flex; flex-wrap: wrap; gap: 3px; margin-left: 10px; }
+.bar-tag { height: 20px; padding: 0 8px; border-radius: 999px; font-family: var(--font-ui); font-size: var(--t-micro); letter-spacing: 0; text-transform: none; color: var(--fg-muted); }
+.bar-tag:hover { background: var(--tint); }
+.bar-tag.on { background: var(--tint-2); color: var(--fg); }
+.clip-tags { color: var(--fg-muted); }

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { camera, panBy, toWorld, zoomAt, fitRect, type Point, type Rect } from "./camera";
 import { within } from "../state/board";
+import { filtering } from "../state/tagging";
 import { Source } from "./Source";
 import {
   graph, clearSelection, select, toggleSelect, moveNodes, raise, intersects, deleteSelected,
@@ -129,7 +130,14 @@ export function Canvas() {
   const lens = ui.use((u) => u.lens);
   const [lHeld, setLHeld] = useState(false);
   const lensOn = lens || lHeld;
+  // a tag filter (M3.8): only what carries the tag stays lit; groups are where things lie, never dimmed
+  const filter = filtering.use();
   const lit = useMemo(() => {
+    if (filter) {
+      const set = new Set<string>();
+      for (const id of childrenOf(g, focus)) if (g.nodes[id].kind === "group" || g.nodes[id].tags?.includes(filter.tag)) set.add(id);
+      return set;
+    }
     if (!lensOn) return null;
     const set = new Set<string>(g.selection);
     for (const e of Object.values(g.edges)) {
@@ -137,7 +145,7 @@ export function Canvas() {
       if (g.selection.includes(e.to.node)) set.add(e.from.node);
     }
     return set;
-  }, [lensOn, g.selection, g.edges]);
+  }, [lensOn, g.selection, g.edges, filter, g.nodes, focus]);
 
   // the wheel: a trackpad pans, a pinch (ctrlKey) or ⌘-wheel zooms about the
   // pointer. Zoom is also how you cross a level: in past ENTER_AT over a
@@ -473,7 +481,7 @@ export function Canvas() {
   return (
     <div
       ref={ref}
-      className={`stage${live ? " wiring" : ""}${liveType ? ` wiring-${liveType}` : ""}${map ? " lod-map" : ""}${lensOn ? " lens" : ""}${arriveClass}`}
+      className={`stage${live ? " wiring" : ""}${liveType ? ` wiring-${liveType}` : ""}${map ? " lod-map" : ""}${lensOn || filter ? " lens" : ""}${arriveClass}`}
       style={{
         backgroundSize: `${gap}px ${gap}px`,
         backgroundPosition: `${cam.x + 12 * cam.zoom}px ${cam.y + 12 * cam.zoom}px`,

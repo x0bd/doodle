@@ -36,6 +36,8 @@ export interface GraphNode extends Rect {
   from?: string;
   /** inputs given to this node by hand, beyond the kind's own */
   extras?: Port[];
+  /** words the writer files it under (M3.8): lowercase, no `#` */
+  tags?: string[];
 }
 
 export interface PortRef {

@@ -160,3 +160,41 @@ test("a style made from pictures on the board carries them into image requests",
   expect(made.images[0].label).toContain("a reference for the style");
   expect(made.prompt).toContain("Pictures attached");
 });
+
+// Tags (PLAN.md M3.8): tagged in the Inspector; the board filtered by one —
+// only what carries it stays lit; ⌘K finds by it.
+test("tags: the board filtered by one, and ⌘K finds by it", async ({ page }) => {
+  const ids = await aBoard(page);
+  const pics = await page.evaluate(async (board) => {
+    const G = await import("/src/state/graph.ts" as string);
+    const U = await import("/src/state/ui.ts" as string);
+    if (!U.ui.get().inspector) U.toggleInspector();
+    const mk = (t: string, x: number) => G.makeNode("clip", x, 300, { title: t, parent: board, data: { what: "picture", text: "", source: "", from: `${t}.jpg`, page: 0, pages: 0, ratio: 1, note: "" } });
+    const ps = [mk("harbour-01", 0), mk("harbour-02", 300), mk("lamp-room", 600)];
+    G.graph.set((g: any) => ({ ...g, nodes: { ...g.nodes, ...Object.fromEntries(ps.map((p: any) => [p.id, p])) }, order: [...g.order, ...ps.map((p: any) => p.id)] }));
+    G.select([ps[0].id, ps[1].id]);
+    return ps.map((p: any) => p.id);
+  }, ids.board);
+
+  // two chosen, tagged at once in the Inspector
+  const field = page.getByRole("textbox", { name: "Add a tag" });
+  await field.fill("#Harbour");
+  await field.press("Enter");
+  await expect(page.locator(".tag-chip", { hasText: "#harbour" })).toBeVisible();
+
+  // the board's bar offers it; chosen, only what carries it stays lit
+  await page.getByRole("radio", { name: "#harbour" }).click();
+  await expect(page.locator(`[data-node="${pics[2]}"].dim`)).toHaveCount(1);
+  await expect(page.locator(`[data-node="${ids.doc}"].dim`)).toHaveCount(1);
+  // and it is seen to: what does not carry the tag steps back
+  await expect.poll(async () => Number(await page.locator(`[data-node="${pics[2]}"]`).evaluate((el) => getComputedStyle(el).opacity))).toBeLessThan(0.5);
+  await expect(page.locator(`[data-node="${pics[0]}"].dim`)).toHaveCount(0);
+  await expect(page.locator(`[data-node="${pics[1]}"].dim`)).toHaveCount(0);
+  await page.getByRole("radio", { name: "#harbour" }).click();
+  await expect(page.locator(`[data-node="${pics[2]}"].dim`)).toHaveCount(0);
+
+  // ⌘K: #harbour finds the two
+  await page.evaluate(async () => (await import("/src/state/ui.ts" as string)).openPalette());
+  await page.locator(".pal-input").fill("#harbour");
+  await expect(page.locator(".pal-list .list-word")).toHaveText(["harbour-01", "harbour-02"]);
+});

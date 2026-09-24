@@ -9,6 +9,8 @@ import { proposeShots } from "../state/shots";
 import { KINDS, PLACES } from "../graph/kinds";
 import { gatherDialog } from "../state/gather";
 import { buildFromBoard, styleFromPictures } from "../state/build";
+import { tagsIn } from "../state/tags";
+import { filtering, filterBy } from "../state/tagging";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { History } from "./History";
 
@@ -27,6 +29,7 @@ export function Bar() {
   const g = graph.use();
   const j = jobs.use();
   const focus = nav.use((n) => n.focus);
+  const filter = filtering.use();
   const shown = ui.use((u) => u.bar);
   const asking = ui.use((u) => u.ask);
   const [ask, setAsk] = useState("");
@@ -113,6 +116,7 @@ export function Bar() {
   if (entered?.kind === "board") {
     const n = childrenOf(g, entered.id).filter((id) => g.nodes[id].kind === "clip").length;
     const picked = g.selection.filter((id) => g.nodes[id]?.kind === "clip" && g.nodes[id].data.what === "picture").length;
+    const tags = tagsIn(childrenOf(g, entered.id).map((id) => g.nodes[id]));
     return (
       <div className="bar card k-board board-bar">
         <div className="bar-from">
@@ -120,9 +124,22 @@ export function Bar() {
           <b>{entered.title}</b>
           <span className="to">·</span>
           <span>{n ? `${n} ${n === 1 ? "clipping" : "clippings"}` : "empty"}</span>
+          {/* the board's tags: one chosen, only what carries it stays lit (M3.8) */}
+          {tags.length > 0 && (
+            <span className="bar-tags" role="radiogroup" aria-label="Filter by tag">
+              {tags.slice(0, 8).map(({ tag, n: c }) => {
+                const on = filter?.tag === tag;
+                return (
+                  <button key={tag} className={`bar-tag${on ? " on" : ""}`} role="radio" aria-checked={on} onClick={() => filterBy(on ? null : tag)} title={on ? "Show everything" : `Only what is tagged #${tag} (${c})`}>
+                    #{tag}
+                  </button>
+                );
+              })}
+            </span>
+          )}
         </div>
         <div className="bar-acts">
-          <span className="bar-note">{n ? "The writer reads it all and proposes a cast, places, a style and an outline" : "Drop documents and pictures here"}</span>
+          {!picked && <span className="bar-note">{n ? "The writer reads it all and proposes a cast, places, a style and an outline" : "Drop documents and pictures here"}</span>}
           <div className="gap" />
           <button className="pill pill-sm" onClick={() => void gatherDialog(entered.id)} title="Documents or pictures — ⇧⌘I">
             Add…

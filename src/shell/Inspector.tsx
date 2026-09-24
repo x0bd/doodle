@@ -1,11 +1,13 @@
 import { KINDS } from "../graph/kinds";
 import { useState } from "react";
+import { tagsIn } from "../state/tags";
+import { addTags, removeTag } from "../state/tagging";
 import { graph, select, setStatus, type Canon, type GraphNode } from "../state/graph";
 import { prov, behind } from "../state/prov";
 import { remix, remixable } from "../state/remix";
 import { FieldRow } from "./Fields";
 import { GLYPH } from "../canvas/Doc";
-import { Icon } from "../icons";
+import { Icon, CloseIcon } from "../icons";
 import { doc, setBible } from "../state/doc";
 import { nav } from "../state/nav";
 
@@ -46,7 +48,7 @@ export function Inspector() {
         </div>
       </div>
       {/* gathered things (a board, its clippings and groups) are not canon or a draft */}
-      {(node ? !GATHERED.has(node.kind) : ids.length > 1) && (
+      {(node ? !GATHERED.has(node.kind) : ids.length > 1 && !ids.every((i) => GATHERED.has(g.nodes[i]?.kind))) && (
         <div className="pane-body">
           <div className="group-head">State</div>
           <div className="group">
@@ -66,6 +68,7 @@ export function Inspector() {
           </div>
         </div>
       )}
+      {(node || ids.length > 1) && <Tags ids={node ? [node.id] : ids} />}
       {atRoot && (
         <div className="pane-body">
           <div className="group-head">Bible</div>
@@ -175,3 +178,51 @@ function Source({ node }: { node: GraphNode }) {
   );
 }
 
+
+/** Tags (M3.8): what it is filed under — each a chip that comes off; a
+ *  field to add more (a comma between them). For a selection, the tags any
+ *  of them carries, and adding goes to all. */
+function Tags({ ids }: { ids: string[] }) {
+  const g = graph.use();
+  const [typed, setTyped] = useState("");
+  const nodes = ids.map((id) => g.nodes[id]).filter(Boolean);
+  const all = tagsIn(nodes);
+  const add = () => {
+    addTags(ids, typed);
+    setTyped("");
+  };
+  return (
+    <div className="pane-body">
+      <div className="group-head">Tags</div>
+      <div className="group">
+        <div className="group-row col">
+          {all.length > 0 && (
+            <div className="tag-chips">
+              {all.map(({ tag, n }) => (
+                <span key={tag} className="tag-chip">
+                  <span>#{tag}</span>
+                  {ids.length > 1 && n < ids.length && <span className="tag-n px">{n}</span>}
+                  <button className="tag-off" onClick={() => removeTag(ids, tag)} aria-label={`Take off #${tag}`} title="Take it off">
+                    <Icon icon={CloseIcon} size={10} strokeWidth={2.2} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+          <input
+            className="inp"
+            value={typed}
+            placeholder={all.length ? "Another tag" : "A tag — harbour, mara, the storm"}
+            onChange={(e) => setTyped(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") (e.preventDefault(), add());
+            }}
+            onBlur={() => typed.trim() && add()}
+            spellCheck={false}
+            aria-label="Add a tag"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -388,6 +388,7 @@ function ClipBody({ node }: { node: GraphNode }) {
           {url && <img className="node-img" src={url} alt="" draggable={false} />}
         </div>
         <div className="clip-foot px" title={from}>
+          <Tagged node={node} />
           {node.title}
         </div>
       </div>
@@ -412,6 +413,7 @@ function ClipBody({ node }: { node: GraphNode }) {
         </p>
         <p className="clip-first">{first || "No words in it."}</p>
         <div className="clip-foot px" title={from}>
+          <Tagged node={node} />
           {from}
         </div>
       </div>
@@ -421,12 +423,16 @@ function ClipBody({ node }: { node: GraphNode }) {
     <div className="node-body clip-passage">
       <p className="clip-words">{plain(text).trim()}</p>
       <div className="clip-foot px" title={from}>
+        <Tagged node={node} />
         {page ? `p. ${page} · ` : ""}
         {from}
       </div>
     </div>
   );
 }
+
+/** a clipping's tags, before the rest of its line */
+const Tagged = ({ node }: { node: GraphNode }) => (node.tags?.length ? <span className="clip-tags">{node.tags.map((t) => `#${t}`).join(" ")} · </span> : null);
 
 /** A board on the field: what it holds at a glance — its pictures in a
  *  mosaic, else the names of its documents — and how much there is. */
