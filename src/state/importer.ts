@@ -63,6 +63,9 @@ function cutAt(md: string, level: number): { before: string; parts: Piece[] } {
 
 const heads = (md: string, level: number) => md.split("\n").filter((l) => l.startsWith(`${"#".repeat(level)} `) && !l.startsWith(`${"#".repeat(level + 1)}`)).length;
 
+/** a scene break at a chapter's very start or end is only the rule between chapters */
+const edges = (text: string) => text.replace(/^(?:\* \* \*\s*)+/, "").replace(/(?:\s*\* \* \*)+$/, "").trim();
+
 /** one level up, so a chapter's own headings start at the top level */
 const lift = (text: string, by: number) => (by ? text.replace(/^(#{2,6}) /gm, (_, h: string) => `${"#".repeat(Math.max(1, h.length - by))} `) : text);
 
@@ -77,7 +80,7 @@ export function fromMarkdown(md: string, name: string): Piece[] {
     return [{ title: name, text: s }];
   }
   const { before, parts } = cutAt(s, level);
-  const out: Piece[] = parts.map((p) => ({ title: p.title || "Untitled chapter", text: lift(p.text, level) }));
+  const out: Piece[] = parts.map((p) => ({ title: p.title || "Untitled chapter", text: edges(lift(p.text, level)) }));
   // before the chapters: the book's title (a lone `#` above `##` chapters) goes; words stay, as a chapter
   const lead = level === 2 ? before.replace(/^# .*$/m, "").trim() : before;
   if (lead) out.unshift({ title: level === 2 && /^# /m.test(before) ? before.match(/^# (.*)$/m)![1].trim() : "Before", text: lead });

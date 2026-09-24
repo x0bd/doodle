@@ -7,7 +7,7 @@
   (a package: it conforms to com.apple.package), and double-clicking it
   opens it in Doodle. An archive, Name.doodlebox, is one zip that Doodle
   opens by unpacking it into a project. A manuscript (Markdown, plain
-  text, Word) handed over is imported into chapters of the open book.
+  text, Word, PDF) handed over is imported into chapters of the open book.
 -->
 <plist version="1.0">
 <dict>
@@ -53,6 +53,7 @@
         <string>net.daringfireball.markdown</string>
         <string>public.plain-text</string>
         <string>org.openxmlformats.wordprocessingml.document</string>
+        <string>com.adobe.pdf</string>
       </array>
     </dict>
   </array>

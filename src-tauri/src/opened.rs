@@ -19,7 +19,7 @@ static WAITING: Mutex<Vec<String>> = Mutex::new(Vec::new());
 /// a project, an archive, or a manuscript to import, by its name
 fn ours(p: &PathBuf) -> bool {
     let ext = p.extension().and_then(|e| e.to_str()).unwrap_or("").to_lowercase();
-    matches!(ext.as_str(), "doodle" | "doodlebox" | "md" | "markdown" | "mdown" | "txt" | "text" | "fountain" | "spmd" | "docx")
+    matches!(ext.as_str(), "doodle" | "doodlebox" | "md" | "markdown" | "mdown" | "txt" | "text" | "fountain" | "spmd" | "docx" | "pdf")
 }
 
 pub fn arrived(app: &AppHandle, paths: Vec<PathBuf>) {

@@ -34,6 +34,7 @@ pub fn run() {
             opened::take_opened,
             opened::set_recent,
             import::read_import,
+            import::read_bytes,
             spell::spell_check,
             spell::spell_guesses,
             recovery::recovery_append,

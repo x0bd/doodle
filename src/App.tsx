@@ -18,7 +18,7 @@ import { Shortcuts } from "./shell/Shortcuts";
 import { Notice } from "./shell/Notice";
 import { Versions } from "./shell/Versions";
 import { Find } from "./shell/Find";
-import { onFileDrop, onOpened, importable } from "./platform/fs";
+import { onFileDrop, onOpened, importable, PICTURES } from "./platform/fs";
 import { importFiles } from "./state/importing";
 import { attachFiles, attachTo } from "./state/assets";
 import { nav, reading } from "./state/nav";
@@ -80,7 +80,7 @@ export function App() {
       const under = el?.closest<HTMLElement>("[data-node]")?.dataset.node;
       const focus = nav.get().focus;
       const target = under ?? focus;
-      const pictures = paths.filter((p) => /\.(png|jpe?g|webp|gif|avif)$/i.test(p));
+      const pictures = paths.filter((p) => PICTURES.test(p));
       const texts = paths.filter(importable);
       if (texts.length) await importFiles(texts);
       if (!target || !pictures.length) return;

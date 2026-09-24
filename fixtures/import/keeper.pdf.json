@@ -1,0 +1,20 @@
+{
+  "title": "The Keeper",
+  "pages": [
+    {
+      "n": 1,
+      "text": "# Chapter One\n\nThe ship came in at first light, with no one at the wheel and no one on the deck. Mara watched it from the lamp room until the tide turned.\n\nHer father said the sea keeps what it is given, and gives back only what it has finished with. The lighthouse stood where it had always stood.",
+      "scanned": false
+    },
+    {
+      "n": 2,
+      "text": "# Chapter Two\n\nNobody came for the ship. By the third day the gulls had taken it for their own.",
+      "scanned": false
+    },
+    {
+      "n": 3,
+      "text": "",
+      "scanned": true
+    }
+  ]
+}

@@ -11,7 +11,8 @@ import { nav, riseTo } from "./nav";
 import { closeChooser } from "./ui";
 import { chaptersFrom, placeAt } from "./importer";
 import { stats, noted, brought, bookWords } from "./stats";
-import { inTauri, pickImport, readImport } from "../platform/fs";
+import { inTauri, pickImport } from "../platform/fs";
+import { readMaterial, onlyScans } from "../readers";
 import { painted } from "../platform/log";
 import { fitLevel } from "../canvas/view";
 
@@ -32,10 +33,11 @@ export async function importFiles(paths: string[]) {
 export async function importFrom(path: string) {
   let got;
   try {
-    got = await readImport(path);
+    got = await readMaterial(path);
   } catch (e) {
-    return void say(String(e));
+    return void say(String(e).replace(/^Error: /, ""));
   }
+  if (onlyScans(got)) return void say(`“${got.name}” is scanned pages, with no words in them to bring in yet.`);
   const { chapters, form } = chaptersFrom(got.kind, got.text, got.name);
   if (!chapters.length) return void say(`“${got.name}” has no words to bring in.`);
 

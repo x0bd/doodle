@@ -1,0 +1,21 @@
+{
+  "chapters": [
+    {
+      "title": "The Harbour",
+      "text": "A book in three chapters."
+    },
+    {
+      "title": "The Arrival",
+      "text": "The ship came in at first light. See the map.\n\n# Morning\n\nNobody was on deck."
+    },
+    {
+      "title": "The Waiting",
+      "text": "Days went by, and **nothing** moved."
+    },
+    {
+      "title": "The Leaving",
+      "text": "She let the lamp go out."
+    }
+  ],
+  "form": "prose"
+}

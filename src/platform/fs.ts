@@ -70,9 +70,11 @@ export async function pickOpenFile(ext: string, title: string): Promise<string |
   return typeof p === "string" ? p : null;
 }
 
-/** What Doodle can import into chapters (PLAN.md M2.9). */
-export const IMPORTS = ["md", "markdown", "txt", "fountain", "docx"];
-export const importable = (path: string) => /\.(md|markdown|mdown|txt|text|fountain|spmd|docx)$/i.test(path);
+/** What Doodle can import into chapters (PLAN.md M2.9, M3.1). */
+export const IMPORTS = ["md", "markdown", "txt", "fountain", "docx", "pdf"];
+export const importable = (path: string) => /\.(md|markdown|mdown|txt|text|fountain|spmd|docx|pdf)$/i.test(path);
+/** the pictures Doodle keeps — HEIC and TIFF made JPEGs on the way in */
+export const PICTURES = /\.(png|jpe?g|webp|gif|avif|heic|heif|tiff?|bmp)$/i;
 
 /** Ask for a manuscript to import. */
 export async function pickImport(): Promise<string | null> {
@@ -80,9 +82,12 @@ export async function pickImport(): Promise<string | null> {
   return typeof p === "string" ? p : null;
 }
 
-export interface ImportedText { name: string; kind: string; text: string }
-/** A file's words as Markdown (Fountain as it is), read by `import.rs`. */
-export const readImport = (path: string) => invoke<ImportedText>("read_import", { path });
+export interface ImportedText { name: string; kind: string; text: string; pictures: string[] }
+/** A file's words as Markdown (Fountain as it is), read by `import.rs`;
+ *  with `dir`, a Word document's pictures are kept in the project. */
+export const readImport = (path: string, dir: string | null = null) => invoke<ImportedText>("read_import", { path, dir });
+/** A file's bytes (a PDF, for pdf.js). */
+export const readBytes = async (path: string) => new Uint8Array(await invoke<ArrayBuffer>("read_bytes", { path }));
 
 /** Ask where to put a file that is not the document — an export. */
 export async function pickSaveFile(name: string, ext: string, title: string): Promise<string | null> {

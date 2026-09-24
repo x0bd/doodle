@@ -160,6 +160,40 @@ pub struct ImportedAsset {
 
 const MAX_ASSET: u64 = 64 * 1024 * 1024;
 
+/// Bytes into the project's `assets/`, named by their hash (so the same
+/// picture is kept once), written whole or not at all. Its path, relative.
+pub fn store(dir: &Path, bytes: &[u8], ext: &str) -> Result<String, String> {
+    let hash = hex::encode(Sha256::digest(bytes));
+    let rel = format!("assets/{hash}.{ext}");
+    let target = dir.join(&rel);
+    fs::create_dir_all(dir.join("assets")).map_err(|e| e.to_string())?;
+    if !target.exists() {
+        let tmp = dir.join(format!("assets/.{hash}.tmp"));
+        fs::write(&tmp, bytes).map_err(|e| e.to_string())?;
+        fs::rename(&tmp, &target).map_err(|e| e.to_string())?;
+    }
+    Ok(rel)
+}
+
+/// A picture the page cannot draw (HEIC from a phone, TIFF from a scanner),
+/// as a JPEG — by `sips`, the Mac's own image tool.
+fn as_jpeg(src: &Path) -> Result<Vec<u8>, String> {
+    let out = std::env::temp_dir().join(format!("doodle-{}-{}.jpg", std::process::id(), hex::encode(Sha256::digest(src.to_string_lossy().as_bytes()))));
+    let done = std::process::Command::new("/usr/bin/sips")
+        .args(["-s", "format", "jpeg", "-s", "formatOptions", "90"])
+        .arg(src)
+        .arg("--out")
+        .arg(&out)
+        .output()
+        .map_err(|e| e.to_string())?;
+    if !done.status.success() {
+        return Err("That picture could not be read".into());
+    }
+    let bytes = fs::read(&out).map_err(|e| e.to_string());
+    let _ = fs::remove_file(&out);
+    bytes
+}
+
 fn ext_of(p: &Path) -> String {
     p.extension().and_then(|e| e.to_str()).unwrap_or("bin").to_ascii_lowercase()
 }
@@ -175,20 +209,12 @@ pub fn import_asset(dir: String, path: String) -> Result<ImportedAsset, String> 
         return Err("Larger than 64 MB".into());
     }
     let ext = ext_of(&src);
-    if !matches!(ext.as_str(), "png" | "jpg" | "jpeg" | "webp" | "gif" | "avif") {
-        return Err(format!("Not an image: .{ext}"));
-    }
-    let bytes = fs::read(&src).map_err(|e| e.to_string())?;
-    let hash = hex::encode(Sha256::digest(&bytes));
-    let rel = format!("assets/{hash}.{ext}");
-    let dir = PathBuf::from(dir);
-    let target = dir.join(&rel);
-    fs::create_dir_all(dir.join("assets")).map_err(|e| e.to_string())?;
-    if !target.exists() {
-        let tmp = dir.join(format!("assets/.{hash}.tmp"));
-        fs::write(&tmp, &bytes).map_err(|e| e.to_string())?;
-        fs::rename(&tmp, &target).map_err(|e| e.to_string())?;
-    }
+    let rel = match ext.as_str() {
+        "png" | "jpg" | "jpeg" | "webp" | "gif" | "avif" => store(Path::new(&dir), &fs::read(&src).map_err(|e| e.to_string())?, &ext)?,
+        // what WebKit and the image crate may not draw: the Mac's own converter makes a JPEG of it
+        "heic" | "heif" | "tif" | "tiff" | "bmp" => store(Path::new(&dir), &as_jpeg(&src)?, "jpg")?,
+        _ => return Err(format!("Not an image: .{ext}")),
+    };
     Ok(ImportedAsset {
         rel,
         name: src.file_name().and_then(|n| n.to_str()).unwrap_or("").to_string(),
@@ -233,17 +259,9 @@ pub fn write_asset(dir: String, data_url: String) -> Result<ImportedAsset, Strin
     if bytes.len() as u64 > MAX_ASSET {
         return Err("Larger than 64 MB".into());
     }
-    let hash = hex::encode(Sha256::digest(&bytes));
-    let rel = format!("assets/{hash}.{ext}");
-    let dir = PathBuf::from(dir);
-    let target = dir.join(&rel);
-    fs::create_dir_all(dir.join("assets")).map_err(|e| e.to_string())?;
-    if !target.exists() {
-        let tmp = dir.join(format!("assets/.{hash}.tmp"));
-        fs::write(&tmp, &bytes).map_err(|e| e.to_string())?;
-        fs::rename(&tmp, &target).map_err(|e| e.to_string())?;
-    }
-    Ok(ImportedAsset { rel, name: format!("{hash}.{ext}"), bytes: bytes.len() as u64 })
+    let rel = store(Path::new(&dir), &bytes, ext)?;
+    let name = rel.trim_start_matches("assets/").to_string();
+    Ok(ImportedAsset { rel, name, bytes: bytes.len() as u64 })
 }
 
 /// Where Ollama is installed, if it is — the app or the command — so the
