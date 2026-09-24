@@ -68,6 +68,7 @@ pub fn build(app: &App) -> tauri::Result<Menu<Wry>> {
         .item(&item("edit.select-all", "Select All", Some("CmdOrCtrl+A"))?)
         .separator()
         .item(&item("edit.find", "Find and Replace…", Some("CmdOrCtrl+F"))?)
+        .item(&item("edit.comment", "Add Comment", Some("Alt+CmdOrCtrl+M"))?)
         .build()?;
 
     let graph = SubmenuBuilder::new(app, "Graph")

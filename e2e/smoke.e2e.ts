@@ -134,3 +134,41 @@ test("find and replace across the book: a rename everywhere, one undo, a hit sho
   await expect(page.locator(".docpage .pm").first()).toBeVisible();
   await expect.poll(() => page.evaluate(() => window.getSelection()?.toString())).toBe("tarred string");
 });
+
+test("comments: in the margin by their words, through an edit before them, resolved and reopened", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /The keeper's daughter/ }).click();
+  await page.locator('[data-node="ch1"]').dblclick({ position: { x: 60, y: 14 } });
+  const pm = page.locator(".docpage .pm").first();
+  // choose the chapter's last words and comment on them
+  await pm.click();
+  await page.keyboard.press("Meta+ArrowDown");
+  await page.keyboard.press("Shift+Alt+ArrowLeft");
+  await page.keyboard.press("Shift+Alt+ArrowLeft");
+  await page.getByRole("button", { name: "Comment", exact: true }).click();
+  const card = page.locator(".comment-card").first();
+  await expect(card).toBeVisible();
+  await page.keyboard.type("Why does he say it twice?");
+  await expect(card.locator("textarea")).toHaveValue("Why does he say it twice?");
+  const passage = page.locator(".tie.remark").first();
+  await expect(passage).toBeVisible();
+  // level with its words
+  const [p, c] = [await passage.boundingBox(), await card.boundingBox()];
+  expect(Math.abs(p!.y - c!.y)).toBeLessThan(40);
+  // words written before it: it stays with its words
+  await pm.click({ position: { x: 5, y: 5 } });
+  await page.keyboard.press("Meta+ArrowUp");
+  await page.keyboard.type("Before anything, ");
+  await expect(page.locator(".tie.remark").first()).toContainText("he says");
+  // resolved: put away; shown on asking; reopened
+  await card.getByRole("button", { name: "Resolve" }).click();
+  await expect(page.locator(".comment-card")).toHaveCount(0);
+  await expect(page.locator(".tie.remark")).toHaveCount(0);
+  await page.getByRole("button", { name: "1 resolved" }).click();
+  await page.locator(".comment-card.done").getByRole("button", { name: "Reopen" }).click();
+  await expect(page.locator(".tie.remark")).toHaveCount(1);
+  // and it is not the book's words: Find does not see it
+  await page.keyboard.press("Meta+f");
+  await page.getByLabel("Find", { exact: true }).fill("say it twice");
+  await expect(page.locator(".find-note")).toHaveText("Not in the book.");
+});

@@ -6,7 +6,7 @@
  */
 import { LOOKS } from "./looks";
 
-export type NodeKind = "model" | "prompt" | "generate" | "preview" | "character" | "location" | "style" | "write" | "page" | "note" | "shot" | "chapter";
+export type NodeKind = "model" | "prompt" | "generate" | "preview" | "character" | "location" | "style" | "write" | "page" | "note" | "shot" | "chapter" | "comment";
 
 /** the kinds that are written in — entered, they are a document; zoomed
  *  into on the field, they open */
@@ -248,6 +248,16 @@ export const KINDS: Record<NodeKind, KindDef> = {
     outputs: [{ id: "text", name: "text", type: "text" }],
     size: { w: 300, h: 400 },
     data: { text: "" },
+    groups: [],
+  },
+  comment: {
+    kind: "comment",
+    title: "Comment",
+    note: "A remark on a passage — in the margin, never in the book.",
+    inputs: [],
+    outputs: [],
+    size: { w: 240, h: 120 },
+    data: { text: "", resolved: 0 },
     groups: [],
   },
   chapter: {

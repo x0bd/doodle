@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import {
-  Icon, PlusIcon, CheckIcon, CloseIcon, ImageIcon, ModelIcon, TextIcon, GenerateIcon, CharacterIcon, LocationIcon, StyleIcon, WriteIcon, PageIcon, ChapterIcon, NoteIcon, ShotIcon, ChevronRightIcon, ChevronLeftIcon,
+  Icon, PlusIcon, CheckIcon, CloseIcon, ImageIcon, ModelIcon, TextIcon, GenerateIcon, CharacterIcon, LocationIcon, StyleIcon, WriteIcon, PageIcon, ChapterIcon, NoteIcon, CommentIcon, ShotIcon, ChevronRightIcon, ChevronLeftIcon,
   type IconSvgElement,
 } from "../icons";
 import { shots, proposalsFor, keepShot, keepAll, dropShot, dismiss } from "../state/shots";
@@ -9,6 +9,8 @@ import { KINDS, type NodeKind } from "../graph/kinds";
 import { graph, updateData, rename, childrenOf, makeNode, addNode, takeOutput, type GraphNode } from "../state/graph";
 import { ui } from "../state/ui";
 import { reveal } from "../state/reveal";
+import { picked, addComment } from "../state/comments";
+import { Margin } from "./Margin";
 import { drafts, draftsFor, accept, reject, cancel, proseKey } from "../state/drafts";
 import { urlFor, thumbFor, assets } from "../state/assets";
 import { enter, step, sibling, siblings } from "../state/nav";
@@ -24,7 +26,7 @@ import { formOf, countWords, plain } from "../writer/markup";
 
 export const GLYPH: Record<NodeKind, IconSvgElement> = {
   model: ModelIcon, prompt: TextIcon, generate: GenerateIcon, preview: ImageIcon,
-  character: CharacterIcon, location: LocationIcon, style: StyleIcon, write: WriteIcon, page: PageIcon, note: NoteIcon, shot: ShotIcon, chapter: ChapterIcon,
+  character: CharacterIcon, location: LocationIcon, style: StyleIcon, write: WriteIcon, page: PageIcon, note: NoteIcon, shot: ShotIcon, chapter: ChapterIcon, comment: CommentIcon,
 };
 
 /** how long a screenplay runs: a page a minute, some 180 words a page */
@@ -55,7 +57,7 @@ export function Doc({ id }: { id: string }) {
   // beats and notes are written in the list; anything else inside (a brief,
   // a writer, a generator) is a row that opens it
   const kids = inside.filter((k) => k.kind === "note" || k.kind === "shot");
-  const others = inside.filter((k) => k.kind !== "note" && k.kind !== "shot");
+  const others = inside.filter((k) => k.kind !== "note" && k.kind !== "shot" && k.kind !== "comment");
   const images = node.attachments ?? [];
   const mine = draftsFor(all, id);
   const proposed = proposalsFor(proposals, id);
@@ -601,11 +603,12 @@ export function Prose({ node, field = "text", focus = true }: { node: GraphNode;
   const [sel, setSel] = useState<Picked | null>(null);
   const lit = held.use((h) => h.beat);
   const tying = held.use((h) => h.tying);
-  // the passages that beats are tied to, where they are in the words now
-  const found = (field === "text" ? tiedTo(g, node.id) : []).filter((t) => t.found);
+  // the passages that beats and open comments are tied to, where they are in the words now
+  const found = (field === "text" ? tiedTo(g, node.id) : []).filter((t) => t.found && !(t.node.kind === "comment" && t.node.data.resolved));
   const tieKey = found.map((t) => `${t.node.id}:${t.found!.start}:${t.found!.end}:${t.found!.loose}`).join("|");
+  const host = useRef<HTMLDivElement>(null);
   const ties = useMemo<Tie[]>(
-    () => found.map((t) => ({ id: t.node.id, start: t.found!.start, end: t.found!.end, loose: t.found!.loose })),
+    () => found.map((t) => ({ id: t.node.id, start: t.found!.start, end: t.found!.end, loose: t.found!.loose, remark: t.node.kind === "comment" })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [tieKey],
   );
@@ -633,6 +636,7 @@ export function Prose({ node, field = "text", focus = true }: { node: GraphNode;
     }
   }, [tying, sel, node.id]);
   return (
+    <div className="prose-wrap" ref={host}>
     <Editor
       value={value}
       form={form}
@@ -657,16 +661,28 @@ export function Prose({ node, field = "text", focus = true }: { node: GraphNode;
           .filter((n) => n.title.toLowerCase().startsWith(q.toLowerCase()))
           .map((n) => ({ id: n.id, title: n.title, hint: n.kind, icon: <Icon icon={GLYPH[n.kind]} size={13} strokeWidth={1.8} /> }))
       }
-      onPick={setSel}
+      onPick={(p) => {
+        setSel(p);
+        // what Edit › Add Comment is about — kept past the blur the menu causes
+        if (p && field === "text") picked.set({ node: node.id, p });
+      }}
       gutter
       bubble={(p) =>
         field === "text" ? (
-          <button className="wb-act" onClick={() => beatFrom(p)} title="A beat from the selected words, tied to them">
-            <Icon icon={PlusIcon} size={11} strokeWidth={2.4} />
-            {node.kind === "prompt" ? "Beat" : "Note"}
-          </button>
+          <>
+            <button className="wb-act" onClick={() => beatFrom(p)} title="A beat from the selected words, tied to them">
+              <Icon icon={PlusIcon} size={11} strokeWidth={2.4} />
+              {node.kind === "prompt" || node.kind === "chapter" ? "Beat" : "Note"}
+            </button>
+            <button className="wb-act" onClick={() => (addComment(node.id, p), setSel(null))} title="A comment on these words, in the margin — ⌥⌘M">
+              <Icon icon={CommentIcon} size={11} strokeWidth={2.2} />
+              Comment
+            </button>
+          </>
         ) : null
       }
     />
+    {field === "text" && <Margin node={node} host={host} value={value} />}
+    </div>
   );
 }

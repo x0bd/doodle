@@ -23,6 +23,7 @@ import { inTauri, revealPath } from "./fs";
 import { logPath } from "./log";
 import { measure } from "../state/bench";
 import { makeDiagnostics } from "../state/diagnostics";
+import { commentOnSelection } from "../state/comments";
 import { editorUndo, editorRedo } from "../writer/Editor";
 import { keepVersionHere, openVersions } from "../state/versions";
 
@@ -60,6 +61,7 @@ export const actions: Record<string, () => void> = {
   "edit.duplicate": () => !typing() && duplicateSelected(),
   "edit.delete": () => !typing() && deleteSelected(),
   "edit.find": openFind,
+  "edit.comment": commentOnSelection,
   "edit.select-all": () => (typing() ? document.execCommand("selectAll") : selectAll()),
   "graph.run": () => enqueue(),
   "graph.stop": clearQueue,
@@ -119,6 +121,7 @@ function devKeys() {
       : k === "e" && e.shiftKey ? "file.export"
       : k === "f" && e.shiftKey ? "view.focus"
       : k === "f" ? "edit.find"
+      : e.altKey && e.code === "KeyM" ? "edit.comment"
       : k === "s" ? "file.save"
       : k === "n" ? "file.new"
       : k === "k" ? "view.search"

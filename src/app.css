@@ -2079,3 +2079,26 @@ html, body, #root { height: 100%; }
 .find-mark { background: var(--tint-2); color: var(--fg); border-radius: 3px; padding: 0 1px; }
 .find-one { flex: none; margin-right: 4px; opacity: 0; }
 .find-hit:hover .find-one, .find-one:focus-visible { opacity: 1; }
+
+/* ── comments (M2.7): in the margin, level with their words ── */
+.prose-wrap { position: relative; }
+/* a comment's passage: a quieter mark than a beat's, the tint under the words */
+.tie.remark, .tie.remark.loose { background: var(--tint); border-radius: 2px; box-shadow: inset 0 -1px 0 var(--fg-faint); }
+.tie.remark.lit { background: var(--tint-2); box-shadow: inset 0 -1px 0 var(--fg-muted); }
+.margin { position: absolute; top: 0; left: calc(100% + 28px); width: 232px; height: 100%; }
+.margin.narrow { left: auto; right: -34px; width: 26px; }
+.comment-card { position: absolute; left: 0; width: 232px; padding: 8px 8px 6px 10px; border-radius: 12px; background: var(--surface); box-shadow: var(--card-lift), var(--card-lift-2); transition: top var(--base) var(--ease); z-index: 3; }
+.comment-card.done { opacity: 0.55; }
+.margin.narrow .comment-card { top: 30px; left: auto; right: 0; }
+.remark-text { display: block; width: 100%; resize: none; field-sizing: content; min-height: 20px; max-height: 240px; font-size: var(--t-label); line-height: 1.5; color: var(--fg); background: transparent; outline: none; user-select: text; -webkit-user-select: text; }
+.remark-text::placeholder { color: var(--fg-faint); }
+.remark-adrift { margin-bottom: 4px; font-size: var(--t-micro); color: var(--fg-faint); font-style: italic; }
+.remark-foot { display: flex; align-items: center; gap: 2px; margin-top: 4px; }
+.remark-on { flex: 1; min-width: 0; font-size: var(--t-micro); color: var(--fg-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.remark-key { width: 22px; height: 22px; flex: none; }
+.margin-mark-at { position: absolute; right: 0; }
+.margin-mark { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 999px; color: var(--fg-muted); background: var(--tint); }
+.margin-mark:hover, .margin-mark.on { background: var(--tint-2); color: var(--fg); }
+.margin-resolved { position: absolute; top: -30px; right: 0; height: 22px; padding: 0 10px; border-radius: 999px; font-size: var(--t-micro); color: var(--fg-faint); white-space: nowrap; z-index: 4; }
+.margin-resolved:hover { background: var(--tint); color: var(--fg); }
+.win.focusing .margin { opacity: 0; pointer-events: none; transition: opacity var(--base) var(--ease); }

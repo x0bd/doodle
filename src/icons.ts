@@ -44,6 +44,7 @@ export {
   File01Icon as PageIcon,
   BookOpen01Icon as ChapterIcon,
   StickyNote01Icon as NoteIcon,
+  BubbleChatIcon as CommentIcon,
   ArrowUp01Icon as UpIcon,
   Camera01Icon as ShotIcon,
   Search01Icon as SearchIcon,

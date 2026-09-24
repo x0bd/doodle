@@ -30,6 +30,8 @@ export interface Tie {
   start: number;
   end: number;
   loose?: boolean;
+  /** a beat's passage, or a comment's (M2.7) — marked differently */
+  remark?: boolean;
 }
 /** what is selected, as words, and where it starts in them */
 export interface Picked {
@@ -360,7 +362,7 @@ export function Editor(props: Props) {
             for (const t of ties ?? []) {
               const a = toPos(pl, t.start);
               const b = toPos(pl, t.end);
-              if (b > a) out.push(Decoration.inline(a, b, { class: `tie${t.loose ? " loose" : ""}${lit === t.id ? " lit" : ""}` }));
+              if (b > a) out.push(Decoration.inline(a, b, { class: `tie${t.remark ? " remark" : ""}${t.loose ? " loose" : ""}${lit === t.id ? " lit" : ""}`, "data-tie": t.id }));
             }
             for (const n of names ?? []) {
               const needle = `@${n}`;

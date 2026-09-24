@@ -10,8 +10,9 @@ import { GLYPH } from "../canvas/Doc";
 /** where a drop would land on a row */
 type Drop = { id: string; where: "before" | "after" | "into" } | null;
 
+/** what a row holds, in order — comments live in the margin, not the tree */
 const kids = (g: GraphState, id: string | null) =>
-  childrenOf(g, id).map((c) => g.nodes[c]).sort((a, b) => a.seq - b.seq);
+  childrenOf(g, id).map((c) => g.nodes[c]).filter((n) => n.kind !== "comment").sort((a, b) => a.seq - b.seq);
 
 /** The left pane: the whole document as a tree — the book, its chapters,
  *  their pages, what the pages hold — the way an outliner shows a scene.
