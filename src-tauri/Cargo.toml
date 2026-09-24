@@ -1,6 +1,6 @@
 [package]
 name = "doodle"
-version = "0.2.0"
+version = "0.3.0"
 description = "A recursively zoomable creative document"
 authors = ["x0bd"]
 edition = "2021"
