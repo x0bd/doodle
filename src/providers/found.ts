@@ -21,6 +21,9 @@ export interface Found {
 }
 
 /** a model's name as a person would say it: `hf.co/someone/chandra-ocr-2-GGUF:Q4_K_M` → chandra-ocr-2 */
+/** the writer to pull: Hemmingway-1, the best prose that fits a laptop (HANDOFF.md, 2026-09-24) */
+const PULL = "ollama pull hf.co/bartowski/Altworld_Hemmingway-1-GGUF:Q6_K";
+
 const said = (m: string) => m.replace(/^hf\.co\/[^/]+\//, "").replace(/-GGUF(?=:|$)/i, "").replace(/:(latest|Q\d\w*)$/i, "");
 
 /** where a binary came from, by the folder it is in */
@@ -49,10 +52,10 @@ export async function probe(): Promise<Record<string, Found>> {
     olS === "available"
       ? { chip: "Ready", ready: true, says: `Writes with ${writers.join(", ")}.${rest.length ? ` Also here: ${rest.join(", ")}.` : ""}`, where: "localhost:11434" }
       : ol.answered
-        ? { chip: "Nothing to write with", ready: false, says: `Running, but no model here writes prose${rest.length ? ` (${rest.join(", ")} read, not write)` : ""}.`, fix: "ollama pull qwen3:14b" }
+        ? { chip: "Nothing to write with", ready: false, says: `Running, but no model here writes prose${rest.length ? ` (${rest.join(", ")} read, not write)` : ""}.`, fix: PULL }
         : at
           ? { chip: "Not running", ready: false, says: "Installed, but not running.", where: at, then: "Open Ollama from Applications, then look again." }
-          : { chip: "Not installed", ready: false, says: "Models on this Mac, free and private. Install it from ollama.com, then pull one that writes:", fix: "ollama pull qwen3:14b" };
+          : { chip: "Not installed", ready: false, says: "Models on this Mac, free and private. Install it from ollama.com, then pull one that writes:", fix: PULL };
 
   // ChatGPT through Codex: not found, found but signed out, ready
   const cx: CodexStatus | null = inTauri ? await codexStatus().catch(() => null) : null;

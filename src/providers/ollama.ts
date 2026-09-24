@@ -12,9 +12,11 @@ const BASE = "http://localhost:11434";
 let installed: string[] = [];
 /** whether the server answered the last time it was asked */
 let answered = false;
-/** families that write prose; OCR and embedding models do not */
-const WRITERS = /^(llama|gemma|qwen|mistral|mixtral|phi|deepseek|command|granite|smollm|tinyllama)/i;
-const writers = () => installed.filter((m) => WRITERS.test(m));
+/** the ones that only read — OCR, embeddings; every other model writes
+ *  (a finetune pulled from Hugging Face is named for its maker, not its family) */
+const READS_ONLY = /(ocr|embed|nomic-bert|bge-|minilm|mxbai|rerank|whisper)/i;
+const writes = (m: string) => !READS_ONLY.test(m);
+const writers = () => installed.filter(writes);
 /** the ones that can look at a picture; the rest are given the words only */
 const SEES = /(llava|vision|-vl|vl:|minicpm-v|moondream|gemma3|llama4|qwen2\.5vl|qwen3-vl|granite3\.2-vision|mistral-small3\.[12])/i;
 
@@ -45,7 +47,7 @@ function body(req: TextRequest) {
 /** what the Providers screen says: whether it answered, and what it holds */
 export const ollamaFound = () => ({
   answered,
-  models: installed.map((name) => ({ name, writes: WRITERS.test(name), sees: SEES.test(name) })),
+  models: installed.map((name) => ({ name, writes: writes(name), sees: SEES.test(name) })),
 });
 
 /** where it is installed, if it is — "not running" and "not here" are
