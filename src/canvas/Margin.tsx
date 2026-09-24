@@ -32,8 +32,12 @@ export function Margin({ node, host, value }: { node: GraphNode; host: RefObject
   const cards = useRef<Record<string, HTMLDivElement | null>>({});
   const key = list.map((c) => `${c.id}:${c.data.resolved}:${String(c.data.text).length}`).join("|");
 
-  // level with its words, then pushed down so none covers the one above
-  const layout = () => {
+  // Level with its words, then pushed down so none covers the one above.
+  // The writer draws a new passage's mark a moment after the comment exists,
+  // so a first pass places only what it can find; the pass a frame later
+  // (`settled`) is the one that calls a comment with no mark adrift. A card
+  // with no place yet is not shown, so nothing slides in from the foot.
+  const layout = (settled = true) => {
     const h = host.current;
     if (!h) return;
     const box = h.getBoundingClientRect();
@@ -41,10 +45,12 @@ export function Margin({ node, host, value }: { node: GraphNode; host: RefObject
     const pane = document.querySelector<HTMLElement>(".win.ins-on .pane.right");
     const edge = pane ? pane.getBoundingClientRect().left : window.innerWidth;
     setWide(edge - box.right >= ROOM);
-    const at = list.map((c) => {
-      const el = h.querySelector(`[data-tie="${c.id}"]`);
-      return { id: c.id, top: el ? el.getBoundingClientRect().top - box.top : Infinity };
-    });
+    const at = list
+      .map((c) => {
+        const el = h.querySelector(`[data-tie="${c.id}"]`);
+        return { id: c.id, top: el ? el.getBoundingClientRect().top - box.top : settled ? Infinity : NaN };
+      })
+      .filter((a) => !Number.isNaN(a.top));
     at.sort((a, b) => a.top - b.top);
     const next: Record<string, number> = {};
     let floor = 0;
@@ -57,16 +63,22 @@ export function Margin({ node, host, value }: { node: GraphNode; host: RefObject
     }
     setTops(next);
   };
-  useLayoutEffect(layout, [value, key]);
+  useLayoutEffect(() => {
+    layout(false);
+    const f = requestAnimationFrame(() => layout(true));
+    return () => cancelAnimationFrame(f);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, key]);
   useEffect(() => {
     const h = host.current;
     if (!h) return;
-    const ro = new ResizeObserver(() => layout());
+    const again = () => layout();
+    const ro = new ResizeObserver(again);
     ro.observe(h);
-    window.addEventListener("resize", layout);
+    window.addEventListener("resize", again);
     return () => {
       ro.disconnect();
-      window.removeEventListener("resize", layout);
+      window.removeEventListener("resize", again);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
@@ -92,14 +104,14 @@ export function Margin({ node, host, value }: { node: GraphNode; host: RefObject
 
   if (!all.length) return null;
   const card = (c: GraphNode, style?: React.CSSProperties) => (
-    <Remark key={c.id} c={c} style={style} set={(el) => (cards.current[c.id] = el)} adrift={!host.current?.querySelector(`[data-tie="${c.id}"]`)} />
+    <Remark key={c.id} c={c} style={style} placed={tops[c.id] !== undefined} set={(el) => (cards.current[c.id] = el)} adrift={!host.current?.querySelector(`[data-tie="${c.id}"]`)} />
   );
   return (
     <div className={`margin${wide ? "" : " narrow"}`} aria-label="Comments">
       {wide
-        ? list.map((c) => card(c, { top: tops[c.id] ?? 0 }))
+        ? list.map((c) => card(c, tops[c.id] === undefined ? { visibility: "hidden" } : { top: tops[c.id] }))
         : list.map((c) => (
-            <div key={c.id} className="margin-mark-at" style={{ top: tops[c.id] ?? 0 }}>
+            <div key={c.id} className="margin-mark-at" style={tops[c.id] === undefined ? { visibility: "hidden" } : { top: tops[c.id] }}>
               <button className={`margin-mark${open === c.id ? " on" : ""}`} onClick={() => setOpen((o) => (o === c.id ? null : c.id))} onPointerEnter={() => holdBeat(c.id)} onPointerLeave={() => holdBeat(null)} aria-label="A comment">
                 <Icon icon={CommentIcon} size={12} strokeWidth={2} />
               </button>
@@ -115,15 +127,16 @@ export function Margin({ node, host, value }: { node: GraphNode; host: RefObject
   );
 }
 
-function Remark({ c, style, set, adrift }: { c: GraphNode; style?: React.CSSProperties; set: (el: HTMLDivElement | null) => void; adrift: boolean }) {
+function Remark({ c, style, set, adrift, placed }: { c: GraphNode; style?: React.CSSProperties; set: (el: HTMLDivElement | null) => void; adrift: boolean; placed: boolean }) {
   const box = useRef<HTMLTextAreaElement>(null);
   const want = editing.use();
+  // a comment just made takes the caret — once it stands where it belongs
   useEffect(() => {
-    if (want === c.id) {
+    if (want === c.id && placed) {
       box.current?.focus();
       editing.set(null);
     }
-  }, [want, c.id]);
+  }, [want, c.id, placed]);
   const done = !!c.data.resolved;
   return (
     <div ref={set} className={`comment-card${done ? " done" : ""}`} style={style} onPointerEnter={() => holdBeat(c.id)} onPointerLeave={() => holdBeat(null)}>

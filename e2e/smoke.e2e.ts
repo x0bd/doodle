@@ -138,6 +138,7 @@ test("find and replace across the book: a rename everywhere, one undo, a hit sho
 test("comments: in the margin by their words, through an edit before them, resolved and reopened", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: /The keeper's daughter/ }).click();
+  await page.locator(".stage").press("Tab"); // the panes away: room for the margin
   await page.locator('[data-node="ch1"]').dblclick({ position: { x: 60, y: 14 } });
   const pm = page.locator(".docpage .pm").first();
   // choose the chapter's last words and comment on them
@@ -152,14 +153,16 @@ test("comments: in the margin by their words, through an edit before them, resol
   await expect(card.locator("textarea")).toHaveValue("Why does he say it twice?");
   const passage = page.locator(".tie.remark").first();
   await expect(passage).toBeVisible();
-  // level with its words
+  // in the margin, level with its words
   const [p, c] = [await passage.boundingBox(), await card.boundingBox()];
+  expect(c!.x).toBeGreaterThan(p!.x + p!.width);
   expect(Math.abs(p!.y - c!.y)).toBeLessThan(40);
   // words written before it: it stays with its words
   await pm.click({ position: { x: 5, y: 5 } });
   await page.keyboard.press("Meta+ArrowUp");
   await page.keyboard.type("Before anything, ");
   await expect(page.locator(".tie.remark").first()).toContainText("he says");
+  await expect(card).toBeVisible();
   // resolved: put away; shown on asking; reopened
   await card.getByRole("button", { name: "Resolve" }).click();
   await expect(page.locator(".comment-card")).toHaveCount(0);
@@ -167,7 +170,13 @@ test("comments: in the margin by their words, through an edit before them, resol
   await page.getByRole("button", { name: "1 resolved" }).click();
   await page.locator(".comment-card.done").getByRole("button", { name: "Reopen" }).click();
   await expect(page.locator(".tie.remark")).toHaveCount(1);
+  // the panes back: no room — a mark at the column's edge opens the card
+  await page.locator(".stage").press("Tab");
+  await expect(page.locator(".margin-mark")).toHaveCount(1, { timeout: 3000 });
+  await page.locator(".margin-mark").click();
+  await expect(page.locator(".comment-card textarea")).toHaveValue("Why does he say it twice?");
   // and it is not the book's words: Find does not see it
+  await page.keyboard.press("Escape");
   await page.keyboard.press("Meta+f");
   await page.getByLabel("Find", { exact: true }).fill("say it twice");
   await expect(page.locator(".find-note")).toHaveText("Not in the book.");
