@@ -1,5 +1,5 @@
-import { useEffect, useMemo } from "react";
-import { Icon, SourceIcon } from "../icons";
+import { useEffect, useMemo, useState } from "react";
+import { Icon, SourceIcon, ClipIcon } from "../icons";
 import { graph, type GraphNode } from "../state/graph";
 import { doc } from "../state/doc";
 import { urlFor, assets } from "../state/assets";
@@ -10,6 +10,7 @@ import { openKept } from "../platform/fs";
 import { Editor } from "../writer/Editor";
 import { countWords } from "../writer/markup";
 import { kindWord } from "./Node";
+import { clipPassage } from "../state/gather";
 
 /** a page to open a document at, asked for by whatever opened it */
 const openingAt = createStore<{ id: string; page: number } | null>(null);
@@ -43,6 +44,40 @@ export function Source({ id }: { id: string }) {
     if (page > 1) requestAnimationFrame(() => document.getElementById(`source-page-${page}`)?.scrollIntoView({ block: "start" }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  // a passage selected in a document: a pill over it to clip it to the board
+  const [picked, setPicked] = useState<{ text: string; page: number; x: number; y: number } | null>(null);
+  useEffect(() => {
+    if (what !== "document") return;
+    const look = () => {
+      const s = window.getSelection();
+      const r = s && s.rangeCount && !s.isCollapsed ? s.getRangeAt(0) : null;
+      const sec = r && (r.commonAncestorContainer instanceof Element ? r.commonAncestorContainer : r.commonAncestorContainer.parentElement)?.closest<HTMLElement>(".source-page");
+      const start = r && (r.startContainer instanceof Element ? r.startContainer : r.startContainer.parentElement)?.closest<HTMLElement>(".source-page");
+      const text = s?.toString().trim() ?? "";
+      if (!r || !text || !(sec ?? start)) return setPicked(null);
+      const box = r.getBoundingClientRect();
+      // the page it begins on
+      const page = Number((start ?? sec)!.id.replace("source-page-", "")) || 1;
+      setPicked({ text: s!.toString(), page, x: box.left + box.width / 2, y: box.top });
+    };
+    document.addEventListener("selectionchange", look);
+    // it rides with the words as the page scrolls
+    document.addEventListener("scroll", look, true);
+    return () => {
+      document.removeEventListener("selectionchange", look);
+      document.removeEventListener("scroll", look, true);
+    };
+  }, [what]);
+  const clip = () => {
+    if (!picked) return;
+    const made = clipPassage(id, picked.text, picked.page);
+    if (!made) return;
+    window.getSelection()?.removeAllRanges();
+    setPicked(null);
+    const board = graph.get().nodes[graph.get().nodes[id]?.parent ?? ""]?.title ?? "the board";
+    say(`Clipped to “${board}”, page ${picked.page}. ⌘Z takes it back.`);
+  };
 
   if (!node) return null;
   const from = String(node.data.from ?? "");
@@ -113,6 +148,14 @@ export function Source({ id }: { id: string }) {
             ))
           ))}
       </article>
+      {picked && (
+        <div className="clip-pill" style={{ left: picked.x, top: picked.y }} onMouseDown={(e) => e.preventDefault()}>
+          <button className="wb-act" onClick={clip} title="A clipping of these words on the board, with its page">
+            <Icon icon={ClipIcon} size={11} strokeWidth={2.2} />
+            Clip to board
+          </button>
+        </div>
+      )}
     </div>
   );
 }

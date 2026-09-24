@@ -141,3 +141,36 @@ export async function gatherInto(boardId: string, paths: string[], at: { x: numb
     `Laid ${count === 1 ? "one thing" : `${count} things`} on “${board}”${failed.length ? ` — ${failed.length === 1 ? `“${failed[0]}”` : `${failed.length} files`} could not be read` : ""}. ⌘Z takes ${count === 1 ? "it" : "them"} back.`,
   );
 }
+
+/** a passage's name: its first words */
+export const passageTitle = (text: string) => {
+  const words = text.replace(/\s+/g, " ").trim().split(" ");
+  return words.slice(0, 6).join(" ").replace(/[,;:.]$/, "") + (words.length > 6 ? "…" : "");
+};
+
+/**
+ * Clip a passage from a document clipping (PLAN.md M3.4): a clipping of
+ * its own on the same board, beside the document — under the passages
+ * already clipped from it — remembering the document and the page.
+ */
+export function clipPassage(docId: string, text: string, page: number): string | null {
+  const g = graph.get();
+  const d = g.nodes[docId];
+  const words = text.replace(/\n{3,}/g, "\n\n").trim();
+  if (!d || !words) return null;
+  const from = childrenOf(g, d.parent).map((id) => g.nodes[id]);
+  const siblings = from.filter((n) => n.kind === "clip" && n.data.of === docId);
+  const at = { x: d.x + d.w + 32, y: siblings.length ? Math.max(...siblings.map((n) => n.y + n.h)) + 16 : d.y };
+  const others = from.filter((n) => n.kind !== "group");
+  const laid = layOut([{ name: "", items: [{ what: "passage", title: passageTitle(words), text: words }] }], at, others);
+  const p = laid.items[0];
+  const node = makeNode("clip", p.x, p.y, {
+    title: p.title,
+    w: p.w,
+    h: p.h,
+    parent: d.parent,
+    data: { what: "passage", text: words, source: String(d.data.source ?? ""), from: String(d.data.from ?? ""), page, pages: 0, ratio: 0, note: "", of: docId },
+  });
+  commit("Clip", () => graph.set((x) => ({ ...x, nodes: { ...x.nodes, [node.id]: node }, order: [...x.order, node.id] })));
+  return node.id;
+}

@@ -2200,3 +2200,20 @@ html, body, #root { height: 100%; }
 .lod-map .k-clip.what-picture .node-body { display: flex; }
 .lod-map .k-clip.what-picture .clip-foot { display: none; }
 .lod-map .frame-name { font-size: 26px; top: -38px; left: 6px; color: var(--fg); }
+
+/* a passage selected in a document opened from a board: the pill that clips it (M3.4) */
+.clip-pill {
+  position: fixed;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  padding: 3px;
+  border-radius: var(--r-ctl);
+  background: var(--surface-raised);
+  box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), 0 0 0 1px var(--rim-edge), var(--lift-2);
+  translate: -50% calc(-100% - 10px);
+  animation: in var(--fast) var(--ease) both;
+  white-space: nowrap;
+  font-size: var(--t-label);
+  line-height: 1;
+}
