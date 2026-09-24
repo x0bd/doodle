@@ -106,6 +106,23 @@ export function Doc({ id }: { id: string }) {
             )}
           </p>
           <input className="paper-title" value={node.title} onChange={(e) => rename(id, e.target.value)} spellCheck={false} aria-label="Title" placeholder="Untitled" />
+          {/* built from the board (M3.6): the clippings it came from, a key away */}
+          {String(node.data.clips ?? "")
+            .split(",")
+            .filter((c) => g.nodes[c]).length > 0 && (
+            <p className="paper-clips">
+              <span>From the board</span>
+              {String(node.data.clips)
+                .split(",")
+                .map((c) => g.nodes[c])
+                .filter(Boolean)
+                .map((c) => (
+                  <button key={c.id} className="built-clip" onClick={() => enter(c.id)} title="Open the clipping">
+                    {c.title}
+                  </button>
+                ))}
+            </p>
+          )}
         </header>
 
         <Body node={node} />

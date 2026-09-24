@@ -64,3 +64,52 @@ test("a passage clipped from page 2 remembers its page, and opens its document t
   expect(top).toBeGreaterThanOrEqual(0);
   expect(top).toBeLessThan(200);
 });
+
+// Build from the board (PLAN.md M3.6), with the stand-in writer so the
+// proposals are the same every time: the board read, a cast, places, a
+// style and an outline proposed, each naming its clippings; kept, each is a
+// node that opens the clippings it came from.
+test("built from the board: what is kept links back to the clippings it came from", async ({ page }) => {
+  const ids = await aBoard(page);
+  await page.evaluate(async (board) => {
+    const U = await import("/src/state/ui.ts" as string);
+    U.setWriteWith("Mock");
+    const G = await import("/src/state/graph.ts" as string);
+    const pic = G.makeNode("clip", 400, 0, { title: "harbour-03", parent: board, data: { what: "picture", text: "", source: "", from: "harbour-03.jpg", page: 0, pages: 0, ratio: 1, note: "", seen: "A yellow sun over a navy sea." } });
+    G.graph.set((g: any) => ({ ...g, nodes: { ...g.nodes, [pic.id]: pic }, order: [...g.order, pic.id] }));
+  }, ids.board);
+
+  await page.getByRole("button", { name: "Build from the board" }).click();
+  const panel = page.getByRole("complementary", { name: "From the board" });
+  await expect(panel).toBeVisible({ timeout: 10_000 });
+  for (const head of ["Cast", "Places", "Things", "Style", "Outline", "Bible"]) await expect(panel.locator(".built-of", { hasText: head })).toBeVisible();
+  // each proposal names what it came from; pointed at, those light on the board
+  await panel.locator(".built-row", { hasText: "Mara" }).hover();
+  await expect(page.locator(`[data-node="${ids.doc}"].from-lit`)).toHaveCount(1);
+
+  // keep Mara, then all the rest
+  await page.getByRole("button", { name: "Keep Mara" }).click();
+  await page.getByRole("button", { name: "Keep all" }).click();
+  await expect(panel).toHaveCount(0);
+
+  const kept = await page.evaluate(async (board) => {
+    const G = await import("/src/state/graph.ts" as string);
+    const D = await import("/src/state/doc.ts" as string);
+    const g = G.graph.get();
+    const made = Object.values(g.nodes).filter((n: any) => n.parent === null && n.id !== board && n.kind !== "board") as any[];
+    return { made: made.map((n) => ({ kind: n.kind, title: n.title, clips: String(n.data.clips ?? "") })), bible: D.doc.get().bible };
+  }, ids.board);
+  expect(kept.made.map((m) => m.kind).sort()).toEqual(["chapter", "chapter", "chapter", "character", "character", "location", "note", "style"]);
+  // everything kept is linked back to the clippings it came from
+  for (const m of kept.made) expect(m.clips.split(",").filter(Boolean).length).toBeGreaterThan(0);
+  expect(kept.bible.tone).toContain("Quiet");
+
+  // and a kept thing opens them: Mara's page names the document; a click opens it
+  const mara = await page.evaluate(async () => {
+    const G = await import("/src/state/graph.ts" as string);
+    return (Object.values(G.graph.get().nodes).find((n: any) => n.title === "Mara") as any).id;
+  });
+  await page.evaluate(async (id) => (await import("/src/state/nav.ts" as string)).enter(id), mara);
+  await page.locator(".paper-clips .built-clip", { hasText: "The Keeper's Log" }).click();
+  await expect(page.locator(".source .read-title")).toHaveText("The Keeper's Log");
+});

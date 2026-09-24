@@ -18,6 +18,7 @@ import { Shortcuts } from "./shell/Shortcuts";
 import { Notice } from "./shell/Notice";
 import { Versions } from "./shell/Versions";
 import { Find } from "./shell/Find";
+import { Built } from "./shell/Built";
 import { onFileDrop, onOpened, importable, PICTURES } from "./platform/fs";
 import { importFiles } from "./state/importing";
 import { gatherInto, freeSpot, startFromMaterial } from "./state/gather";
@@ -125,6 +126,7 @@ export function App() {
       <Shortcuts />
       <Versions />
       <Find />
+      <Built />
       <Notice />
     </div>
   );

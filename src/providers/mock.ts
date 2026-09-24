@@ -85,6 +85,26 @@ export const mock: Provider = {
     await new Promise((r) => setTimeout(r, 400));
     if (signal.aborted) throw new DOMException("Cancelled", "AbortError");
     if (req.tools && req.runTool) return agent(req, signal);
+    // build from the board: a book's makings from its numbered material, cited by number
+    if (req.system?.startsWith("BUILD FROM THE BOARD")) {
+      const n = (req.prompt.match(/^\[(\d+)\]/gm) ?? []).length;
+      const at = (k: number) => (n ? [((k - 1) % n) + 1] : []);
+      return JSON.stringify({
+        cast: [
+          { name: "Mara", description: "A lighthouse keeper's daughter who reads every wreck's manifest.", from: at(1) },
+          { name: "The boatman", description: "Takes her down to the shore; says little.", from: at(2) },
+        ],
+        places: [{ name: "Hollin Head", description: "The lighthouse on the point, and the bar below it.", from: at(1) }],
+        things: [{ name: "The manifest", description: "A ship's list of what it carried, and what it did not.", from: at(2) }],
+        style: { name: "Navy dusk", description: "Flat colour, a low sun over dark water.", palette: "Navy, pale yellow, teal", lighting: "Low sun, long light", from: at(n) },
+        outline: [
+          { title: "The ship", summary: "A ship comes in at first light with no one on it.", from: at(1) },
+          { title: "The bar", summary: "It grounds on the bar; they cannot reach it.", from: at(2) },
+          { title: "The manifest", summary: "What it carried, and what it did not.", from: at(3) },
+        ],
+        bible: { tone: "Quiet, close, weather in every paragraph.", rules: "The lamp is lit every night, whatever happens.", avoid: "Explaining the ship." },
+      });
+    }
     if (req.system?.includes("JSON array only")) {
       const n = Number(req.system.match(/Propose (\d+) shots/)?.[1] ?? 6);
       return JSON.stringify(SHOTS.slice(0, Math.max(1, Math.min(SHOTS.length, n))));

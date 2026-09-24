@@ -30,7 +30,16 @@ function body(req: TextRequest) {
   // a model that sees takes the pictures as bare base64; one that does not
   // still has the words that describe them
   const images = SEES.test(model) ? (req.images ?? []).map((p) => p.data?.split(",")[1]).filter(Boolean) : [];
-  return { model, prompt: req.prompt, system: req.system, stream: false, ...(req.schema ? { format: req.schema } : {}), ...(images.length ? { images } : {}) };
+  return {
+    model,
+    prompt: req.prompt,
+    system: req.system,
+    stream: false,
+    ...(req.schema ? { format: req.schema } : {}),
+    ...(images.length ? { images } : {}),
+    ...(req.context ? { options: { num_ctx: req.context } } : {}),
+    ...(req.think !== undefined ? { think: req.think } : {}),
+  };
 }
 
 /** what the Providers screen says: whether it answered, and what it holds */

@@ -50,6 +50,10 @@ export interface TextRequest {
   model?: string;
   /** a JSON Schema the answer must match, for providers that can promise it */
   schema?: unknown;
+  /** how many tokens of context a long request needs (a local model's window is small unless asked) */
+  context?: number;
+  /** whether a model that thinks first should (off: faster, for a structured answer) */
+  think?: boolean;
   /** pictures to look at with the words (vision) */
   images?: Picture[];
   /** Doodle's own tools for this turn (agent/tools.ts): a provider that

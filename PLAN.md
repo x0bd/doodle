@@ -176,7 +176,7 @@ Built on **D1** (decided: the chapter is the manuscript).
 | M3.3 ✅ | **The inspiration board** — a new place kind: a free field of *clippings* (text excerpts, images, whole documents collapsed to a card), groups, notes; every clipping keeps its source (file, page, position) and opens it | Drop 3 files and 20 images; everything lands, grouped by source; click a clipping → its source at that page. |
 | M3.4 ✅ | **Clip from a document**: open an imported document read-only; select a passage → *Clip to board* | The clip remembers its page. |
 | M3.5 ✅ | **Start from material**: a welcome choice that makes a book with a board, drops the files onto it, then offers *Build from the board* | Scenario step 2 in < 2 minutes. |
-| M3.6 | **Build from the board** (agent): read the board (text + images via vision) → propose cast, places, objects, style (palette/look from the images), chapter outline, bible entries — as ghosts | Scenario step 3; everything kept is linked back to the clippings it came from. |
+| M3.6 ✅ | **Build from the board** (agent): read the board (text + images via vision) → propose cast, places, objects, style (palette/look from the images), chapter outline, bible entries — as ghosts | Scenario step 3; everything kept is linked back to the clippings it came from. |
 | M3.7 | **Board → style**: select images → *Make a style from these* (vision describes palette, lighting, medium; the images become the style's references) | The style's references ride into image requests. |
 | M3.8 | **Tags** on clippings and nodes; search by tag (long plan §3.3 search) | Filter the board by tag; ⌘K finds by tag. |
 

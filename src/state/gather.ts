@@ -13,6 +13,7 @@ import { doc, save, mayLeave, newGraph } from "./doc";
 import { closeChooser } from "./ui";
 import { enter } from "./nav";
 import { fitAll } from "../canvas/view";
+import { buildFromBoard } from "./build";
 import { layOut, pictureSource, type Gathered, type Item } from "./board";
 import { readMaterial } from "../readers";
 import { importAsset, keepSource, readThumb, pickGather, PICTURES, importable } from "../platform/fs";
@@ -198,4 +199,7 @@ export async function startFromMaterial(paths?: string[]) {
   if (!(await save())) return void say("The book is not saved yet — its material needs a home. Save it, then drop the files on its board.");
   await gatherInto(board, files, { x: 0, y: 0 });
   enter(board, () => requestAnimationFrame(fitAll));
+  // what the board is for: the book's makings, proposed from it (M3.6)
+  if (childrenOf(graph.get(), board).length)
+    say("From here the writer can propose a cast, places, a style and an outline — you keep what fits.", { label: "Build from the board", run: () => void buildFromBoard(board) });
 }

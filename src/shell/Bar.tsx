@@ -1,12 +1,14 @@
 import { Icon, HistoryIcon, SaveIcon, RunIcon, CloseIcon, UpIcon, GenerateIcon, TextIcon } from "../icons";
 import { save } from "../state/doc";
-import { graph, updateData } from "../state/graph";
+import { graph, updateData, childrenOf } from "../state/graph";
 import { jobs, enqueue, generators, current, latest, mainPort, clearQueue } from "../state/jobs";
 import { ui, hideBar, showBar, hideAsk, toggleAsk } from "../state/ui";
 import { nav } from "../state/nav";
 import { propose } from "../state/drafts";
 import { proposeShots } from "../state/shots";
 import { KINDS, PLACES } from "../graph/kinds";
+import { gatherDialog } from "../state/gather";
+import { buildFromBoard } from "../state/build";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { History } from "./History";
 
@@ -102,6 +104,30 @@ export function Bar() {
           </button>
           <button className="bar-go" aria-label="Ask" title="Ask — ⏎" disabled={!ask.trim()} onClick={send}>
             <Icon icon={UpIcon} size={16} strokeWidth={2.25} />
+          </button>
+        </div>
+      </div>
+    );
+  }
+  // on a board, the bar is what a board does: gather, and build from it
+  if (entered?.kind === "board") {
+    const n = childrenOf(g, entered.id).filter((id) => g.nodes[id].kind === "clip").length;
+    return (
+      <div className="bar card k-board board-bar">
+        <div className="bar-from">
+          <span className="dot" />
+          <b>{entered.title}</b>
+          <span className="to">·</span>
+          <span>{n ? `${n} ${n === 1 ? "clipping" : "clippings"}` : "empty"}</span>
+        </div>
+        <div className="bar-acts">
+          <span className="bar-note">{n ? "The writer reads it all and proposes a cast, places, a style and an outline" : "Drop documents and pictures here"}</span>
+          <div className="gap" />
+          <button className="pill pill-sm" onClick={() => void gatherDialog(entered.id)} title="Documents or pictures — ⇧⌘I">
+            Add…
+          </button>
+          <button className="pill" onClick={() => void buildFromBoard(entered.id)} disabled={!n} title="Read the board and propose what the book could be built from">
+            Build from the board
           </button>
         </div>
       </div>

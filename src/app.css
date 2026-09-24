@@ -2218,3 +2218,29 @@ html, body, #root { height: 100%; }
   font-size: var(--t-label);
   line-height: 1;
 }
+
+/* ── build from the board (M3.6): what was proposed, beside the board ── */
+.built { position: absolute; top: 58px; right: 16px; z-index: 44; width: min(400px, calc(100% - 32px)); max-height: calc(100% - 170px); display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: var(--r-card); box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), 0 0 0 1px var(--rim-edge), var(--lift-2); animation: in var(--fast) var(--ease) both; }
+.win.ins-on .built { right: 312px; }
+.built-head { display: flex; align-items: center; gap: 8px; padding: 2px 2px 4px 6px; }
+.built-title { font-size: var(--t-body); font-weight: var(--w-declare); color: var(--fg); }
+.built-by { flex: 1; min-width: 0; font-size: var(--t-micro); color: var(--fg-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.built-x { width: 24px; height: 24px; flex: none; }
+.built-list { overflow-y: auto; min-height: 0; margin: 0 -4px -4px; padding: 0 4px 4px; }
+.built-group { margin-top: 8px; }
+.built-group:first-child { margin-top: 2px; }
+.built-of { display: flex; align-items: center; gap: 6px; padding: 0 6px 4px; font-size: var(--t-micro); color: var(--fg-faint); }
+.built-row { display: flex; align-items: flex-start; gap: 6px; padding: 6px; border-radius: 8px; }
+.built-row:hover { background: var(--tint); }
+.built-what { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.built-what b { font-size: var(--t-label); font-weight: var(--w-mid); color: var(--fg); }
+.built-text { font-size: var(--t-label); line-height: 1.45; color: var(--fg-muted); }
+.built-from { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+.built-clip { height: 20px; max-width: 160px; padding: 0 8px; border-radius: 999px; background: var(--tint); font-size: var(--t-micro); color: var(--fg-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.built-clip:hover { background: var(--tint-2); color: var(--fg); }
+.built-keys { display: flex; gap: 2px; flex: none; opacity: 0.55; transition: opacity var(--fast) var(--ease); }
+.built-row:hover .built-keys { opacity: 1; }
+/* the clippings a proposal came from, lit on the board while it is pointed at */
+.node.from-lit { box-shadow: var(--card-rim), 0 0 0 3px hsl(var(--lit-khaki) / 0.75), var(--card-lift-2); }
+.paper-clips { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 2px; font-size: var(--t-micro); color: var(--fg-faint); }
+.paper-clips > span { margin-right: 4px; }
