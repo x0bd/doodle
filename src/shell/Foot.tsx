@@ -2,6 +2,7 @@ import { Icon, PlusIcon, MinusIcon, FitIcon, EyeIcon, LinkIcon } from "../icons"
 import Avatar from "boring-avatars";
 import { openSettings, ui, toggleLens, toggleMap } from "../state/ui";
 import { Minimap } from "./Minimap";
+import { Goal } from "./Goal";
 import { graph, childrenOf } from "../state/graph";
 import { nav, reading } from "../state/nav";
 import { jobs, current, latest } from "../state/jobs";
@@ -45,11 +46,15 @@ export function Foot() {
         <button className="pill-icon who" aria-label="Settings" title="You — settings, ⌘," onClick={openSettings}>
           <Avatar name={WHO} variant="bauhaus" size={26} colors={MARK} />
         </button>
-        <div className="readout" aria-hidden>
-          <span><span className="k">T</span>{elapsed.toFixed(2)}s</span>
-          <span><span className="k">I</span>{j.iterations}</span>
-          <span><span className="k">N</span>{n}</span>
-        </div>
+        {writing ? (
+          <Goal />
+        ) : (
+          <div className="readout" aria-hidden>
+            <span><span className="k">T</span>{elapsed.toFixed(2)}s</span>
+            <span><span className="k">I</span>{j.iterations}</span>
+            <span><span className="k">N</span>{n}</span>
+          </div>
+        )}
       </div>
 
       {!writing && map && <Minimap />}

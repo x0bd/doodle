@@ -20,6 +20,7 @@ import { check, FORMAT, Unreadable, type Checked, type FileGraph } from "./integ
 import { delta, replay, type Tracked } from "./recovery";
 import { say, hushAll } from "./notice";
 import { keepDaily, loadVersions, versions } from "./versions";
+import { stats, noted as tally, bookWords } from "./stats";
 const versionsDir = () => versions.get().dir;
 
 export type SaveState = "idle" | "saving" | "saved" | "failed";
@@ -135,6 +136,7 @@ function serialize(): string {
     views: { ...nav.get().views, [nav.get().focus ?? "root"]: camera.get() },
     bible: doc.get().bible,
     provenance: prov.get(),
+    stats: stats.get(),
   };
   return JSON.stringify(file, null, 2);
 }
@@ -345,6 +347,32 @@ history.subscribe(() => {
   timer = window.setTimeout(() => doc.get().path === path && write(path), Math.max(0, Math.min(600, pendingSince + 5000 - Date.now())));
 });
 
+/* ── today's words (M2.5): the ledger follows the book a moment after the
+   typing pauses, and once a minute, so midnight turns the day over ── */
+let counting: number | undefined;
+const count = () => stats.set((s) => tally(s, bookWords(graph.get())));
+graph.subscribe(() => {
+  clearTimeout(counting);
+  counting = window.setTimeout(count, 1000);
+});
+// one timer for the window, whatever replaced this module last (a hot
+// patch once left one per copy, each counting into a store gone stale)
+if (typeof window !== "undefined") {
+  const w = window as unknown as { __doodleCount?: number };
+  clearInterval(w.__doodleCount);
+  w.__doodleCount = window.setInterval(count, 60_000);
+}
+
+/** A change that is not a journal entry but belongs in the file — the
+ *  daily goal: written soon, as an edit would be. */
+export function saveSoon() {
+  doc.set((d) => (d.dirty ? d : { ...d, dirty: true }));
+  const path = doc.get().path;
+  if (!path) return;
+  clearTimeout(timer);
+  timer = window.setTimeout(() => doc.get().path === path && write(path), 600);
+}
+
 /* ── the recovery log (PLAN.md M1.4; the lines themselves: recovery.ts) ── */
 
 /** what the log so far is written against; null while nothing is logged */
@@ -509,6 +537,7 @@ function load(file: FileGraph, path: string | null) {
   if (!file.views?.root && file.camera) camera.set(file.camera);
   resetHistory();
   resetProv(file.provenance ?? {});
+  stats.set(tally(file.stats ?? { goal: 0, days: {} }, bookWords(graph.get())));
   doc.set({ path, name: file.name ?? (path ? nameOf(path) : "Untitled"), dirty: false, save: path ? "saved" : "idle", bible: { ...EMPTY_BIBLE, ...(file.bible ?? {}) } });
 }
 
@@ -631,6 +660,7 @@ export function newGraph(template: TemplateId = "images") {
   resetNav();
   forgetJobs();
   resetProv();
+  stats.set(tally({ goal: 0, days: {} }, bookWords(graph.get())));
   doc.set({ path: null, name: template === "sample" ? t.name : `Untitled ${t.name.toLowerCase()}`, dirty: false, save: "idle", bible: EMPTY_BIBLE });
   logUntitled();
 }

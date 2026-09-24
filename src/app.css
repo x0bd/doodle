@@ -2029,3 +2029,28 @@ html, body, #root { height: 100%; }
 /* the paragraph you are in, lit; the rest a step back */
 .win.focusing.dim .pm > * { transition: opacity var(--base) var(--ease); opacity: 0.28; }
 .win.focusing.dim .ProseMirror-focused > .here { opacity: 1; }
+
+/* ── the day's writing (M2.5): a ring and a count in the foot ── */
+.goal { position: relative; display: flex; align-items: center; }
+.goal-key { display: flex; align-items: center; gap: 7px; height: 26px; padding: 0 10px 0 6px; border-radius: 999px; color: var(--fg-muted); }
+.goal-key:hover { background: var(--tint); color: var(--fg); }
+.goal-ring { flex: none; }
+.goal-track { fill: none; stroke: var(--tint-2); stroke-width: 2.25; }
+.goal-fill { fill: none; stroke: var(--fg); stroke-width: 2.25; stroke-linecap: round; transition: stroke-dasharray var(--base) var(--ease); }
+.goal-n { font-size: var(--t-micro); }
+.goal-pop { position: absolute; bottom: 36px; left: 0; width: 264px; padding: 12px 12px 10px; border-radius: var(--r-card); box-shadow: inset 0 1px 0 var(--rim-lit), inset 0 -1px 0 var(--rim-shade), 0 0 0 1px var(--rim-edge), var(--lift-2); z-index: 30; animation: in var(--fast) var(--ease) both; }
+.goal-rows { display: flex; flex-direction: column; gap: 7px; }
+.goal-row { display: flex; justify-content: space-between; gap: 12px; font-size: var(--t-label); color: var(--fg-muted); }
+.goal-row span:first-child { color: var(--fg); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.goal-row .px { font-size: var(--t-micro); white-space: nowrap; }
+.goal-set { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; font-size: var(--t-label); color: var(--fg); }
+.goal-step { display: flex; align-items: center; gap: 4px; padding: 2px; border-radius: 999px; background: var(--tint); }
+.goal-step .pill-icon { width: 24px; height: 24px; }
+.goal-val { min-width: 62px; text-align: center; font-size: var(--t-micro); }
+.goal-note { margin-top: 10px; font-size: var(--t-micro); line-height: 1.45; color: var(--fg-faint); }
+
+/* a document's "Inside": what works on its words, a row each that opens it */
+.inside { border-radius: 10px; background: var(--surface-raised); padding: 3px; }
+.inside-row { min-height: 34px; gap: 10px; }
+.inside-glyph { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: hsl(var(--role) / 0.22); color: var(--fg); flex: none; }
+.inside-kind { margin-left: auto; font-size: var(--t-micro); color: var(--fg-faint); }

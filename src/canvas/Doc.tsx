@@ -50,7 +50,11 @@ export function Doc({ id }: { id: string }) {
   const name = doc.use((d) => d.name);
   if (!node) return null;
   const def = KINDS[node.kind];
-  const kids = childrenOf(g, id).map((c) => g.nodes[c]).sort((a, b) => a.seq - b.seq);
+  const inside = childrenOf(g, id).map((c) => g.nodes[c]).sort((a, b) => a.seq - b.seq);
+  // beats and notes are written in the list; anything else inside (a brief,
+  // a writer, a generator) is a row that opens it
+  const kids = inside.filter((k) => k.kind === "note" || k.kind === "shot");
+  const others = inside.filter((k) => k.kind !== "note" && k.kind !== "shot");
   const images = node.attachments ?? [];
   const mine = draftsFor(all, id);
   const proposed = proposalsFor(proposals, id);
@@ -254,6 +258,22 @@ export function Doc({ id }: { id: string }) {
               </ol>
             )}
           </Section>
+
+          {others.length > 0 && (
+            <Section name="Inside" note="What works on these words. Each opens.">
+              <div className="list inside">
+                {others.map((k) => (
+                  <button key={k.id} className="list-row inside-row" onClick={() => enter(k.id, () => requestAnimationFrame(fitAll))}>
+                    <span className={`inside-glyph k-${k.kind}`}>
+                      <Icon icon={GLYPH[k.kind]} size={13} strokeWidth={1.8} />
+                    </span>
+                    <span className="list-word">{k.title}</span>
+                    <span className="inside-kind">{KINDS[k.kind].title}</span>
+                  </button>
+                ))}
+              </div>
+            </Section>
+          )}
 
           <Section name="Media" note={images.length ? undefined : "Drop an image anywhere on this page."}>
             {images.length > 0 && (

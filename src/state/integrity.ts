@@ -16,6 +16,7 @@ import type { Edge, GraphNode, GraphState } from "./graph";
 import type { Camera } from "../canvas/camera";
 import type { Prov } from "./prov";
 import type { Bible } from "./recovery";
+import type { Stats } from "./stats";
 import { plain } from "../writer/markup";
 
 /** the format this Doodle writes: 2 — a chapter holds its own words (D1) */
@@ -34,6 +35,8 @@ export interface FileGraph {
   bible?: Bible;
   /** where every generated thing came from, by what it produced */
   provenance?: Record<string, Prov>;
+  /** the daily goal and the days written (M2.5) */
+  stats?: Stats;
 }
 
 export class Unreadable extends Error {
@@ -264,6 +267,7 @@ export function check(text: string): Checked {
     views: isObj(f.views) ? (f.views as FileGraph["views"]) : undefined,
     bible: isObj(f.bible) ? (f.bible as unknown as Bible) : undefined,
     provenance: isObj(f.provenance) ? (f.provenance as FileGraph["provenance"]) : undefined,
+    stats: isObj(f.stats) && isObj(f.stats.days) ? { goal: num(f.stats.goal, 0), days: f.stats.days as Stats["days"] } : undefined,
   };
   return { file, fixes };
 }

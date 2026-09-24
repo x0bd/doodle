@@ -87,3 +87,22 @@ test("Focus: only the words, the line held where the eye is, and back without lo
   await page.keyboard.type(" Then the stairs.");
   await expect(writer).toContainText("He was already awake. Then the stairs.");
 });
+
+test("goals: today's words follow the writing; a daily goal fills the ring", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /The keeper's daughter/ }).click();
+  await page.locator('[data-node="ch1"]').dblclick({ position: { x: 60, y: 14 } });
+  const key = page.locator(".goal-key");
+  await expect(key).toContainText("0 today");
+  await page.locator(".docpage .pm").first().click();
+  await page.keyboard.press("Meta+ArrowDown");
+  await page.keyboard.type(" She went down the stairs in the dark.");
+  await expect(key).toContainText("8 today", { timeout: 4000 });
+  await key.click();
+  await expect(page.locator(".goal-pop")).toContainText("The book");
+  await page.getByRole("button", { name: "Raise the goal" }).click();
+  await page.getByRole("button", { name: "Raise the goal" }).click();
+  await expect(key).toContainText("8 / 500");
+  const dash = await page.locator(".goal-fill").getAttribute("stroke-dasharray");
+  expect(Number(dash!.split(" ")[0])).toBeGreaterThan(0);
+});
