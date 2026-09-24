@@ -153,6 +153,20 @@ public/fixtures/black-bear.png
 - The Rust watcher sometimes misses an edit made by a script — `touch src-tauri/src/lib.rs` nudges it.
 - The pane state once flipped to off/off during HMR + a process swap; never on a clean launch; store key is `doodle.ui.v1`. After many HMR patches the webview can hold stale handlers (keys, the wheel) — the fix is a relaunch, not code. Nothing may focus a field on arrival (the bar once did, and every field key went into the prompt). The menu listener no longer rots (it lives on the window).
 
+## Writers on this Mac (2026-09-24, the user's research ask)
+
+**The user removed `qwen3:14b` and Chandra OCR** from Ollama (they ran `ollama rm` themselves — Claude does not delete files). So: **Ollama has no writer** (Doodle writes with the stand-in until one is pulled); **OCR falls back to GLM-OCR** (94.5%, misses bold headings); **the eyes are gone** — *Build from the board* sends pictures by name only (`data.seen` empty), *Make a style from these* makes a generic style. A general vision model in Ollama would bring them back (`vision.ts` takes one automatically); ask before downloading.
+
+**Research — the best writer that can go explicit, that fits 48 GB** (EQ-Bench Creative Writing v3 + Longform, judged by Claude Sonnet 4.6; UGI leaderboard for willingness/NSFW — raw data from `eqbench.com/creative_writing.js`, `…_longform.js` and the UGI space's `ugi-leaderboard-data.csv`):
+- **qwen3:14b was weak**: longform 35.9/100 (collapses chapter by chapter). Frontier cloud is 83–86 (Claude Opus 5 86.3).
+- **1. Altworld/Hemmingway-1 (27B, Qwen3.8-27B finetune, released 2026-09-20)** — the recommendation. Creative writing **#15 of 140 (Elo 1906, above Claude Opus 4.7)**, **longform 74.2** (its base 53.3). Explicit willingness **untested** (too new for UGI; its card states no content limits). **CC BY-NC 4.0** — fine for the user's own writing; selling a book written with it: Altworld's card says commercial use by agreement. bartowski GGUF: Q4_K_M 17.4 GB, Q5_K_M 20.9, **Q6_K 23.9 (the pick)**, Q8_0 29.1. `ollama pull hf.co/bartowski/Altworld_Hemmingway-1-GGUF:Q6_K` — **not pulled; waiting for the user's go-ahead** (24 GB).
+- **2. Uncensored Qwen3.8-27B** (huihui-ai abliterated, HauhauCS) — the fallback if Hemmingway refuses; flatter prose (longform 53). A `brainnxdomain/Hemmingway-1-Heretic` exists but is 2 days old, unvetted.
+- **3. Cydonia / WeirdCompound 24B** (Mistral-Small finetunes) — the most explicit that fits (UGI NSFW 6–8/10, willingness 7–10/10), weaker prose and long-range coherence (Mistral Small 3.2 longform 41.6).
+- **Avoid Muse-Glimmer-30B** for this: strong short fiction (#26) but willingness ~4/10 (safety-RL'd).
+- Base models refuse (Gemma 4 / Qwen W/10 1–2); their "heretic"/abliterated versions keep the writing at W/10 9.5–10.
+- **Cloud**: the top writers (Claude Opus 5, Fable 5.1, GPT-6) almost never go explicit (NSFW < 1/10) — nor does the user's ChatGPT via Codex. Grok is the explicit-willing one (Grok-4 NSFW 9.2/10; Grok 4.7 creative-writing #8).
+- Speed on the M5 Pro: a 27B dense model at Q6 is an estimate of ~10–15 words/s (not measured).
+
 ## Next
 
 **`PLAN.md` is the order.** M2 is built (M2.9 import landed last). Now:
