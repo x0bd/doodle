@@ -52,3 +52,11 @@ describe("placing imported chapters", () => {
       }
   });
 });
+
+import { chaptersFrom } from "./importer";
+describe("one chapter", () => {
+  it("a heading it opens with, of any level, is its name", () => {
+    expect(chaptersFrom("pdf", "## The Keeper's Log\n\nThe fourteenth of March.", "scan").chapters).toEqual([{ title: "The Keeper's Log", text: "The fourteenth of March." }]);
+    expect(chaptersFrom("md", "Words first.\n\n## A heading later", "notes").chapters[0].title).toBe("notes");
+  });
+});

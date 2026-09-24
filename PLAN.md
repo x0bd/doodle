@@ -172,7 +172,7 @@ Built on **D1** (decided: the chapter is the manuscript).
 | # | Task | Acceptance |
 |---|---|---|
 | M3.1 ✅ | **Readers** (Rust or webview, pure functions, fixture-tested): Markdown, plain text, `.docx` (mammoth-style: headings, emphasis, lists, images), PDF text with page numbers (pdf.js), PDF page images, images (jpg/png/webp/heic), Fountain; later `.pages`, EPUB | Each reader has fixtures with expected output. |
-| M3.2 | **OCR for scanned PDFs and images of text**: detect pages with no text layer, run a local OCR model through Ollama (`glm-ocr` installed; `chandra-ocr-2` as the careful one) | A scanned page becomes text with > 95% word accuracy on the fixture. |
+| M3.2 ✅ | **OCR for scanned PDFs and images of text**: detect pages with no text layer, run a local OCR model through Ollama (`glm-ocr` installed; `chandra-ocr-2` as the careful one) | A scanned page becomes text with > 95% word accuracy on the fixture. |
 | M3.3 | **The inspiration board** — a new place kind: a free field of *clippings* (text excerpts, images, whole documents collapsed to a card), groups, notes; every clipping keeps its source (file, page, position) and opens it | Drop 3 files and 20 images; everything lands, grouped by source; click a clipping → its source at that page. |
 | M3.4 | **Clip from a document**: open an imported document read-only; select a passage → *Clip to board* | The clip remembers its page. |
 | M3.5 | **Start from material**: a welcome choice that makes a book with a board, drops the files onto it, then offers *Build from the board* | Scenario step 2 in < 2 minutes. |

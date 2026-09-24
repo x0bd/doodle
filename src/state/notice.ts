@@ -35,3 +35,8 @@ export function hush(id?: number) {
 export function hushAll() {
   notices.set([]);
 }
+
+/** say something new in a notice's place (a count as it runs) — a notice put away stays away */
+export function retell(id: number, text: string, action?: Notice["action"]) {
+  notices.set((l) => l.map((n) => (n.id === id ? { ...n, text, action: action ?? n.action } : n)));
+}

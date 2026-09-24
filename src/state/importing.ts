@@ -6,14 +6,16 @@
  */
 import { graph, makeNode, childrenOf } from "./graph";
 import { commit } from "./history";
-import { say } from "./notice";
+import { say, retell, hush } from "./notice";
 import { nav, riseTo } from "./nav";
 import { closeChooser } from "./ui";
 import { chaptersFrom, placeAt } from "./importer";
 import { stats, noted, brought, bookWords } from "./stats";
 import { inTauri, pickImport } from "../platform/fs";
 import { readMaterial, onlyScans } from "../readers";
-import { painted } from "../platform/log";
+import { painted, log, since } from "../platform/log";
+
+const kindOf = (path: string) => path.split(".").pop()?.toLowerCase() ?? "file";
 import { fitLevel } from "../canvas/view";
 
 const many = (n: number) => n.toLocaleString("en-US");
@@ -31,13 +33,29 @@ export async function importFiles(paths: string[]) {
 }
 
 export async function importFrom(path: string) {
+  const t0 = performance.now();
   let got;
+  // a scanned PDF is read page by page (OCR): the count shows, and Stop stops it
+  const stop = new AbortController();
+  let note: number | null = null;
+  const name = path.split("/").pop() ?? path;
   try {
-    got = await readMaterial(path);
+    got = await readMaterial(path, null, {
+      signal: stop.signal,
+      onPage: (at, of, model) => {
+        const text = `Reading “${name}”: scanned page ${at} of ${of}, with ${model}…`;
+        if (note === null) note = say(text, { label: "Stop", run: () => stop.abort() });
+        else retell(note, text);
+      },
+    });
   } catch (e) {
-    return void say(String(e).replace(/^Error: /, ""));
+    log("import", `${kindOf(path)} ${stop.signal.aborted ? "stopped" : `failed: ${String(e).replace(/^Error: /, "")}`}`, stop.signal.aborted ? "info" : "warn");
+    return void say(stop.signal.aborted ? `Stopped reading “${name}” — nothing was brought in.` : String(e).replace(/^Error: /, ""));
+  } finally {
+    if (note !== null) hush(note);
   }
-  if (onlyScans(got)) return void say(`“${got.name}” is scanned pages, with no words in them to bring in yet.`);
+  if (onlyScans(got))
+    return void say(`“${got.name}” is scanned pages. Doodle reads them with an OCR model in Ollama — Chandra OCR 2 or GLM-OCR (ollama pull glm-ocr).`);
   const { chapters, form } = chaptersFrom(got.kind, got.text, got.name);
   if (!chapters.length) return void say(`“${got.name}” has no words to bring in.`);
 
@@ -64,6 +82,8 @@ export async function importFrom(path: string) {
   );
 
   const words = bookWords(graph.get()) - had;
+  const read = got.pages?.filter((p) => p.ocr);
+  log("import", `${got.kind}: ${made.length} chapter${made.length === 1 ? "" : "s"}, ${words} words${got.pages ? `, ${got.pages.length} pages` : ""}${read?.length ? `, ${read.length} read by ${read[0].ocr}` : ""}, ${since(t0)} ms`);
   stats.set((s) => brought(s, words));
   say(
     made.length === 1

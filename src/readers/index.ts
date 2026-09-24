@@ -6,7 +6,8 @@
  * `pdf.ts` (PDF, through pdf.js), and the asset store (pictures).
  */
 import { readImport, readBytes, importAsset, PICTURES } from "../platform/fs";
-import { readPdf, type PdfPage } from "./pdf";
+import { readPdf, pagePictures, type PdfPage } from "./pdf";
+import { ocrModels, ocrImage } from "./ocr";
 
 export type MaterialKind = "md" | "txt" | "fountain" | "docx" | "pdf" | "image";
 
@@ -24,11 +25,33 @@ export interface Material {
 
 const stem = (path: string) => (path.split("/").pop() ?? path).replace(/\.[^.]+$/, "");
 
+export interface Reading {
+  /** each scanned page as OCR reaches it: which of how many, and by what */
+  onPage?: (at: number, of: number, model: string) => void;
+  signal?: AbortSignal;
+}
+
 /** A file, read. With `dir` (the open project) its pictures are kept in it;
- *  without, a picture cannot be read and a document's pictures are left out. */
-export async function readMaterial(path: string, dir: string | null = null): Promise<Material> {
+ *  without, a picture cannot be read and a document's pictures are left out.
+ *  A PDF's scanned pages are read by OCR (M3.2) when this Mac has a model
+ *  for it; else they stay `scanned`, with no words. */
+export async function readMaterial(path: string, dir: string | null = null, how: Reading = {}): Promise<Material> {
   if (/\.pdf$/i.test(path)) {
-    const got = await readPdf(await readBytes(path));
+    const bytes = await readBytes(path);
+    const got = await readPdf(bytes);
+    const scans = got.pages.filter((p) => p.scanned);
+    const model = scans.length ? (await ocrModels())[0] : undefined;
+    if (model) {
+      let at = 0;
+      // a page drawn at 1600 across: small print still reads, and a page stays a few hundred KB
+      await pagePictures(bytes, scans.map((p) => p.n), 1600, async (n, picture) => {
+        how.signal?.throwIfAborted();
+        how.onPage?.(++at, scans.length, model.name);
+        const page = got.pages[n - 1];
+        page.text = await ocrImage(picture.slice(picture.indexOf(",") + 1), model, how.signal);
+        page.ocr = model.name;
+      });
+    }
     const text = got.pages
       .map((p) => p.text)
       .filter(Boolean)
@@ -44,5 +67,5 @@ export async function readMaterial(path: string, dir: string | null = null): Pro
   return { name: got.name, path, kind: got.kind as MaterialKind, text: got.text, pictures: got.pictures ?? [] };
 }
 
-/** a PDF made only of pictures of its pages — nothing to read until OCR (M3.2) */
-export const onlyScans = (m: Material) => m.kind === "pdf" && !!m.pages?.length && m.pages.every((p) => p.scanned);
+/** a PDF made only of pictures of its pages, none of them read — no OCR model here */
+export const onlyScans = (m: Material) => m.kind === "pdf" && !!m.pages?.length && m.pages.every((p) => p.scanned && !p.ocr);

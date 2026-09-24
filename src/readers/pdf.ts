@@ -22,6 +22,8 @@ export interface PdfPage {
   n: number;
   text: string;
   scanned: boolean;
+  /** the OCR model that read a scanned page's words, by name */
+  ocr?: string;
 }
 
 export interface PdfRead {
@@ -102,10 +104,35 @@ export function pageText(runs: Run[]): string {
 
 /* ── pdf.js, loaded only when a PDF comes ── */
 
+/** pdf.js reads its text as `for await (… of readableStream)`; the system
+ *  WebKit the app runs on (macOS 26) has no async iterator on a
+ *  ReadableStream — Playwright's WebKit build does, so only the real window
+ *  showed it. The iterator, as the platform will give it. */
+function streamsIterate() {
+  if (typeof ReadableStream === "undefined") return;
+  const proto = ReadableStream.prototype as ReadableStream & { [Symbol.asyncIterator]?: unknown; values?: unknown };
+  if (proto[Symbol.asyncIterator]) return;
+  async function* values(this: ReadableStream) {
+    const reader = this.getReader();
+    try {
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) return;
+        yield value;
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  }
+  Object.defineProperty(proto, "values", { value: values, configurable: true, writable: true });
+  Object.defineProperty(proto, Symbol.asyncIterator, { value: values, configurable: true, writable: true });
+}
+
 type PdfJs = typeof import("pdfjs-dist/legacy/build/pdf.mjs");
 let lib: Promise<PdfJs> | null = null;
 function pdfjs(): Promise<PdfJs> {
   return (lib ??= (async () => {
+    streamsIterate();
     const m = await import("pdfjs-dist/legacy/build/pdf.mjs");
     if (typeof window !== "undefined" && !m.GlobalWorkerOptions.workerSrc) {
       m.GlobalWorkerOptions.workerSrc = (await import("pdfjs-dist/legacy/build/pdf.worker.min.mjs?url")).default;
@@ -151,22 +178,33 @@ export async function readPdf(bytes: Uint8Array): Promise<PdfRead> {
   }
 }
 
-/** A page as a picture (a JPEG data URL), `width` pixels across. */
-export async function pagePicture(bytes: Uint8Array, n: number, width = 1400): Promise<string> {
+/** Pages as pictures (JPEG data URLs), `width` pixels across, one at a
+ *  time as each is drawn — the document opened once. */
+export async function pagePictures(bytes: Uint8Array, ns: number[], width: number, each: (n: number, picture: string) => Promise<void>): Promise<void> {
   const { doc, close } = await open(bytes);
   try {
-    const page = await doc.getPage(n);
-    const base = page.getViewport({ scale: 1 });
-    const viewport = page.getViewport({ scale: width / base.width });
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.round(viewport.width);
-    canvas.height = Math.round(viewport.height);
-    const ctx = canvas.getContext("2d")!;
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    await page.render({ canvas, canvasContext: ctx, viewport }).promise;
-    return canvas.toDataURL("image/jpeg", 0.88);
+    for (const n of ns) {
+      const page = await doc.getPage(n);
+      const base = page.getViewport({ scale: 1 });
+      const viewport = page.getViewport({ scale: width / base.width });
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(viewport.width);
+      canvas.height = Math.round(viewport.height);
+      const ctx = canvas.getContext("2d")!;
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({ canvas, canvasContext: ctx, viewport }).promise;
+      page.cleanup();
+      await each(n, canvas.toDataURL("image/jpeg", 0.88));
+    }
   } finally {
     close();
   }
+}
+
+/** A page as a picture (a JPEG data URL), `width` pixels across. */
+export async function pagePicture(bytes: Uint8Array, n: number, width = 1400): Promise<string> {
+  let out = "";
+  await pagePictures(bytes, [n], width, async (_, p) => void (out = p));
+  return out;
 }

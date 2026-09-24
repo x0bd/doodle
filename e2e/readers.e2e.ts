@@ -29,3 +29,26 @@ test("a PDF reads, page by page, and a page becomes a picture", async ({ page })
   expect(got.size[0]).toBe(600);
   expect(got.dark).toBeGreaterThan(50);
 });
+
+// OCR (PLAN.md M3.2), the whole way as the app goes: the scanned PDF's page
+// drawn by pdf.js at 1600 across, read by the first OCR model Ollama has.
+test("a scanned PDF page is read by OCR", async ({ page }) => {
+  test.setTimeout(180_000);
+  await page.goto("/");
+  const got = await page.evaluate(async () => {
+    const ocr = await import("/src/readers/ocr.ts" as string);
+    const pdf = await import("/src/readers/pdf.ts" as string);
+    const models = await ocr.ocrModels();
+    if (!models.length) return null;
+    const bytes = new Uint8Array(await (await fetch("/fixtures/import/scan.pdf")).arrayBuffer());
+    const read = await pdf.readPdf(bytes);
+    let text = "";
+    await pdf.pagePictures(bytes, [1], 1600, async (_: number, p: string) => void (text = await ocr.ocrImage(p.slice(p.indexOf(",") + 1), models[0])));
+    const truth = await (await fetch("/fixtures/import/scan.txt")).text();
+    return { scanned: read.pages[0].scanned, model: models[0].name, accuracy: ocr.wordAccuracy(text, truth) as number };
+  });
+  test.skip(got === null, "no OCR model in Ollama");
+  expect(got!.scanned).toBe(true);
+  console.log(`${got!.model}: ${(got!.accuracy * 100).toFixed(1)}%`);
+  expect(got!.accuracy).toBeGreaterThan(0.95);
+});

@@ -74,9 +74,9 @@ export function fromMarkdown(md: string, name: string): Piece[] {
   if (!s) return [];
   const level = heads(s, 1) >= 2 ? 1 : heads(s, 2) >= 2 ? 2 : 0;
   if (!level) {
-    // one chapter: its own heading (if there is one) is its name
-    const { before, parts } = cutAt(s, 1);
-    if (parts.length === 1 && !before) return [{ title: parts[0].title || name, text: lift(parts[0].text, 1) }];
+    // one chapter: a heading it opens with, of whatever level, is its name
+    const open = s.match(/^(#{1,3}) (.+)\n*/);
+    if (open) return [{ title: open[2].replace(/\s+#*\s*$/, "").trim() || name, text: lift(s.slice(open[0].length).trim(), open[1].length) }];
     return [{ title: name, text: s }];
   }
   const { before, parts } = cutAt(s, level);
