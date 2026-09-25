@@ -39,6 +39,7 @@ export {
   Film01Icon as FilmIcon,
   UserIcon as CharacterIcon,
   Location01Icon as LocationIcon,
+  Key01Icon as ObjectIcon,
   PaintBrush01Icon as StyleIcon,
   PenTool03Icon as WriteIcon,
   File01Icon as PageIcon,

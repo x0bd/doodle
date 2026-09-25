@@ -82,7 +82,7 @@ export function giveLook(id: string, ref: string) {
   commit("Picture", () =>
     graph.set((x) => {
       const n = x.nodes[id];
-      if (!n || (n.kind !== "character" && n.kind !== "location")) return x;
+      if (!n || (n.kind !== "character" && n.kind !== "location" && n.kind !== "object")) return x;
       return { ...x, nodes: { ...x.nodes, [id]: { ...n, asset: ref, attachments: [...new Set([...(n.attachments ?? []), ref])] } } };
     }),
   );

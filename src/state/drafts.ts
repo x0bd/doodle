@@ -29,6 +29,7 @@ export const DOING: Record<string, string> = {
   propose_text: "drafting",
   propose_characters: "proposing characters",
   propose_places: "proposing places",
+  propose_objects: "proposing things",
   propose_comment: "commenting",
   propose_bible: "proposing to the bible",
 };
@@ -149,7 +150,7 @@ export function cancel(id: string) {
 }
 
 /** where a kind keeps its words */
-export const proseKey = (kind: string) => (kind === "character" || kind === "location" || kind === "style" || kind === "shot" ? "description" : "text");
+export const proseKey = (kind: string) => (kind === "character" || kind === "location" || kind === "object" || kind === "style" || kind === "shot" ? "description" : "text");
 
 export function accept(id: string) {
   const d = drafts.get()[id];

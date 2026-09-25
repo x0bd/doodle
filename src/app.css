@@ -96,6 +96,7 @@
 .k-shot      { --role: var(--role-orange); --lit: var(--lit-orange); }
 .k-character { --role: var(--role-rose); --lit: var(--lit-rose); }
 .k-location  { --role: var(--role-khaki); --lit: var(--lit-khaki); }
+.k-object    { --role: var(--role-orange); --lit: var(--lit-orange); }
 .k-style     { --role: var(--role-violet); --lit: var(--lit-violet); }
 .k-generate  { --role: var(--role-teal); --lit: var(--lit-teal); }
 .k-write     { --role: var(--role-indigo); --lit: var(--lit-indigo); }
@@ -488,6 +489,9 @@ html, body, #root { height: 100%; }
 .sheet-field { display: flex; flex-direction: column; gap: 6px; }
 .sheet-field.grow { flex: 1; }
 .sheet-field .inp { resize: none; font-size: var(--t-body); line-height: 1.5; }
+.appears { display: flex; flex-wrap: wrap; gap: 6px; }
+.appears-n { margin-left: 6px; font-size: var(--t-micro); color: var(--fg-faint); }
+.appears-none { font-size: var(--t-label); color: var(--fg-faint); }
 .sheet-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .swatches { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
 

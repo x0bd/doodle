@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import {
-  Icon, PlusIcon, CheckIcon, CloseIcon, ImageIcon, ModelIcon, TextIcon, GenerateIcon, CharacterIcon, LocationIcon, StyleIcon, WriteIcon, PageIcon, ChapterIcon, NoteIcon, CommentIcon, ShotIcon, BoardIcon, ClipIcon, GroupIcon, ChevronRightIcon, ChevronLeftIcon,
+  Icon, PlusIcon, CheckIcon, CloseIcon, ImageIcon, ModelIcon, TextIcon, GenerateIcon, CharacterIcon, LocationIcon, ObjectIcon, StyleIcon, WriteIcon, PageIcon, ChapterIcon, NoteIcon, CommentIcon, ShotIcon, BoardIcon, ClipIcon, GroupIcon, ChevronRightIcon, ChevronLeftIcon,
   type IconSvgElement,
 } from "../icons";
 import { shots, proposalsFor, keepShot, keepAll, dropShot, dismiss } from "../state/shots";
@@ -22,13 +22,14 @@ import { doc } from "../state/doc";
 import { jobs, enqueue, jobFor, partialFor, RUNNABLE } from "../state/jobs";
 import { FieldRow } from "../shell/Fields";
 import { mentionables } from "./mentions";
+import { appearances } from "../state/appears";
 import { useState, useMemo } from "react";
 import { Editor, type Picked, type Tie } from "../writer/Editor";
 import { formOf, countWords, plain } from "../writer/markup";
 
 export const GLYPH: Record<NodeKind, IconSvgElement> = {
   model: ModelIcon, prompt: TextIcon, generate: GenerateIcon, preview: ImageIcon,
-  character: CharacterIcon, location: LocationIcon, style: StyleIcon, write: WriteIcon, page: PageIcon, note: NoteIcon, shot: ShotIcon, chapter: ChapterIcon, comment: CommentIcon,
+  character: CharacterIcon, location: LocationIcon, object: ObjectIcon, style: StyleIcon, write: WriteIcon, page: PageIcon, note: NoteIcon, shot: ShotIcon, chapter: ChapterIcon, comment: CommentIcon,
   board: BoardIcon, clip: ClipIcon, group: GroupIcon,
 };
 
@@ -38,7 +39,7 @@ const runtime = (words: number) => {
   return s < 60 ? `≈ ${Math.max(5, Math.round(s / 5) * 5)} s` : `≈ ${Math.round(s / 60)} min`;
 };
 
-const IDEA_WORD: Record<string, string> = { beat: "beats", note: "notes", character: "characters", location: "places", comment: "comments", bible: "additions to the bible" };
+const IDEA_WORD: Record<string, string> = { beat: "beats", note: "notes", character: "characters", location: "places", object: "things", comment: "comments", bible: "additions to the bible" };
 
 const ASK_LABEL = { expand: "Expanded", continue: "Continued", rewrite: "Rewritten", ask: "Answered" } as const;
 
@@ -438,6 +439,29 @@ function Beat({ node, n, tie }: { node: GraphNode; n: number; tie?: Tied }) {
 
 /* ── what each kind is, as sections ── */
 
+/** the chapters and pages that name them, each a key to go there */
+function Appears({ node }: { node: GraphNode }) {
+  const nodes = graph.use((g) => g.nodes);
+  const where = useMemo(() => appearances(node, Object.values(nodes)), [node, nodes]);
+  return (
+    <div className="sheet-field">
+      <span className="lbl">Appears in</span>
+      {where.length ? (
+        <span className="appears">
+          {where.map((a) => (
+            <button key={a.id} className="pill pill-sm" onClick={() => enter(a.id)} title={`Named ${a.count === 1 ? "once" : `${a.count} times`}`}>
+              {a.title}
+              <span className="appears-n px">{a.count}</span>
+            </button>
+          ))}
+        </span>
+      ) : (
+        <span className="appears-none">No chapter names {KINDS[node.kind].title.toLowerCase() === "character" ? "them" : "it"} yet.</span>
+      )}
+    </div>
+  );
+}
+
 function Body({ node }: { node: GraphNode }) {
   const def = KINDS[node.kind];
   const set = (patch: Record<string, string | number>) => updateData(node.id, patch);
@@ -449,6 +473,7 @@ function Body({ node }: { node: GraphNode }) {
     case "chapter":
       return <Prose node={node} />;
     case "location":
+    case "object":
     case "character":
       return (
         <div className="sheet-char">
@@ -462,9 +487,10 @@ function Body({ node }: { node: GraphNode }) {
               <input className="inp" value={String(node.data.name ?? "")} onChange={(e) => set({ name: e.target.value })} spellCheck={false} />
             </label>
             <label className="sheet-field grow">
-              <span className="lbl">Appearance</span>
+              <span className="lbl">{node.kind === "object" ? "What it is, how it looks" : node.kind === "location" ? "What it is like" : "Appearance"}</span>
               <textarea className="inp" rows={6} value={String(node.data.description ?? "")} onChange={(e) => set({ description: e.target.value })} spellCheck />
             </label>
+            <Appears node={node} />
           </div>
         </div>
       );

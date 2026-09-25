@@ -18,7 +18,7 @@ export interface Menu {
   node?: string;
 }
 
-const ADDABLE: NodeKind[] = ["page", "chapter", "board", "prompt", "note", "character", "location", "style", "shot", "generate", "preview", "write", "model"];
+const ADDABLE: NodeKind[] = ["page", "chapter", "board", "prompt", "note", "character", "location", "object", "style", "shot", "generate", "preview", "write", "model"];
 /** on a board: what you gathered is added from files; by hand, a note or a group */
 const ON_BOARD: NodeKind[] = ["note", "group"];
 /** what can be given to a node that takes words: the kind, and the name
@@ -26,6 +26,7 @@ const ON_BOARD: NodeKind[] = ["note", "group"];
 const GIVEABLE: { kind: NodeKind; port: string; word: string }[] = [
   { kind: "character", port: "character", word: "A character" },
   { kind: "location", port: "place", word: "A place" },
+  { kind: "object", port: "thing", word: "A thing" },
   { kind: "style", port: "style", word: "A style or a voice" },
   { kind: "prompt", port: "scene", word: "A scene" },
   { kind: "note", port: "note", word: "A note" },

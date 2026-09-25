@@ -45,7 +45,7 @@ async function sourcesFor(ch: GraphNode, tell: (t: string) => void, signal: Abor
   const b = doc.get().bible;
   const bible = [b.tone && `Tone: ${b.tone}`, b.rules && `Rules of the world: ${b.rules}`, b.avoid && `Avoid: ${b.avoid}`].filter(Boolean).join("\n");
   if (bible) sources.push({ name: "The bible", text: bible });
-  const known = Object.values(g.nodes).filter((n) => (n.kind === "character" || n.kind === "location") && live(n));
+  const known = Object.values(g.nodes).filter((n) => (n.kind === "character" || n.kind === "location" || n.kind === "object") && live(n));
   for (const n of known) {
     const text = [n.data.name && n.data.name !== n.title ? `Name: ${n.data.name}` : "", String(n.data.description ?? ""), String(n.data.text ?? "")].filter((x) => String(x).trim()).join("\n");
     if (text.trim()) sources.push({ name: n.title, text });
@@ -75,7 +75,7 @@ async function sourcesFor(ch: GraphNode, tell: (t: string) => void, signal: Abor
     }
     for (const { node, texts } of [...near.values()].sort((a, b) => a.node.seq - b.node.seq)) sources.push({ name: node.title, text: [...texts].join("\n\n…\n\n") });
   }
-  const said = [bible && "the bible", known.length && `${known.length} character${known.length === 1 ? "" : "s"} and places`, earlier.length && `${earlier.length} chapter${earlier.length === 1 ? "" : "s"} before${all > WHOLE ? " (by gist and the passages nearest)" : ""}`].filter(Boolean).join(", ");
+  const said = [bible && "the bible", known.length && `${known.length} of the cast, places and things`, earlier.length && `${earlier.length} chapter${earlier.length === 1 ? "" : "s"} before${all > WHOLE ? " (by gist and the passages nearest)" : ""}`].filter(Boolean).join(", ");
   return { sources, notes, said };
 }
 

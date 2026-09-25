@@ -46,7 +46,7 @@ const node = (id: unknown): GraphNode => {
 };
 const label = (n: GraphNode) => `${n.title} (${KINDS[n.kind].title.toLowerCase()}, id ${n.id}${n.status !== "canon" ? `, ${n.status}` : ""})`;
 const wordsOf = (n: GraphNode) => {
-  const key = n.kind === "character" || n.kind === "location" || n.kind === "style" || n.kind === "shot" ? "description" : n.kind === "chapter" ? "summary" : "text";
+  const key = n.kind === "character" || n.kind === "location" || n.kind === "object" || n.kind === "style" || n.kind === "shot" ? "description" : n.kind === "chapter" ? "summary" : "text";
   return String(n.data[key] ?? "");
 };
 const clip = (t: string, max: number) => (t.length > max ? `${t.slice(0, max)}… (${t.length - max} more characters)` : t);
@@ -322,6 +322,19 @@ export const TOOLS: Tool[] = [
     },
   },
   {
+    name: "propose_objects",
+    title: "Propose things",
+    description: "Propose things that matter in the story — the manifest, the lamp, the key — as objects beside a node, each with what it is and how it looks. They appear as proposals on that node's page for the writer to keep or drop.",
+    inputSchema: obj({ id: str("The node to propose them beside — usually the one open."), objects: { type: "array", items: obj({ name: str("Its name."), description: str("What it is, how it looks, what it means to the story.") }, ["name", "description"]) } }, ["id", "objects"]),
+    readOnly: false,
+    run(args, by) {
+      const n = node(args.id);
+      const list = (Array.isArray(args.objects) ? args.objects : []) as { name?: string; description?: string }[];
+      const count = offer(n.id, list.map((c) => ({ kind: "object", title: String(c.name ?? ""), text: String(c.description ?? "") })), by);
+      return count ? `Proposed ${count} thing${count === 1 ? "" : "s"} on ${label(n)}.` : "Nothing to propose.";
+    },
+  },
+  {
     name: "propose_places",
     title: "Propose places",
     description: "Propose new places (locations), beside a node. They appear as proposals on that node's page for the writer to keep or drop.",
@@ -357,7 +370,7 @@ export function briefing(nodeId: string): string {
     "You are the writing partner inside Doodle, a creative document made of nodes — chapters, pages, scenes, beats, characters, places, styles, shots.",
     n ? `The writer is on ${label(n)}.` : "",
     "Read what you need with the doodle_* tools before you answer (doodle_read the node you are on first). In a long book, doodle_search_meaning finds the passages a question is about.",
-    "You cannot change the document. To suggest additions use propose_beats, propose_shots, propose_characters, propose_places, propose_comment, propose_bible or propose_text: they appear as proposals the writer keeps or drops.",
+    "You cannot change the document. To suggest additions use propose_beats, propose_shots, propose_characters, propose_places, propose_objects, propose_comment, propose_bible or propose_text: they appear as proposals the writer keeps or drops.",
     "Keep your final reply short — what you proposed and why, or the answer to the question.",
   ]
     .filter(Boolean)

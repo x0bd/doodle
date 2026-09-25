@@ -13,7 +13,7 @@ export const learned = createStore<string[]>([]);
 /** the words ignored while it is open */
 export const ignored = createStore<string[]>([]);
 
-const NAMED = new Set(["character", "location", "style", "shot"]);
+const NAMED = new Set(["character", "location", "object", "style", "shot"]);
 const parts = (s: string) => s.split(/[^\p{L}\p{M}'’-]+/u).filter(Boolean);
 
 /** Every word the book knows that a dictionary might not, lowercased. */

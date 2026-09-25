@@ -314,7 +314,8 @@ function Body({ node }: { node: GraphNode }) {
       );
     }
     case "location":
-      // a place the way a map card has one: the view across the top, then its name
+    case "object":
+      // a place the way a map card has one (a thing the same: what it looks like, then its name): the view across the top, then its name
       return (
         <div className="node-body node-place">
           <div className={`place-view${node.asset ? " has" : ""}`}>
@@ -501,7 +502,7 @@ function pullOut(e: ReactPointerEvent, ref: string, url: string | undefined, cli
     const over = document.elementFromPoint(ev.clientX, ev.clientY);
     const card = over?.closest<HTMLElement>("[data-node]");
     // on a character or a place: its picture; on the field: a card of its own
-    if (card && (card.classList.contains("k-character") || card.classList.contains("k-location"))) giveLook(card.dataset.node!, ref);
+    if (card && (card.classList.contains("k-character") || card.classList.contains("k-location") || card.classList.contains("k-object"))) giveLook(card.dataset.node!, ref);
     else if (over?.closest(".stage") && !card) setOnField(ref, toWorld(camera.get(), { x: ev.clientX, y: ev.clientY }));
   };
   window.addEventListener("pointermove", move);

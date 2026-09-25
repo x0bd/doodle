@@ -10,7 +10,7 @@ import { pick } from "../providers/registry";
 import { doc, bibleText } from "./doc";
 import { writeAsset, saveRecord, loadRecord, inTauri, readThumb } from "../platform/fs";
 import { ui } from "./ui";
-import { expandMentions } from "../canvas/mentions";
+import { expandMentions, mentionedIn } from "../canvas/mentions";
 import { plain, formOf } from "../writer/markup";
 import { FRAMES } from "../graph/kinds";
 import { record, inputsOf } from "./prov";
@@ -71,11 +71,13 @@ function describe(n: GraphNode | undefined, bare = false): string {
   const words = (t: string, of: GraphNode) => (bare ? plain(expandMentions(t), formOf(of.data)) : expandMentions(t));
   if (!n || n.status === "rejected") return "";
   const d = n.data;
-  if (n.kind === "character" || n.kind === "location") return [d.name, d.description].filter(Boolean).join(": ");
+  if (n.kind === "character" || n.kind === "location" || n.kind === "object") return [d.name, d.description].filter(Boolean).join(": ");
   if (n.kind === "style") return [d.description, d.palette && `palette: ${d.palette}`, d.lighting && `lighting: ${d.lighting}`].filter(Boolean).join(", ");
   if (n.kind === "shot") return [expandMentions(String(d.description ?? "")), `${d.shotSize} shot`, `${d.lensMm}mm`, `${d.movement}`].filter(Boolean).join(", ");
   return words(String(d.text ?? ""), n);
 }
+
+const WHAT: Record<string, string> = { character: "a character", location: "a place", object: "a thing in the story" };
 
 /** a style's references that ride with it — four at most */
 const STYLE_REFS = 4;
@@ -98,9 +100,16 @@ function picturesFor(n: GraphNode): Picture[] {
         out.push({ label: `${from.title} (a reference for the style — its palette, light and medium, not what is in it)`, ref });
       continue;
     }
-    if (!from.asset || (from.kind !== "character" && from.kind !== "location")) continue;
-    seen.add(from.id);
-    out.push({ label: `${String(from.data.name || from.title)} (${from.kind === "location" ? "a place" : "a character"})`, ref: from.asset });
+    if (from.asset && (from.kind === "character" || from.kind === "location" || from.kind === "object")) {
+      seen.add(from.id);
+      out.push({ label: `${String(from.data.name || from.title)} (${WHAT[from.kind]})`, ref: from.asset });
+    }
+    // and whoever its words name with @ (M5.2): a mention is as good as a wire
+    for (const m of mentionedIn(String(from.data.text ?? ""))) {
+      if (!m.asset || m.status === "rejected" || seen.has(m.id)) continue;
+      seen.add(m.id);
+      out.push({ label: `${String(m.data.name || m.title)} (${WHAT[m.kind]})`, ref: m.asset });
+    }
   }
   return out;
 }

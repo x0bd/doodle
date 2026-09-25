@@ -1,10 +1,10 @@
-import { Icon, CloseIcon, CheckIcon, CharacterIcon, LocationIcon, NoteIcon, StyleIcon, ChapterIcon, BookIcon, type IconSvgElement } from "../icons";
+import { Icon, CloseIcon, CheckIcon, CharacterIcon, LocationIcon, ObjectIcon, StyleIcon, ChapterIcon, BookIcon, type IconSvgElement } from "../icons";
 import { graph } from "../state/graph";
 import { nav, enter } from "../state/nav";
 import { built, keepProposals, dropProposal, type Proposal, type ProposalKind } from "../state/build";
 
 const HEAD: Record<ProposalKind, string> = { character: "Cast", location: "Places", thing: "Things", style: "Style", chapter: "Outline", bible: "Bible" };
-const GLYPHS: Record<ProposalKind, IconSvgElement> = { character: CharacterIcon, location: LocationIcon, thing: NoteIcon, style: StyleIcon, chapter: ChapterIcon, bible: BookIcon };
+const GLYPHS: Record<ProposalKind, IconSvgElement> = { character: CharacterIcon, location: LocationIcon, thing: ObjectIcon, style: StyleIcon, chapter: ChapterIcon, bible: BookIcon };
 const ORDER: ProposalKind[] = ["character", "location", "thing", "style", "chapter", "bible"];
 
 /** light the clippings a proposal came from, on the board behind */

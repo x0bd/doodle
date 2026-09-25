@@ -3,7 +3,9 @@ import { Icon, type IconSvgElement } from "../icons";
 import { graph, type GraphNode } from "../state/graph";
 import type { NodeKind } from "../graph/kinds";
 
-const MENTIONABLE = new Set<NodeKind>(["character", "style", "shot", "note", "prompt"]);
+const MENTIONABLE = new Set<NodeKind>(["character", "location", "object", "style", "shot", "note", "prompt"]);
+/** the ones that are someone, somewhere or something — with a look of their own */
+const LOOKED = new Set<NodeKind>(["character", "location", "object"]);
 const AT = /(^|\s)@([^\s@]*)$/;
 
 /** The things a mention can name, longest title first so a longer name
@@ -20,10 +22,24 @@ export function mentionables(): GraphNode[] {
 export function expandMentions(text: string): string {
   let out = text;
   for (const n of mentionables()) {
-    const what = n.kind === "character" ? `${n.data.name || n.title} (${n.data.description})` : n.kind === "style" ? `${n.title}: ${n.data.description}` : String(n.data.description || n.data.text || n.title);
+    const what = LOOKED.has(n.kind) ? `${n.data.name || n.title} (${n.data.description})` : n.kind === "style" ? `${n.title}: ${n.data.description}` : String(n.data.description || n.data.text || n.title);
     out = out.split(`@${n.title}`).join(what);
   }
   return out;
+}
+
+/** Who, where and what a text names with `@` — the ones with a picture
+ *  ride into the request with it (PLAN.md M5.2). */
+export function mentionedIn(text: string): GraphNode[] {
+  const found: GraphNode[] = [];
+  let rest = text;
+  // longest first, and each mention taken out once found, so "@Mara's lamp" is not also "@Mara"
+  for (const n of mentionables()) {
+    if (!LOOKED.has(n.kind) || !rest.includes(`@${n.title}`)) continue;
+    found.push(n);
+    rest = rest.split(`@${n.title}`).join(" ");
+  }
+  return found;
 }
 
 /** Type @ in a field and pick from what the graph holds. Wire the returned

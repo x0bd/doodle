@@ -6,7 +6,7 @@
  */
 import { LOOKS } from "./looks";
 
-export type NodeKind = "model" | "prompt" | "generate" | "preview" | "character" | "location" | "style" | "write" | "page" | "note" | "shot" | "chapter" | "comment" | "board" | "clip" | "group";
+export type NodeKind = "model" | "prompt" | "generate" | "preview" | "character" | "location" | "object" | "style" | "write" | "page" | "note" | "shot" | "chapter" | "comment" | "board" | "clip" | "group";
 
 /** the kinds that are written in — entered, they are a document; zoomed
  *  into on the field, they open */
@@ -163,6 +163,24 @@ export const KINDS: Record<NodeKind, KindDef> = {
         fields: [
           { key: "name", label: "Name", type: "line" },
           { key: "description", label: "What it is like", type: "text", rows: 5 },
+        ],
+      },
+    ],
+  },
+  object: {
+    kind: "object",
+    title: "Object",
+    note: "A thing that matters in the story — the manifest, the lamp, the key",
+    inputs: [],
+    outputs: [{ id: "text", name: "description", type: "text" }],
+    size: { w: 240, h: 190 },
+    data: { name: "", description: "" },
+    groups: [
+      {
+        name: "The thing",
+        fields: [
+          { key: "name", label: "Name", type: "line" },
+          { key: "description", label: "What it is, how it looks", type: "text", rows: 5 },
         ],
       },
     ],

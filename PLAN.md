@@ -200,7 +200,7 @@ Built on **D1** (decided: the chapter is the manuscript).
 | # | Task | Acceptance |
 |---|---|---|
 | M5.1 | **Character sheet**: face, turnaround (front/¾/profile), expressions, outfit variants — generated as a *set* from the chosen face as reference; a gallery; one picture is *the* face | Scenario step 5. |
-| M5.2 | **Objects** — a new kind for things that matter in the story (the manifest, the lamp, the key): description, pictures, where they appear | An object mentioned with `@` rides into requests with its picture. |
+| M5.2 ✅ | **Objects** — a new kind for things that matter in the story (the manifest, the lamp, the key): description, pictures, where they appear | An object mentioned with `@` rides into requests with its picture. |
 | M5.3 | **Illustrate a passage**: select words → *Illustrate*; the request carries who and where appear in the passage (mentions + the chapter's cast) and their references; results appear as takes beside the passage | Scenario step 6. |
 | M5.4 | **Figures in the manuscript**: a figure block (image, caption, alt text) anchored to a passage; placement (inline, full page, chapter opener); in Markdown as `![caption](assets/…)` | Figures survive the round trip and export. |
 | M5.5 | **Book style lock**: a book-level look (style + reference images + model + settings) applied to every picture unless overridden | Switch the lock: new pictures follow it. |

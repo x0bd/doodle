@@ -99,7 +99,7 @@ test("built from the board: what is kept links back to the clippings it came fro
     const made = Object.values(g.nodes).filter((n: any) => n.parent === null && n.id !== board && n.kind !== "board") as any[];
     return { made: made.map((n) => ({ kind: n.kind, title: n.title, clips: String(n.data.clips ?? "") })), bible: D.doc.get().bible };
   }, ids.board);
-  expect(kept.made.map((m) => m.kind).sort()).toEqual(["chapter", "chapter", "chapter", "character", "character", "location", "note", "style"]);
+  expect(kept.made.map((m) => m.kind).sort()).toEqual(["chapter", "chapter", "chapter", "character", "character", "location", "object", "style"]);
   // everything kept is linked back to the clippings it came from
   for (const m of kept.made) expect(m.clips.split(",").filter(Boolean).length).toBeGreaterThan(0);
   expect(kept.bible.tone).toContain("Quiet");

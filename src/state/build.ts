@@ -2,7 +2,7 @@
  * Build from the board (PLAN.md M3.6). What was gathered — documents,
  * passages, notes, pictures (described by a model that sees, `vision.ts`) —
  * numbered and handed to the writer, who proposes what the book could be
- * built from: its cast, places, things, a style from the pictures, a
+ * built from: its cast, places, things (objects, M5.2), a style from the pictures, a
  * chapter outline, a bible. Each proposal names the numbers it came from.
  * They are ghosts on the board until kept; kept, a thing is a node that
  * remembers its clippings (`data.clips`, their ids) and opens them.
@@ -132,7 +132,7 @@ export function keepProposals(boardId: string, ids: string[]) {
       made.push(makeNode("chapter", p.x, p.y, { title: k.title, parent: level, data: { summary: k.text, text: "", clips } }));
       continue;
     }
-    const kind = k.kind === "character" ? "character" : k.kind === "location" ? "location" : k.kind === "style" ? "style" : "note";
+    const kind = k.kind === "character" ? "character" : k.kind === "location" ? "location" : k.kind === "thing" ? "object" : k.kind === "style" ? "style" : "note";
     const node = makeNode(kind, x, y, {
       title: k.title,
       parent: level,

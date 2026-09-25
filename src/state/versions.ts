@@ -23,7 +23,7 @@ import { countWords, formOf } from "../writer/markup";
 import { inTauri, versionIndex, versionRead, versionSave } from "../platform/fs";
 
 /** the kinds that hold what a person wrote */
-export const VERSIONED = new Set<NodeKind>(["page", "chapter", "note", "prompt", "character", "location", "style", "shot"]);
+export const VERSIONED = new Set<NodeKind>(["page", "chapter", "note", "prompt", "character", "location", "object", "style", "shot"]);
 
 export type Reason = "daily" | "kept" | "before-restore";
 

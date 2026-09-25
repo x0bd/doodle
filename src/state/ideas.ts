@@ -14,7 +14,7 @@ import { doc, setBible } from "./doc";
 import { plain, formOf } from "../writer/markup";
 import type { NodeKind } from "../graph/kinds";
 
-export type IdeaKind = "beat" | "note" | "character" | "location" | "comment" | "bible";
+export type IdeaKind = "beat" | "note" | "character" | "location" | "object" | "comment" | "bible";
 
 export interface Idea {
   kind: IdeaKind;
@@ -49,7 +49,7 @@ export function offer(nodeId: string, items: Idea[], by: string): number {
 
 export const ideasFor = (all: Record<string, IdeaSet>, nodeId: string) => Object.values(all).filter((s) => s.nodeId === nodeId);
 
-const KIND: Record<Exclude<IdeaKind, "bible">, NodeKind> = { beat: "note", note: "note", character: "character", location: "location", comment: "comment" };
+const KIND: Record<Exclude<IdeaKind, "bible">, NodeKind> = { beat: "note", note: "note", character: "character", location: "location", object: "object", comment: "comment" };
 
 /** the bible's words added to, never replaced: what it says stays, the new goes after */
 function toBible(idea: Idea) {
@@ -89,14 +89,14 @@ function made(set: IdeaSet, idea: Idea, offset: number): GraphNode | undefined {
     const anchor = tie(host, idea.quote) ?? { node: host.id, text: plain(String(host.data.text ?? ""), formOf(host.data)).slice(0, 60), at: 0 };
     return makeNode("comment", 0, 0, { parent: host.id, title: "Comment", data: { text: [idea.text, idea.why].filter(Boolean).join("\n\n"), resolved: 0, by: set.by }, anchor });
   }
-  // a character or a place lives beside what it was proposed for
+  // a character, a place or a thing lives beside what it was proposed for
   const x = host.x + (offset + 1) * 40;
   const y = host.y + host.h + 60 + offset * 30;
   return makeNode(kind, x, y, {
     parent: host.parent,
     title: idea.title.slice(0, 60),
     status: "draft",
-    data: kind === "character" ? { name: idea.title, description: idea.text } : { name: idea.title, description: idea.text },
+    data: { name: idea.title, description: idea.text },
   });
 }
 
