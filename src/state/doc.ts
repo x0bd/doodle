@@ -10,7 +10,7 @@ import { camera } from "../canvas/camera";
 import { history, reset as resetHistory, commit, undo } from "./history";
 import { nav, resetNav } from "./nav";
 import { restoreJobs, forgetJobs } from "./jobs";
-import { inTauri, importable, askThree, listBackups, readBackup, setAside, unusedAssets, trashUnusedAssets, recoveryAppend, recoveryRead, recoveryClear, takeOpened, setRecentMenu, loadGraph, pickOpenDir, pickOpenFile, pickSaveDir, pickSaveFile, saveGraph, graphExists, writeAsset, duplicateGraph, revealPath, writeText, exportArchive, importArchive, confirmAsk } from "../platform/fs";
+import { inTauri, importable, askThree, listBackups, readBackup, setAside, unusedAssets, trashUnusedAssets, recoveryAppend, recoveryRead, recoveryClear, takeOpened, setRecentMenu, loadGraph, pickOpenDir, pickOpenFile, pickSaveDir, pickSaveFile, saveGraph, graphExists, writeAsset, duplicateGraph, revealPath, writeText, exportPictures, exportArchive, importArchive, confirmAsk } from "../platform/fs";
 import { templateById, type TemplateId } from "../graph/templates";
 import { PLACES } from "../graph/kinds";
 import { prov, resetProv, rekey } from "./prov";
@@ -260,9 +260,17 @@ export async function exportText() {
   const here = focus && g.nodes[focus] && PLACES.has(g.nodes[focus].kind) ? focus : null;
   const d = doc.get();
   const name = here ? g.nodes[here].title : d.name;
-  const text = asMarkdown(g, here, d.name);
+  let text = asMarkdown(g, here, d.name);
   const path = await pickSaveFile(name, "md", "Export as Markdown");
   if (!path) return;
+  // the figures' pictures go beside it, in a folder of their own, and the words point there (M5.4)
+  const rels = [...new Set([...text.matchAll(/\]\((assets\/[^)\s]+)/g)].map((m) => m[1]))];
+  if (rels.length && d.path) {
+    const stem = path.replace(/^.*\//, "").replace(/\.md$/i, "");
+    const folder = `${stem} pictures`;
+    await exportPictures(d.path, rels, `${path.replace(/[^/]*$/, "")}${folder}`);
+    text = text.replace(/\]\(assets\//g, `](${encodeURI(folder)}/`);
+  }
   await writeText(path, text);
   await revealPath(path);
 }

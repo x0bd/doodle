@@ -25,7 +25,7 @@ import { mentionables } from "./mentions";
 import { appearances } from "../state/appears";
 import { useState, useMemo } from "react";
 import { Editor, type Picked, type Tie } from "../writer/Editor";
-import { formOf, countWords, plain } from "../writer/markup";
+import { formOf, countWords, plain, figureLine } from "../writer/markup";
 
 export const GLYPH: Record<NodeKind, IconSvgElement> = {
   model: ModelIcon, prompt: TextIcon, generate: GenerateIcon, preview: ImageIcon,
@@ -63,6 +63,8 @@ export function Doc({ id }: { id: string }) {
   const kids = inside.filter((k) => k.kind === "note" || k.kind === "shot");
   const others = inside.filter((k) => k.kind !== "note" && k.kind !== "shot" && k.kind !== "comment");
   const images = node.attachments ?? [];
+  // a chapter or page in prose takes pictures into its words, as figures
+  const prosed = (node.kind === "chapter" || node.kind === "page") && formOf(node.data) === "prose";
   const mine = draftsFor(all, id);
   const proposed = proposalsFor(proposals, id);
   const offered = ideasFor(offers, id);
@@ -304,7 +306,16 @@ export function Doc({ id }: { id: string }) {
               <div className="media">
                 {images.map((ref, i) => {
                   const url = thumbFor(ref, 512);
-                  return <div key={`${i}:${ref}`} className="media-img well">{url && <img src={url} alt="" draggable={false} />}</div>;
+                  return (
+                    <div key={`${i}:${ref}`} className="media-img well">
+                      {url && <img src={url} alt="" draggable={false} />}
+                      {prosed && (
+                        <button className="pill pill-sm media-in" onClick={() => intoWords(node, ref)} title="A figure at the end of the words — move it where it belongs">
+                          Into the words
+                        </button>
+                      )}
+                    </div>
+                  );
                 })}
               </div>
             )}
@@ -313,6 +324,12 @@ export function Doc({ id }: { id: string }) {
       </article>
     </div>
   );
+}
+
+/** a picture from the page's media into its words, as a figure at their end */
+function intoWords(node: GraphNode, src: string) {
+  const text = String(node.data.text ?? "").trimEnd();
+  updateData(node.id, { text: `${text}${text ? "\n\n" : ""}${figureLine({ src })}` });
 }
 
 /** The turn of a page: the one before, the one after — or a new one, when

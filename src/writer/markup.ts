@@ -191,6 +191,16 @@ function tidy(toks: Tok[]) {
 // ─── prose ──────────────────────────────────────────────────────────────────
 
 const HEADING = /^(#{1,3})\s+(.*)$/;
+/** a figure: `![caption](assets/… "alt"){.page}` — the placement only when it is not in the run of the text */
+const FIGURE = /^!\[((?:\\.|\[[^\]]*\]|[^\]\\])*)\]\(([^)\s]+)(?:\s+"((?:\\.|[^"\\])*)")?\)(?:\{\.(page|opener)\})?\s*$/;
+const unescape = (s: string) => s.replace(/\\(.)/g, "$1");
+
+/** a figure as its line of Markdown */
+export function figureLine(a: { src: string; caption?: string; alt?: string; place?: string }): string {
+  const caption = (a.caption ?? "").replace(/[\\\]]/g, "\\$&").replace(/\n/g, " ");
+  const alt = (a.alt ?? "").replace(/[\\"]/g, "\\$&").replace(/\n/g, " ");
+  return `![${caption}](${a.src}${alt ? ` "${alt}"` : ""})${a.place && a.place !== "inline" ? `{.${a.place}}` : ""}`;
+}
 
 function parseProse(text: string): PMNode[] {
   const blocks: PMNode[] = [];
@@ -207,7 +217,12 @@ function parseProse(text: string): PMNode[] {
   };
   for (const line of text.split("\n")) {
     const h = line.match(HEADING);
+    const fig = !quote.length && line.match(FIGURE);
     if (!line.trim()) flush();
+    else if (fig) {
+      flush();
+      blocks.push(N.figure.create({ caption: unescape(fig[1]), src: fig[2], alt: unescape(fig[3] ?? ""), place: fig[4] ?? "inline" }));
+    }
     else if (h && !quote.length) {
       flush();
       blocks.push(N.heading.create({ level: h[1].length }, inline(h[2], [], true, false)));
@@ -232,6 +247,8 @@ function serializeProse(doc: PMNode): string {
     if (b.type === N.heading) {
       const t = serializeInline(b).replace(/\n/g, " ").trim();
       if (t) out.push(`${"#".repeat(b.attrs.level)} ${t}`);
+    } else if (b.type === N.figure) {
+      if (b.attrs.src) out.push(figureLine(b.attrs as { src: string }));
     } else if (b.type === N.quote) {
       const paras: string[] = [];
       b.forEach((p) => {

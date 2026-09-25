@@ -35,6 +35,27 @@ const nodes: Record<string, NodeSpec> = {
   parenthetical: { ...block("p", "sp-paren", "text*"), marks: "" },
   dialogue: block("p", "sp-dialogue"),
   transition: { ...block("p", "sp-transition", "text*"), marks: "" },
+  /** a picture in the words (PLAN.md M5.4): its file, its caption, what it
+   *  shows for someone who cannot see it, and where it goes when the book
+   *  is set — in the run of the text, a page of its own, or the chapter's
+   *  opener. Not words: plain(), counts and anchors pass over it. */
+  figure: {
+    group: "block",
+    atom: true,
+    selectable: true,
+    draggable: true,
+    attrs: { src: { default: "" }, caption: { default: "" }, alt: { default: "" }, place: { default: "inline" } },
+    parseDOM: [
+      {
+        tag: "figure[data-src]",
+        getAttrs: (d) => {
+          const e = d as HTMLElement;
+          return { src: e.dataset.src ?? "", caption: e.dataset.caption ?? "", alt: e.dataset.alt ?? "", place: e.dataset.place ?? "inline" };
+        },
+      },
+    ],
+    toDOM: (n) => ["figure", { class: `figure fig-${n.attrs.place}`, "data-src": n.attrs.src, "data-caption": n.attrs.caption, "data-alt": n.attrs.alt, "data-place": n.attrs.place }, ["figcaption", n.attrs.caption]],
+  },
   text: { group: "inline" },
   hard_break: { inline: true, group: "inline", selectable: false, parseDOM: [{ tag: "br" }], toDOM: () => ["br"] },
 };

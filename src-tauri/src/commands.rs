@@ -66,6 +66,29 @@ pub fn write_text(path: String, text: String) -> Result<(), String> {
     Ok(())
 }
 
+/// The project's pictures an export names, copied into a folder beside it
+/// (M5.4). Only files under the project's `assets/`, by their own names —
+/// a reference that climbs out of it is skipped. Returns how many.
+#[tauri::command]
+pub fn export_pictures(dir: String, rels: Vec<String>, to: String) -> Result<usize, String> {
+    let from = PathBuf::from(dir).join("assets");
+    let to = PathBuf::from(to);
+    fs::create_dir_all(&to).map_err(|e| e.to_string())?;
+    let mut n = 0;
+    for rel in rels {
+        let Some(name) = rel.strip_prefix("assets/") else { continue };
+        if name.is_empty() || name.contains('/') || name.contains("..") {
+            continue;
+        }
+        let src = from.join(name);
+        if src.is_file() {
+            fs::copy(&src, to.join(name)).map_err(|e| e.to_string())?;
+            n += 1;
+        }
+    }
+    Ok(n)
+}
+
 #[tauri::command]
 pub fn load_graph(dir: String) -> Result<String, String> {
     let dir = PathBuf::from(dir);
@@ -279,4 +302,25 @@ pub fn ollama_where() -> Option<String> {
     .into_iter()
     .find(|p| p.exists())
     .map(|p| p.display().to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn export_pictures_copies_only_what_is_in_assets() {
+        let base = std::env::temp_dir().join(format!("doodle-export-{}", std::process::id()));
+        let project = base.join("Book.doodle");
+        fs::create_dir_all(project.join("assets")).unwrap();
+        fs::write(project.join("assets/ab.jpg"), b"picture").unwrap();
+        fs::write(base.join("secret.txt"), b"no").unwrap();
+        let to = base.join("Book pictures");
+        let rels = vec!["assets/ab.jpg".into(), "assets/../../secret.txt".into(), "assets/missing.png".into(), "graph.json".into()];
+        let n = export_pictures(project.to_string_lossy().into(), rels, to.to_string_lossy().into()).unwrap();
+        assert_eq!(n, 1);
+        assert_eq!(fs::read(to.join("ab.jpg")).unwrap(), b"picture");
+        assert!(!to.join("secret.txt").exists());
+        let _ = fs::remove_dir_all(&base);
+    }
 }

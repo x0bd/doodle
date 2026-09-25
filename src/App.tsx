@@ -103,6 +103,9 @@ export function App() {
       if (texts.length) await importFiles(texts);
       if (!target || !pictures.length) return;
       const refs = await attachFiles(pictures);
+      // onto the words of a chapter or page being written: figures where they fell (M5.4)
+      const words = el?.closest<HTMLElement>(".docpage .pm[contenteditable='true']");
+      if (words && !under) return void words.dispatchEvent(new CustomEvent("doodle-figures", { detail: { refs, x: at.x / scale, y: at.y / scale } }));
       attachTo(target, refs);
     }).then((f) => (off = f));
     return () => off?.();

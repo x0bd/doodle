@@ -59,6 +59,8 @@ export async function onFileDrop(handler: (paths: string[], at: { x: number; y: 
 
 /** Ask where a new `.doodle` folder should go. */
 export const writeText = (path: string, text: string) => invoke<void>("write_text", { path, text });
+/** the project's pictures an export names, copied into a folder beside it */
+export const exportPictures = (dir: string, rels: string[], to: string) => invoke<number>("export_pictures", { dir, rels, to });
 
 export interface Imported { dir: string; name: string; files: number }
 export const exportArchive = (dir: string, path: string, name: string) => invoke<number>("export_archive", { dir, path, name });

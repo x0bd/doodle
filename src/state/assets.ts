@@ -71,7 +71,7 @@ function shrink(src: string, size: number): Promise<string> {
       ctx.imageSmoothingQuality = "high";
       ctx.drawImage(img, 0, 0, c.width, c.height);
       // a PNG may be transparent; anything else is a JPEG
-      resolve(src.startsWith("data:image/png") ? c.toDataURL("image/png") : c.toDataURL("image/jpeg", 0.84));
+      resolve(src.startsWith("data:image/png") || /\.png(\?|$)/i.test(src) ? c.toDataURL("image/png") : c.toDataURL("image/jpeg", 0.84));
     };
     img.onerror = reject;
     img.src = src;

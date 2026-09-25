@@ -21,6 +21,7 @@ import { inputRules, InputRule, textblockTypeInputRule, wrappingInputRule } from
 import type { MarkType, NodeType } from "prosemirror-model";
 import { schema, BLOCKS, type Form } from "./schema";
 import { parse, serialize, plainOf, toPos, toOffset } from "./markup";
+import { FigureView } from "./figure";
 
 const N = schema.nodes;
 const K = schema.marks;
@@ -297,7 +298,8 @@ export function Editor(props: Props) {
     const sel = state.selection;
     const out: Over = {};
     const hasFocus = v.hasFocus();
-    if (hasFocus && !sel.empty && v.editable) {
+    // words chosen, not a figure: the bubble is for marking words
+    if (hasFocus && !sel.empty && v.editable && sel instanceof TextSelection) {
       const a = v.coordsAtPos(sel.from);
       const b = v.coordsAtPos(sel.to);
       const pl = plainOf(state.doc);
@@ -406,6 +408,7 @@ export function Editor(props: Props) {
     const v = new EditorView({ mount: mount.current! }, {
       state: EditorState.create({ doc: parse(p.current.value, f), plugins: [history(), rules(f), keys(f), keymap(baseKeymap), decorations] }),
       editable: () => !p.current.readOnly,
+      nodeViews: { figure: (node, vv, getPos) => new FigureView(node, vv, getPos) },
       // Doodle does the checking when it can (so the book's names are known); else WebKit
       attributes: { class: `pm ${p.current.className ?? ""}`, spellcheck: p.current.spell ? "false" : "true" },
       handleKeyDown(_v, e) {
@@ -418,6 +421,21 @@ export function Editor(props: Props) {
         return false;
       },
       handleDOMEvents: {
+        // pictures dropped on the words (App's file drop): figures, after the block they fell on
+        "doodle-figures": (vv, e) => {
+          const { refs, x, y } = (e as CustomEvent<{ refs: string[]; x: number; y: number }>).detail;
+          if (!vv.editable || !refs.length) return true;
+          const hit = vv.posAtCoords({ left: x, top: y });
+          const doc = vv.state.doc;
+          // the block the point is inside (at its very edge the point falls between blocks)
+          const inner = !hit ? doc.content.size : hit.inside >= 0 ? hit.inside : hit.pos;
+          const $p = doc.resolve(inner);
+          const top = $p.depth >= 1 ? null : doc.nodeAt(inner);
+          const at = $p.depth >= 1 ? $p.after(1) : top && hit && hit.inside >= 0 ? inner + top.nodeSize : $p.pos;
+          const figs = refs.map((src) => schema.nodes.figure.create({ src }));
+          vv.dispatch(vv.state.tr.insert(at, figs).scrollIntoView());
+          return true;
+        },
         contextmenu: (vv, e) => {
           const el = (e.target as HTMLElement).closest<HTMLElement>(".misspelt");
           const h = host.current;

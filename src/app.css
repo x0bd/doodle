@@ -478,6 +478,9 @@ html, body, #root { height: 100%; }
 .media { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
 .media-img { aspect-ratio: 1; border-radius: 10px; overflow: hidden; }
 .media-img img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.media-img { position: relative; }
+.media-in { position: absolute; left: 8px; bottom: 8px; opacity: 0; transition: opacity var(--fast) var(--ease); }
+.media-img:hover .media-in, .media-in:focus-visible { opacity: 1; }
 .media-empty { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 88px; border-radius: 10px; color: var(--fg-faint); font-size: var(--t-label); }
 
 /* the character sheet, the style sheet */
@@ -490,6 +493,26 @@ html, body, #root { height: 100%; }
 .sheet-field.grow { flex: 1; }
 .sheet-field .inp { resize: none; font-size: var(--t-body); line-height: 1.5; }
 .appears { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* a figure in the words (M5.4): the picture, its caption under it; chosen,
+   what it shows and where it goes when the book is set */
+.pm .figure { margin: 1.6em 0; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.pm .figure-well { width: 100%; border-radius: var(--r-plate); overflow: hidden; background: var(--tint); cursor: pointer; }
+.pm .figure-well img { display: block; width: 100%; height: auto; max-height: 62vh; min-height: 120px; object-fit: contain; }
+.pm .figure.chosen .figure-well { box-shadow: 0 0 0 2px hsl(var(--lit) / 0.9); }
+/* chosen, it wears its ring, not the browser's blue */
+.pm .figure-well, .pm .figure-well img { -webkit-user-select: none; user-select: none; }
+.pm .figure::selection, .pm .figure *::selection { background: transparent; }
+.pm .figure input:focus::selection { background: hsl(var(--lit) / 0.3); }
+.pm .fig-page .figure-well { aspect-ratio: 2 / 3; }
+.pm .fig-page .figure-well img, .pm .fig-opener .figure-well img { height: 100%; object-fit: cover; }
+.pm .fig-opener .figure-well { aspect-ratio: 3 / 2; }
+.pm .figure-caption, .pm .figure figcaption { width: 100%; text-align: center; font-family: var(--font-ui); font-size: var(--t-label); line-height: 1.45; color: var(--fg-muted); background: transparent; outline: none; }
+.pm .figure-caption::placeholder, .pm .figure-alt::placeholder { color: var(--fg-faint); }
+.pm .figure-set { display: none; width: 100%; align-items: center; gap: 10px; }
+.pm .figure.chosen .figure-set, .pm .figure:focus-within .figure-set { display: flex; }
+.pm .figure-alt { flex: 1; min-width: 0; height: 26px; padding: 0 10px; border-radius: var(--r-ctl); background: var(--tint); font-family: var(--font-ui); font-size: var(--t-micro); color: var(--fg-muted); outline: none; }
+.pm .figure-place { margin-left: 0; flex: none; }
 .appears-n { margin-left: 6px; font-size: var(--t-micro); color: var(--fg-faint); }
 .appears-none { font-size: var(--t-label); color: var(--fg-faint); }
 .sheet-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }

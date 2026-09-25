@@ -54,6 +54,7 @@ pub fn run() {
             integrity::unused_assets,
             integrity::trash_unused_assets,
             commands::write_text,
+            commands::export_pictures,
             commands::ollama_where,
             archive::export_archive,
             archive::import_archive,

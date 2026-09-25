@@ -151,3 +151,32 @@ describe("no words are lost", () => {
     });
   }
 });
+
+describe("figures (M5.4)", () => {
+  it("read and write back — caption, alt text, placement — between the words", () => {
+    const t = 'She opens it.\n\n![The manifest, its last line a name](assets/ab12.jpg "A folded paper in oilcloth"){.page}\n\nThe paper is dry.\n\n![Dusk](assets/cd34.png)';
+    const doc = parse(t);
+    expect(doc.child(1).type).toBe(N.figure);
+    expect(doc.child(1).attrs).toEqual({ src: "assets/ab12.jpg", caption: "The manifest, its last line a name", alt: "A folded paper in oilcloth", place: "page" });
+    expect(doc.child(3).attrs.place).toBe("inline");
+    expect(round(t)).toBe(t);
+  });
+
+  it("keep brackets and quotes in their words", () => {
+    const t = '![A [torn] map](assets/x.jpg "The \\"north\\" rocks"){.opener}';
+    expect(parse(t).child(0).attrs).toMatchObject({ caption: "A [torn] map", alt: 'The "north" rocks', place: "opener" });
+    expect(round(t)).toBe('![A [torn\\] map](assets/x.jpg "The \\"north\\" rocks"){.opener}');
+    expect(round(round(t))).toBe(round(t));
+  });
+
+  it("are not words: not counted, not in the plain text anchors hold to", () => {
+    const t = "One two.\n\n![Three four five](assets/x.jpg)\n\nSix.";
+    expect(countWords(t)).toBe(3);
+    expect(plain(t)).toBe("One two.\n\nSix.");
+  });
+
+  it("a picture inside a paragraph stays words, as it was", () => {
+    const t = "Before ![x](assets/x.jpg) after.";
+    expect(parse(t).child(0).type).toBe(N.paragraph);
+  });
+});
