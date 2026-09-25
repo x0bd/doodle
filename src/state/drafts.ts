@@ -17,7 +17,7 @@ import type { TextRequest } from "../providers/types";
 export type Ask = "expand" | "continue" | "rewrite" | "ask";
 
 /** a tool as the draft says it is being used */
-const DOING: Record<string, string> = {
+export const DOING: Record<string, string> = {
   doodle_here: "looking where you are",
   doodle_outline: "reading the outline",
   doodle_read: "reading",
@@ -30,6 +30,7 @@ const DOING: Record<string, string> = {
   propose_characters: "proposing characters",
   propose_places: "proposing places",
   propose_comment: "commenting",
+  propose_bible: "proposing to the bible",
 };
 
 export interface Draft {

@@ -38,7 +38,7 @@ const runtime = (words: number) => {
   return s < 60 ? `≈ ${Math.max(5, Math.round(s / 5) * 5)} s` : `≈ ${Math.round(s / 60)} min`;
 };
 
-const IDEA_WORD: Record<string, string> = { beat: "beats", note: "notes", character: "characters", location: "places", comment: "comments" };
+const IDEA_WORD: Record<string, string> = { beat: "beats", note: "notes", character: "characters", location: "places", comment: "comments", bible: "additions to the bible" };
 
 const ASK_LABEL = { expand: "Expanded", continue: "Continued", rewrite: "Rewritten", ask: "Answered" } as const;
 

@@ -7,6 +7,7 @@ import { nav } from "../state/nav";
 import { propose } from "../state/drafts";
 import { proposeShots } from "../state/shots";
 import { checkContinuity } from "../state/continuity";
+import { askBook } from "../state/asking";
 import { KINDS, PLACES } from "../graph/kinds";
 import { gatherDialog } from "../state/gather";
 import { buildFromBoard, styleFromPictures } from "../state/build";
@@ -162,6 +163,47 @@ export function Bar() {
       </div>
     );
   }
+  // on the field, the ask is about the book — or what is selected on it
+  if (asking && !entered) {
+    const chosen = g.selection.filter((id) => g.nodes[id]);
+    const send = () => {
+      if (!ask.trim()) return;
+      void askBook(ask.trim());
+      setAsk("");
+    };
+    return (
+      <div className="bar card ask">
+        <div className="bar-from">
+          <span className="dot" />
+          <b>Ask</b>
+          <span className="to">·</span>
+          <span>{chosen.length === 1 ? g.nodes[chosen[0]].title : chosen.length ? `${chosen.length} selected` : "The book"}</span>
+        </div>
+        <input
+          ref={askRef}
+          className="bar-text"
+          value={ask}
+          placeholder={chosen.length ? "What do you want to know about these?" : "What do you want to know about the book?"}
+          onChange={(e) => setAsk(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") (e.preventDefault(), send());
+            else if (e.key === "Escape") (e.preventDefault(), hideAsk());
+          }}
+          spellCheck={false}
+        />
+        <div className="bar-acts">
+          <div className="gap" />
+          <span className="bar-note">Answers arrive beside the field; what it proposes waits on its pages</span>
+          <button className="pill-icon" aria-label="Close" title="Close — esc" onClick={hideAsk}>
+            <Icon icon={CloseIcon} size={13} strokeWidth={2.2} />
+          </button>
+          <button className="bar-go" aria-label="Ask" title="Ask — ⏎" disabled={!ask.trim()} onClick={send}>
+            <Icon icon={UpIcon} size={16} strokeWidth={2.25} />
+          </button>
+        </div>
+      </div>
+    );
+  }
   // away, the bar is one quiet key: the field is the field
   if (!shown) {
     return (
@@ -211,6 +253,11 @@ export function Bar() {
         <button className="pill-icon" aria-label="Put away" title="Put away — the key brings it back" onClick={hideBar}>
           <Icon icon={CloseIcon} size={13} strokeWidth={2.2} />
         </button>
+        {!entered && (
+          <button className="pill-icon" aria-label="Ask the agent" title="Ask about the book — or what is selected" onClick={toggleAsk}>
+            <Icon icon={GenerateIcon} size={15} strokeWidth={1.9} />
+          </button>
+        )}
         <div className="gap" />
         {note && <span className="bar-note">{note}</span>}
         {running ? (

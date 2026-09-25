@@ -142,7 +142,14 @@ async function agent(req: TextRequest, signal: AbortSignal): Promise<string> {
   };
   const here = (await step("doodle_here")).text;
   const id = here.match(/Open: .*?id ([\w-]+)/)?.[1] ?? here.match(/Selected: .*?id ([\w-]+)/)?.[1];
-  if (!id) return "(Mock) Open a scene or a page and ask again — I work on what is open.";
+  if (!id) {
+    // at the top of the book: what the book is, from its outline
+    const outline = (await step("doodle_outline")).text;
+    const chapters = [...outline.matchAll(/^- (.+?) \(chapter,/gm)].map((m) => m[1]);
+    return chapters.length
+      ? `(Mock) I read the outline. The book has ${chapters.length} chapter${chapters.length === 1 ? "" : "s"}: ${chapters.join(", ")}. Open one and ask there, and I can propose on its page.`
+      : "(Mock) I read the outline: there are no chapters yet.";
+  }
   const read = (await step("doodle_read", { id })).text;
   const words = read.split("Words:\n")[1]?.split("\n\nInside:")[0]?.trim() ?? "";
   const ask = `${req.system ?? ""}`.toLowerCase();

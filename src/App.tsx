@@ -11,6 +11,7 @@ import { listenToMenu } from "./platform/menu";
 import { listenForAgent } from "./agent/tools";
 import { keepIndexed } from "./state/meaning";
 import { keepGists } from "./state/gists";
+import { Answers } from "./shell/Answers";
 import { drafts } from "./state/drafts";
 import { jobs, pending } from "./state/jobs";
 import { doc, launch, openHandedOver, recentMenu } from "./state/doc";
@@ -134,6 +135,7 @@ export function App() {
       <Versions />
       <Find />
       <Built />
+      <Answers />
       <Notice />
     </div>
   );

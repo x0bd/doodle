@@ -292,6 +292,23 @@ export const TOOLS: Tool[] = [
     },
   },
   {
+    name: "propose_bible",
+    title: "Propose to the bible",
+    description:
+      "Propose additions to the book's bible — its tone, the rules of its world, what to avoid — for what the book has settled but the bible does not yet say. They are added after what the bible says, never in place of it, when the writer keeps them.",
+    inputSchema: obj({ id: str("The node the writer is on (the proposal waits on its page)."), tone: str("Optional: to add to the tone."), rules: str("Optional: to add to the rules of the world."), avoid: str("Optional: to add to what to avoid."), why: str("What in the book it comes from.") }, ["id", "why"]),
+    readOnly: false,
+    run(args, by) {
+      const n = node(args.id);
+      const part = (k: string) => String(args[k] ?? "").trim();
+      const bible = { tone: part("tone"), rules: part("rules"), avoid: part("avoid") };
+      const said = [bible.tone && `Tone: ${bible.tone}`, bible.rules && `Rules: ${bible.rules}`, bible.avoid && `Avoid: ${bible.avoid}`].filter(Boolean);
+      if (!said.length) throw new Error("Nothing to add: give tone, rules or avoid.");
+      const count = offer(n.id, [{ kind: "bible", title: "To the bible", text: said.join("\n"), why: part("why") || undefined, bible }], by);
+      return count ? `Proposed to the bible, on ${label(n)}'s page, for the writer to keep.` : "Nothing to propose.";
+    },
+  },
+  {
     name: "propose_characters",
     title: "Propose characters",
     description: "Propose new characters, beside a node. They appear as proposals on that node's page for the writer to keep or drop.",
@@ -340,11 +357,26 @@ export function briefing(nodeId: string): string {
     "You are the writing partner inside Doodle, a creative document made of nodes — chapters, pages, scenes, beats, characters, places, styles, shots.",
     n ? `The writer is on ${label(n)}.` : "",
     "Read what you need with the doodle_* tools before you answer (doodle_read the node you are on first). In a long book, doodle_search_meaning finds the passages a question is about.",
-    "You cannot change the document. To suggest additions use propose_beats, propose_shots, propose_characters, propose_places, propose_comment or propose_text: they appear as proposals the writer keeps or drops.",
+    "You cannot change the document. To suggest additions use propose_beats, propose_shots, propose_characters, propose_places, propose_comment, propose_bible or propose_text: they appear as proposals the writer keeps or drops.",
     "Keep your final reply short — what you proposed and why, or the answer to the question.",
   ]
     .filter(Boolean)
     .join("\n");
+}
+
+/** what the agent is told when asked from the field: about the book, or what is selected */
+export function fieldBriefing(about: string[]): string {
+  const g = graph.get();
+  const chosen = about.map((id) => g.nodes[id]).filter(Boolean);
+  return [
+    "You are the writing partner inside Doodle, a creative document made of nodes — chapters, pages, scenes, beats, characters, places, styles, shots.",
+    chosen.length
+      ? `The writer is at the top of the book and asks about what they have selected: ${chosen.map(label).join("; ")}. doodle_read each before you answer.`
+      : "The writer is at the top of the book and asks about the book as a whole. Start from doodle_outline (it says what happens in each chapter, where that has been written); doodle_search_meaning finds the passages a question is about; doodle_read reads a node whole.",
+    "Answer from what the book says, quoting it where it matters, and say which chapter.",
+    "You cannot change the document. To suggest additions use the propose_* tools (on the node they belong to): they appear as proposals the writer keeps or drops.",
+    "Keep your final reply short and plain.",
+  ].join("\n");
 }
 
 /** Answer the MCP server's requests. The listener belongs to the window,

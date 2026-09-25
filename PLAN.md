@@ -214,7 +214,7 @@ Built on **D1** (decided: the chapter is the manuscript).
 | M6.2 ◐ | **Long-book context**: chapter summaries kept fresh in the background; local embeddings (Ollama embedding model) over passages; `doodle_search_meaning` tool | "Where did Mara first see the ship?" finds the passage in a 120k-word book. |
 | M6.3 ✅ | **Continuity check**: against the bible, character sheets and earlier chapters; answers with quotes and proposals | Scenario step 8 catches a planted contradiction. |
 | M6.4 ◐ | **More tools, still propose-only**: `propose_illustration` (a passage + a prompt, becomes takes on keep), `propose_object`, `propose_bible`, `propose_comment` | The agent can suggest an illustration; nothing is generated until kept. |
-| M6.5 | **Agent on the field bar** as well as on a page (the whole book or the selection as scope) | Ask from the book level about the book. |
+| M6.5 ✅ | **Agent on the field bar** as well as on a page (the whole book or the selection as scope) | Ask from the book level about the book. |
 
 ### M7 — Out: export and a friend-ready build — *M*
 
