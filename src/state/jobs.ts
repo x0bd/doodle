@@ -11,6 +11,7 @@ import { doc, bibleText } from "./doc";
 import { writeAsset, saveRecord, loadRecord, inTauri, readThumb } from "../platform/fs";
 import { ui } from "./ui";
 import { expandMentions, mentionedIn } from "../canvas/mentions";
+import { refsOf, picturesOfNode } from "./refs";
 import { plain, formOf } from "../writer/markup";
 import { FRAMES } from "../graph/kinds";
 import { record, inputsOf } from "./prov";
@@ -78,6 +79,17 @@ function describe(n: GraphNode | undefined, bare = false): string {
 }
 
 const WHAT: Record<string, string> = { character: "a character", location: "a place", object: "a thing in the story" };
+/** what a model is told a reference is for */
+const refLabel = (m: GraphNode) =>
+  m.kind === "board"
+    ? `from the board "${m.title}" (the mood — its colour, light and texture, not its contents)`
+    : m.kind === "style"
+      ? `${m.title} (a reference for the style — its palette, light and medium, not what is in it)`
+      : m.kind === "clip"
+        ? `${m.title} (a reference picture)`
+        : `${String(m.data.name || m.title)} (${WHAT[m.kind] ?? "a reference"})`;
+/** more than this and a model stops telling them apart */
+const MOST_PICTURES = 10;
 
 /** a style's references that ride with it — four at most */
 const STYLE_REFS = 4;
@@ -112,12 +124,23 @@ function picturesFor(n: GraphNode, look?: GraphNode): Picture[] {
     }
     // and whoever its words name with @ (M5.2): a mention is as good as a wire
     for (const m of mentionedIn(String(from.data.text ?? ""))) {
-      if (!m.asset || m.status === "rejected" || seen.has(m.id)) continue;
+      if (m.status === "rejected" || seen.has(m.id)) continue;
       seen.add(m.id);
-      out.push({ label: `${String(m.data.name || m.title)} (${WHAT[m.kind]})`, ref: m.asset });
+      for (const ref of picturesOfNode(m, g, STYLE_REFS)) out.push({ label: refLabel(m), ref });
     }
   }
-  return out;
+  // and the references it was given (the studio): pictures, boards, styles, people
+  for (const r of refsOf(n)) {
+    if ("picture" in r) {
+      if (!out.some((p) => p.ref === r.picture)) out.push({ label: "a reference picture", ref: r.picture });
+      continue;
+    }
+    const m = g.nodes[r.node];
+    if (!m || m.status === "rejected" || seen.has(m.id)) continue;
+    seen.add(m.id);
+    for (const ref of picturesOfNode(m, g, STYLE_REFS)) out.push({ label: refLabel(m), ref });
+  }
+  return out.slice(0, MOST_PICTURES);
 }
 
 /** what the model is told about the pictures, so it knows which is whom */

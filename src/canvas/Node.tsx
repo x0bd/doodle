@@ -1,11 +1,12 @@
 import { memo, useEffect, useMemo, useRef, type PointerEvent as ReactPointerEvent } from "react";
-import { Icon, PopUpIcon, ChevronRightIcon, ImageIcon } from "../icons";
+import { Icon, PopUpIcon, ChevronRightIcon, ImageIcon, GenerateIcon } from "../icons";
 import { thumbFor, assets } from "../state/assets";
 import { KINDS } from "../graph/kinds";
 import { FieldRow } from "../shell/Fields";
 import { graph, inputs, outputs, updateData, childCount, childrenOf, measure, setWidth, setSize, takeOutput, paginate, type GraphNode, type PortRef } from "../state/graph";
 import { camera, toWorld } from "./camera";
 import { setOnField, giveLook } from "../state/remix";
+import { generateLook } from "../state/looks";
 import { jobs, jobFor, partialFor } from "../state/jobs";
 import { Editor } from "../writer/Editor";
 import { plain, formOf, countWords } from "../writer/markup";
@@ -305,6 +306,16 @@ function Body({ node }: { node: GraphNode }) {
         <div className="node-body node-who">
           <div className="who-face">
             {node.asset ? <img className="node-img" src={thumbFor(node.asset, 256)} alt="" draggable={false} /> : <span>{initials(name)}</span>}
+            {/* a face from their appearance, without opening them: four to choose from, in their studio */}
+            <button
+              className="who-make"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => (e.stopPropagation(), generateLook(node.id, "portrait"))}
+              aria-label={node.asset ? `New portraits of ${name}` : `Generate a face for ${name}`}
+              title={node.asset ? "Four new portraits — open them to choose" : "Generate a face from their appearance — open them to choose"}
+            >
+              <Icon icon={GenerateIcon} size={16} strokeWidth={2} />
+            </button>
           </div>
           <div className="who-what">
             <div className="who-name">{name}</div>

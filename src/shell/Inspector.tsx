@@ -9,7 +9,8 @@ import { FieldRow } from "./Fields";
 import { GLYPH } from "../canvas/Doc";
 import { Icon, CloseIcon, PopUpIcon } from "../icons";
 import { doc, setBible } from "../state/doc";
-import { nav } from "../state/nav";
+import { STUDIO } from "../canvas/Doc";
+import { nav, enter } from "../state/nav";
 
 const STATE_WORD: Record<Canon, string> = { canon: "Canon", draft: "Draft", exploration: "Explore", rejected: "Rejected" };
 const STATE_NOTE: Record<Canon, string> = {
@@ -55,6 +56,8 @@ export function Inspector() {
   const isWorkspace = !ids.length && !!focus;
   const d = doc.use();
   const atRoot = !ids.length && !focus;
+  // the node opened in a studio: its fields are on the page
+  const opened = !!node && node.id === focus && STUDIO.has(node.kind);
 
   return (
     <aside className="pane right card" aria-label="Inspector">
@@ -107,7 +110,9 @@ export function Inspector() {
           </div>
         </div>
       )}
-      {node && (
+      {/* opened in a studio, its fields are on the page: here, only what the page lacks */}
+      {node && opened && <Wiring node={node} />}
+      {node && !opened && (
         <div className="pane-body">
           {KINDS[node.kind].groups.map((grp) => (
             <div key={grp.name}>
@@ -124,6 +129,35 @@ export function Inspector() {
       )}
       {node && <Source node={node} />}
     </aside>
+  );
+}
+
+/** what an opened node is wired to and from — each a key to go there */
+function Wiring({ node }: { node: GraphNode }) {
+  const g = graph.use();
+  const into = Object.values(g.edges).filter((e) => e.to.node === node.id).map((e) => g.nodes[e.from.node]).filter(Boolean);
+  const out = Object.values(g.edges)
+    .filter((e) => e.from.node === node.id)
+    .map((e) => ({ n: g.nodes[e.to.node], port: e.to.port }))
+    .filter((x) => x.n && x.n.parent !== node.id);
+  if (!into.length && !out.length) return null;
+  return (
+    <div className="pane-body">
+      <div className="group-head">Wired</div>
+      <div className="group">
+        {out.map(({ n, port }) => (
+          <button key={`o${n.id}${port}`} className="group-row wire-row" onClick={() => enter(n.id)} title="Open it">
+            <span className="group-name">Feeds {n.title}</span>
+            <span className="px wire-port">as {port}</span>
+          </button>
+        ))}
+        {into.map((n) => (
+          <button key={`i${n.id}`} className="group-row wire-row" onClick={() => enter(n.id)} title="Open it">
+            <span className="group-name">From {n.title}</span>
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 

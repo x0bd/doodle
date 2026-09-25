@@ -3,9 +3,11 @@ import { Icon, type IconSvgElement } from "../icons";
 import { graph, type GraphNode } from "../state/graph";
 import type { NodeKind } from "../graph/kinds";
 
-const MENTIONABLE = new Set<NodeKind>(["character", "location", "object", "style", "shot", "note", "prompt"]);
+const MENTIONABLE = new Set<NodeKind>(["character", "location", "object", "style", "shot", "note", "prompt", "board"]);
 /** the ones that are someone, somewhere or something — with a look of their own */
 const LOOKED = new Set<NodeKind>(["character", "location", "object"]);
+/** the ones whose pictures ride when named: those, and a style's references, a board's pictures */
+const PICTURED = new Set<NodeKind>([...LOOKED, "style", "board"]);
 const AT = /(^|\s)@([^\s@]*)$/;
 
 /** The things a mention can name, longest title first so a longer name
@@ -22,7 +24,7 @@ export function mentionables(): GraphNode[] {
 export function expandMentions(text: string): string {
   let out = text;
   for (const n of mentionables()) {
-    const what = LOOKED.has(n.kind) ? `${n.data.name || n.title} (${n.data.description})` : n.kind === "style" ? `${n.title}: ${n.data.description}` : String(n.data.description || n.data.text || n.title);
+    const what = LOOKED.has(n.kind) ? `${n.data.name || n.title} (${n.data.description})` : n.kind === "board" ? `the mood of the board "${n.title}"` : n.kind === "style" ? `${n.title}: ${n.data.description}` : String(n.data.description || n.data.text || n.title);
     out = out.split(`@${n.title}`).join(what);
   }
   return out;
@@ -35,7 +37,7 @@ export function mentionedIn(text: string): GraphNode[] {
   let rest = text;
   // longest first, and each mention taken out once found, so "@Mara's lamp" is not also "@Mara"
   for (const n of mentionables()) {
-    if (!LOOKED.has(n.kind) || !rest.includes(`@${n.title}`)) continue;
+    if (!PICTURED.has(n.kind) || !rest.includes(`@${n.title}`)) continue;
     found.push(n);
     rest = rest.split(`@${n.title}`).join(" ");
   }

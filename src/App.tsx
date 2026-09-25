@@ -11,6 +11,7 @@ import { listenToMenu } from "./platform/menu";
 import { listenForAgent } from "./agent/tools";
 import { keepIndexed } from "./state/meaning";
 import { keepGists } from "./state/gists";
+import { makeRecipe, addRefs, type Shot } from "./state/looks";
 import { Answers } from "./shell/Answers";
 import { drafts } from "./state/drafts";
 import { jobs, pending } from "./state/jobs";
@@ -103,6 +104,13 @@ export function App() {
       if (texts.length) await importFiles(texts);
       if (!target || !pictures.length) return;
       const refs = await attachFiles(pictures);
+      // onto a recipe (the studio): they are its references
+      const recipe = el?.closest<HTMLElement>("[data-node-recipe]");
+      if (recipe) {
+        const r = makeRecipe(recipe.dataset.nodeRecipe!, (recipe.dataset.shot as Shot) || "portrait");
+        if (r) addRefs(r.gen.id, refs.map((picture) => ({ picture })));
+        return;
+      }
       // onto the words of a chapter or page being written: figures where they fell (M5.4)
       const words = el?.closest<HTMLElement>(".docpage .pm[contenteditable='true']");
       if (words && !under) return void words.dispatchEvent(new CustomEvent("doodle-figures", { detail: { refs, x: at.x / scale, y: at.y / scale } }));

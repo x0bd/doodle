@@ -23,6 +23,10 @@ import { jobs, enqueue, jobFor, partialFor, RUNNABLE } from "../state/jobs";
 import { FieldRow } from "../shell/Fields";
 import { mentionables } from "./mentions";
 import { appearances } from "../state/appears";
+import { CharacterStudio } from "./Studio";
+
+/** the kinds that open into a studio of their own (2026-09-25: the character first) */
+export const STUDIO = new Set<NodeKind>(["character"]);
 import { illustrate, illustrationsOf, briefOf, takeIntoWords } from "../state/illustrate";
 import { useState, useMemo } from "react";
 import { Editor, type Picked, type Tie } from "../writer/Editor";
@@ -83,7 +87,7 @@ export function Doc({ id }: { id: string }) {
 
   return (
     <div className="docpage" onPointerDown={(e) => e.stopPropagation()}>
-      <article className={`paper k-${node.kind}`}>
+      <article className={`paper k-${node.kind}${STUDIO.has(node.kind) ? " studio-paper" : ""}`}>
         <header className="paper-head">
           <p className="paper-meta">
             <span className="dot" />
@@ -551,9 +555,14 @@ function Body({ node }: { node: GraphNode }) {
     case "page":
     case "chapter":
       return <Prose node={node} />;
+    case "character":
+      return (
+        <CharacterStudio node={node}>
+          <Appears node={node} />
+        </CharacterStudio>
+      );
     case "location":
     case "object":
-    case "character":
       return (
         <div className="sheet-char">
           <div className={`sheet-ref well${node.asset ? "" : " diag"}`}>
