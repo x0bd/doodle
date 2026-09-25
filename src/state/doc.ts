@@ -34,6 +34,9 @@ export interface Bible {
   tone: string;
   rules: string;
   avoid: string;
+  /** the book's look (M5.5): a style's id — every picture made without a
+   *  style of its own is made in it, its references riding along */
+  look?: string;
 }
 export const EMPTY_BIBLE: Bible = { tone: "", rules: "", avoid: "" };
 

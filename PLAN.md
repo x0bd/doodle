@@ -203,7 +203,7 @@ Built on **D1** (decided: the chapter is the manuscript).
 | M5.2 ✅ | **Objects** — a new kind for things that matter in the story (the manifest, the lamp, the key): description, pictures, where they appear | An object mentioned with `@` rides into requests with its picture. |
 | M5.3 ✅ | **Illustrate a passage**: select words → *Illustrate*; the request carries who and where appear in the passage (mentions + the chapter's cast) and their references; results appear as takes beside the passage | Scenario step 6. |
 | M5.4 ✅ | **Figures in the manuscript**: a figure block (image, caption, alt text) anchored to a passage; placement (inline, full page, chapter opener); in Markdown as `![caption](assets/…)` | Figures survive the round trip and export. |
-| M5.5 | **Book style lock**: a book-level look (style + reference images + model + settings) applied to every picture unless overridden | Switch the lock: new pictures follow it. |
+| M5.5 ✅ | **Book style lock**: a book-level look (style + reference images + model + settings) applied to every picture unless overridden | Switch the lock: new pictures follow it. |
 | M5.6 | **Continuity of looks**: when a character's face changes, pictures made from the old one are flagged *made from an earlier face* with *Remake* | Change a face; old figures show the flag. |
 
 ### M6 — The agent reads the book — *M*
@@ -211,7 +211,7 @@ Built on **D1** (decided: the chapter is the manuscript).
 | # | Task | Acceptance |
 |---|---|---|
 | M6.1 ✅ | **Tools for Ollama** through `/api/chat` tool calling (Hemmingway-1, 2026-09-25); the same `TOOLS` as Codex | A free ask on Ollama proposes beats through tools. |
-| M6.2 ◐ | **Long-book context**: chapter summaries kept fresh in the background; local embeddings (Ollama embedding model) over passages; `doodle_search_meaning` tool | "Where did Mara first see the ship?" finds the passage in a 120k-word book. |
+| M6.2 ✅ | **Long-book context**: chapter summaries kept fresh in the background; local embeddings (Ollama embedding model) over passages; `doodle_search_meaning` tool | "Where did Mara first see the ship?" finds the passage in a 120k-word book. |
 | M6.3 ✅ | **Continuity check**: against the bible, character sheets and earlier chapters; answers with quotes and proposals | Scenario step 8 catches a planted contradiction. |
 | M6.4 ✅ | **More tools, still propose-only**: `propose_illustration` (a passage + a prompt, becomes takes on keep), `propose_object`, `propose_bible`, `propose_comment` | The agent can suggest an illustration; nothing is generated until kept. |
 | M6.5 ✅ | **Agent on the field bar** as well as on a page (the whole book or the selection as scope) | Ask from the book level about the book. |

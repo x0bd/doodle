@@ -11,7 +11,7 @@
  */
 import { graph, type GraphNode } from "./graph";
 import { ui } from "./ui";
-import { passagesOf, type Passage } from "./passages";
+import { passagesOf, hash, type Passage } from "./passages";
 import { embedder, embed, alike } from "../readers/embed";
 import { KINDS } from "../graph/kinds";
 import { log, since } from "../platform/log";
@@ -19,6 +19,8 @@ import { recall, keep } from "../platform/kept";
 
 /** passages read at once: enough to keep the model busy, few enough to stop soon */
 const BATCH = 24;
+/** how many of the nearest passages are read again a paragraph at a time */
+const RERANK = 12;
 
 const vectors = new Map<string, Float32Array>();
 
@@ -84,14 +86,35 @@ export async function searchMeaning(question: string, { count = 6, each = 3, onl
     .filter((p) => g.nodes[p.node] && vectors.has(p.key) && (!only || only(g.nodes[p.node])))
     .map((p) => ({ p, score: alike(q, vectors.get(p.key)!) }))
     .sort((a, b) => b.score - a.score);
+  // the nearest passages, read again a paragraph at a time: a passage is
+  // ~180 words, and the one sentence that answers is thinned by the rest;
+  // each is as near as its nearest paragraph, and that paragraph is the answer
+  const near = scored.slice(0, Math.max(RERANK, count * 2));
+  const paras = near.flatMap(({ p }) => p.text.split(/\n{2,}/).map((t) => t.trim()).filter((t) => t.split(/\s+/).length >= 6).map((t) => ({ p, t, key: hash(`${model}\npara\n${t}`) })));
+  for (const [k, v] of await recall<Float32Array>("vectors", paras.map((x) => x.key).filter((k) => !vectors.has(k)))) vectors.set(k, v);
+  const want = [...new Map(paras.filter((x) => !vectors.has(x.key)).map((x) => [x.key, x])).values()];
+  for (let i = 0; i < want.length; i += BATCH) {
+    const part = want.slice(i, i + BATCH);
+    const vs = await embed(part.map((x) => x.t), model, "passage", signal);
+    const pairs = part.map((x, k) => [x.key, vs[k]] as [string, Float32Array]);
+    for (const [k, v] of pairs) vectors.set(k, v);
+    void keep("vectors", pairs);
+  }
+  const best = near
+    .map(({ p, score }) => {
+      const mine = paras.filter((x) => x.p === p).map((x) => ({ t: x.t, s: alike(q, vectors.get(x.key)!) }));
+      const top = mine.sort((a, b) => b.s - a.s)[0];
+      return { p, score: top && top.s > score ? top.s : score, text: top && top.s > score ? top.t : p.text };
+    })
+    .sort((a, b) => b.score - a.score);
   const per = new Map<string, number>();
   const out: Found[] = [];
-  for (const { p, score } of scored) {
+  for (const { p, score, text } of best) {
     if (out.length >= count) break;
     const n = per.get(p.node) ?? 0;
     if (n >= each) continue;
     per.set(p.node, n + 1);
-    out.push({ node: g.nodes[p.node], text: p.text, page: p.page, score });
+    out.push({ node: g.nodes[p.node], text, page: p.page, score });
   }
   return out;
 }

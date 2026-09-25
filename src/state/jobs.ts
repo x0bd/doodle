@@ -86,10 +86,16 @@ const STYLE_REFS = 4;
  *  that feeds it and has one — through its own ports or given by hand —
  *  and a style's references (M3.7), labelled so the model can tell which
  *  is whom and which is only the look. Rejected ones never. */
-function picturesFor(n: GraphNode): Picture[] {
+function picturesFor(n: GraphNode, look?: GraphNode): Picture[] {
   const g = graph.get();
   const seen = new Set<string>();
   const out: Picture[] = [];
+  // the book's look, for a picture with no style of its own
+  if (look) {
+    seen.add(look.id);
+    for (const ref of (look.attachments ?? []).slice(0, STYLE_REFS))
+      out.push({ label: `${look.title} (a reference for the book's look — its palette, light and medium, not what is in it)`, ref });
+  }
   for (const e of Object.values(g.edges)) {
     if (e.to.node !== n.id) continue;
     const from = g.nodes[e.from.node];
@@ -153,6 +159,16 @@ function given(n: GraphNode, bare = false): string[] {
   return (n.extras ?? []).map((p) => describe(fed(n, p.id), bare)).filter(Boolean);
 }
 
+/** The book's look (M5.5), for a generator that has no style of its own —
+ *  none wired, none given by hand. Overridden by wiring one. */
+export function bookLook(gen: GraphNode): GraphNode | undefined {
+  const id = doc.get().bible.look;
+  const look = id ? graph.get().nodes[id] : undefined;
+  if (!look || look.kind !== "style" || look.status === "rejected") return undefined;
+  const own = fed(gen, "style") || (gen.extras ?? []).some((p) => fed(gen, p.id)?.kind === "style");
+  return own ? undefined : look;
+}
+
 /** The prompt compiler, in its smallest form: the scene, then who is in
  *  it, then how it looks — and then whatever else it was given. */
 export function requestFor(gen: GraphNode): ImageRequest {
@@ -161,8 +177,9 @@ export function requestFor(gen: GraphNode): ImageRequest {
   const neg = fed(gen, "negative");
   const d = gen.data;
   const seed = d.control === "Random" ? Math.floor(Math.random() * 1_000_000) : Number(d.seed);
-  const images = picturesFor(gen);
-  const prompt = [describe(pos, true), describe(fed(gen, "character"), true), describe(fed(gen, "style"), true), ...given(gen, true), bibleText().replace(/\n/g, ". "), captions(images)].filter(Boolean).join(". ");
+  const look = bookLook(gen);
+  const images = picturesFor(gen, look);
+  const prompt = [describe(pos, true), describe(fed(gen, "character"), true), describe(fed(gen, "style"), true), describe(look, true), ...given(gen, true), bibleText().replace(/\n/g, ". "), captions(images)].filter(Boolean).join(". ");
   return {
     prompt,
     images: images.length ? images : undefined,

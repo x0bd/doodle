@@ -7,7 +7,7 @@ import { prov, behind } from "../state/prov";
 import { remix, remixable } from "../state/remix";
 import { FieldRow } from "./Fields";
 import { GLYPH } from "../canvas/Doc";
-import { Icon, CloseIcon } from "../icons";
+import { Icon, CloseIcon, PopUpIcon } from "../icons";
 import { doc, setBible } from "../state/doc";
 import { nav } from "../state/nav";
 
@@ -22,6 +22,30 @@ const BIBLE_HINT = { tone: "Quiet, cold, patient. Nothing is explained twice.", 
 
 /** The right pane: what the selection is, and its every setting. */
 const GATHERED = new Set(["board", "clip", "group"]);
+
+/** The book's look (M5.5): which style every picture is made in, unless it has its own */
+function Look() {
+  const d = doc.use();
+  const styles = graph.use((g) => g.order).map((id) => graph.get().nodes[id]).filter((n) => n?.kind === "style" && n.status !== "rejected");
+  const on = styles.find((s) => s.id === d.bible.look);
+  return (
+    <div className="group-row" title="Every picture made without a style of its own is made in this one, its references riding along">
+      <div className="group-name">The book's look</div>
+      <div className="group-ctl">
+        <label className="pill pill-sm select">
+          <span>{on ? on.title : "None"}</span>
+          <Icon icon={PopUpIcon} size={12} strokeWidth={2} />
+          <select value={on?.id ?? ""} onChange={(e) => setBible({ look: e.target.value })} aria-label="The book's look">
+            <option value="">None</option>
+            {styles.map((s) => (
+              <option key={s.id} value={s.id}>{s.title}</option>
+            ))}
+          </select>
+        </label>
+      </div>
+    </div>
+  );
+}
 
 export function Inspector() {
   const g = graph.use();
@@ -79,6 +103,7 @@ export function Inspector() {
                 <textarea className="inp" rows={3} value={d.bible[k]} onChange={(e) => setBible({ [k]: e.target.value })} spellCheck placeholder={BIBLE_HINT[k]} />
               </div>
             ))}
+            <Look />
           </div>
         </div>
       )}
