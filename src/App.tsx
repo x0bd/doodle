@@ -9,6 +9,10 @@ import { Bar } from "./shell/Bar";
 import { ui, togglePanes, openChooser, setFocusing } from "./state/ui";
 import { listenToMenu } from "./platform/menu";
 import { listenForAgent } from "./agent/tools";
+import { keepIndexed } from "./state/meaning";
+import { keepGists } from "./state/gists";
+import { drafts } from "./state/drafts";
+import { jobs, pending } from "./state/jobs";
 import { doc, launch, openHandedOver, recentMenu } from "./state/doc";
 import { fitAll } from "./canvas/view";
 import { painted } from "./platform/log";
@@ -52,6 +56,9 @@ export function App() {
   }, [focusing]);
   useEffect(listenToMenu, []);
   useEffect(listenForAgent, []);
+  useEffect(keepIndexed, []);
+  // chapter gists while nothing else wants the local writer
+  useEffect(() => keepGists(() => Object.values(drafts.get()).some((d) => d.state === "thinking") || pending(jobs.get()).length > 0), []);
   // what the Finder opened Doodle with; else a graph that was never saved
   // and was being worked on when Doodle stopped; else the last graph if it
   // is still there — with its view — else the templates

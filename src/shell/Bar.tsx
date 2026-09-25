@@ -6,6 +6,7 @@ import { ui, hideBar, showBar, hideAsk, toggleAsk } from "../state/ui";
 import { nav } from "../state/nav";
 import { propose } from "../state/drafts";
 import { proposeShots } from "../state/shots";
+import { checkContinuity } from "../state/continuity";
 import { KINDS, PLACES } from "../graph/kinds";
 import { gatherDialog } from "../state/gather";
 import { buildFromBoard, styleFromPictures } from "../state/build";
@@ -99,6 +100,11 @@ export function Bar() {
               {prose && <button className="pill pill-sm" onClick={() => void propose(entered.id, "continue")}>Continue</button>}
               <button className="pill pill-sm" onClick={() => void propose(entered.id, "rewrite")}>Rewrite</button>
             </>
+          )}
+          {(entered.kind === "chapter" || entered.kind === "page") && (
+            <button className="pill pill-sm" onClick={() => void checkContinuity(entered.id)} title="Read it against the bible, the characters and places, and the chapters before; what does not agree is proposed as comments">
+              Check
+            </button>
           )}
           <div className="gap" />
           <span className="bar-note">{prose || described ? "Drafts wait on the page until you keep them" : "Answers arrive as drafts on the page"}</span>

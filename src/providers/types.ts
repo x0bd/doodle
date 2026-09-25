@@ -62,12 +62,18 @@ export interface TextRequest {
   tools?: boolean;
   /** what the agent is told about where it is, when it has the tools */
   instructions?: string;
-  runTool?: (name: string, args: Record<string, unknown>) => { text: string; error: boolean };
+  runTool?: (name: string, args: Record<string, unknown>) => ToolAnswer | Promise<ToolAnswer>;
   /** the tools themselves, for a provider that is handed them by
    *  description and calls back (Ollama's tool calling) */
   toolSpecs?: ToolSpec[];
   /** a tool reached for, as it happens */
   onTool?: (name: string) => void;
+}
+
+/** what a tool said, and whether it went wrong */
+export interface ToolAnswer {
+  text: string;
+  error: boolean;
 }
 
 /** a tool as a model is told about it */

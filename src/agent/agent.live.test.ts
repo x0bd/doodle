@@ -43,8 +43,8 @@ describe.skipIf(!process.env.DOODLE_LIVE)("the agent on Ollama", () => {
         tools: true,
         instructions: briefing(page.id),
         toolSpecs: toolSpecs(),
-        runTool: (name, args) => {
-          const r = runTool(name, args, "Ollama");
+        runTool: async (name, args) => {
+          const r = await runTool(name, args, "Ollama");
           used.push(`${name}${r.error ? ` ✗ ${r.text}` : ""}`);
           return r;
         },

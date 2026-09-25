@@ -105,6 +105,16 @@ export const mock: Provider = {
         bible: { tone: "Quiet, close, weather in every paragraph.", rules: "The lamp is lit every night, whatever happens.", avoid: "Explaining the ship." },
       });
     }
+    // a continuity check: the chapter's first sentence against the first source's
+    if (req.system?.startsWith("CONTINUITY CHECK")) {
+      const chapter = req.prompt.match(/<chapter[^>]*>\n([\s\S]*?)\n<\/chapter>/)?.[1] ?? "";
+      const src = req.prompt.match(/<source name="([^"]*)">\n([\s\S]*?)\n<\/source>/);
+      const first = (t: string) => t.trim().split(/(?<=[.!?])\s/)[0] ?? "";
+      const quote = first(chapter);
+      return JSON.stringify({
+        findings: quote && src ? [{ quote, source: src[1], says: first(src[2]), problem: "(Mock) This does not agree with what the book has fixed.", fix: "Change it to agree." }] : [],
+      });
+    }
     if (req.system?.includes("JSON array only")) {
       const n = Number(req.system.match(/Propose (\d+) shots/)?.[1] ?? 6);
       return JSON.stringify(SHOTS.slice(0, Math.max(1, Math.min(SHOTS.length, n))));

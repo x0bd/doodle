@@ -13,7 +13,7 @@ import { locate } from "./anchors";
 import { plain, formOf } from "../writer/markup";
 import type { NodeKind } from "../graph/kinds";
 
-export type IdeaKind = "beat" | "note" | "character" | "location";
+export type IdeaKind = "beat" | "note" | "character" | "location" | "comment";
 
 export interface Idea {
   kind: IdeaKind;
@@ -46,7 +46,18 @@ export function offer(nodeId: string, items: Idea[], by: string): number {
 
 export const ideasFor = (all: Record<string, IdeaSet>, nodeId: string) => Object.values(all).filter((s) => s.nodeId === nodeId);
 
-const KIND: Record<IdeaKind, NodeKind> = { beat: "note", note: "note", character: "character", location: "location" };
+const KIND: Record<IdeaKind, NodeKind> = { beat: "note", note: "note", character: "character", location: "location", comment: "comment" };
+
+/** where the quoted words sit in the host's words as read (markup away,
+ *  in the quote too — a model copies the asterisks), if they do */
+function tie(host: GraphNode, quote?: string) {
+  const form = formOf(host.data);
+  const want = plain(quote?.trim() ?? "", form).trim();
+  if (!want) return undefined;
+  const words = plain(String(host.data.text ?? ""), form);
+  const anchor = { node: host.id, text: want, at: Math.max(0, words.indexOf(want)) };
+  return locate(words, anchor) ? anchor : undefined;
+}
 
 function made(set: IdeaSet, idea: Idea, offset: number): GraphNode | undefined {
   const g = graph.get();
@@ -57,13 +68,14 @@ function made(set: IdeaSet, idea: Idea, offset: number): GraphNode | undefined {
     const n = childrenOf(g, host.id).length + offset;
     const node = makeNode("note", 60 + n * 260, 60, { parent: host.id, title: idea.title.slice(0, 60) || `Beat ${n + 1}`, data: { text: idea.text } });
     // a beat that says where it came from is tied there, if the words are
-    if (idea.quote?.trim()) {
-      const words = plain(String(host.data.text ?? ""), formOf(host.data));
-      const at = words.indexOf(idea.quote.trim());
-      const anchor = { node: host.id, text: idea.quote.trim(), at: Math.max(0, at) };
-      if (locate(words, anchor)) node.anchor = anchor;
-    }
+    const anchor = tie(host, idea.quote);
+    if (anchor) node.anchor = anchor;
     return node;
+  }
+  // a remark in the margin, on its words; one whose words are not there is a remark on the whole
+  if (kind === "comment") {
+    const anchor = tie(host, idea.quote) ?? { node: host.id, text: plain(String(host.data.text ?? ""), formOf(host.data)).slice(0, 60), at: 0 };
+    return makeNode("comment", 0, 0, { parent: host.id, title: "Comment", data: { text: [idea.text, idea.why].filter(Boolean).join("\n\n"), resolved: 0, by: set.by }, anchor });
   }
   // a character or a place lives beside what it was proposed for
   const x = host.x + (offset + 1) * 40;

@@ -38,7 +38,7 @@ const runtime = (words: number) => {
   return s < 60 ? `≈ ${Math.max(5, Math.round(s / 5) * 5)} s` : `≈ ${Math.round(s / 60)} min`;
 };
 
-const IDEA_WORD: Record<string, string> = { beat: "beats", note: "notes", character: "characters", location: "places" };
+const IDEA_WORD: Record<string, string> = { beat: "beats", note: "notes", character: "characters", location: "places", comment: "comments" };
 
 const ASK_LABEL = { expand: "Expanded", continue: "Continued", rewrite: "Rewritten", ask: "Answered" } as const;
 
@@ -184,7 +184,7 @@ export function Doc({ id }: { id: string }) {
                 <li key={i} className="ghost">
                   <span className="beat-n px">{i + 1}</span>
                   <div className="beat-what">
-                    <span className="ghost-title">{it.title}</span>
+                    {it.kind !== "comment" && <span className="ghost-title">{it.title}</span>}
                     <span className="ghost-text">{it.text}</span>
                     {(it.quote || it.why) && (
                       <span className="ghost-cam px">

@@ -11,6 +11,7 @@ import { ui } from "./ui";
 import { bibleText } from "./doc";
 import { expandMentions } from "../canvas/mentions";
 import { briefing, runTool, toolSpecs } from "../agent/tools";
+import { gistOf } from "./gists";
 import type { TextRequest } from "../providers/types";
 
 export type Ask = "expand" | "continue" | "rewrite" | "ask";
@@ -21,11 +22,14 @@ const DOING: Record<string, string> = {
   doodle_outline: "reading the outline",
   doodle_read: "reading",
   doodle_find: "searching",
+  doodle_search_meaning: "searching the book",
+  doodle_check_continuity: "checking continuity",
   propose_beats: "proposing beats",
   propose_shots: "proposing shots",
   propose_text: "drafting",
   propose_characters: "proposing characters",
   propose_places: "proposing places",
+  propose_comment: "commenting",
 };
 
 export interface Draft {
@@ -65,7 +69,8 @@ function before(nodeId: string): string {
     const all = g.order.map((id) => g.nodes[id]).filter((n) => n.parent === node.parent && n.kind === "chapter" && n.status !== "rejected").sort((a, b) => a.seq - b.seq);
     const prev = all[all.findIndex((c) => c.id === nodeId) - 1];
     if (!prev) return "";
-    const line = String(prev.data.summary ?? "").trim();
+    // the author's line for it, else what the writer made of it
+    const line = String(prev.data.summary ?? "").trim() || gistOf(prev) || "";
     const tail = String(prev.data.text ?? "").trim().slice(-900);
     return [`The chapter before is "${prev.title}"${line ? `: ${line}` : ""}.`, tail && `It ends:\n…${tail}`].filter(Boolean).join("\n");
   }
@@ -129,6 +134,12 @@ export async function propose(nodeId: string, ask: Ask, instruction = "") {
   } finally {
     controllers.delete(id);
   }
+}
+
+/** A draft made elsewhere (the continuity check) that Stop stops; the answer lets it go. */
+export function stoppable(id: string, ctl: AbortController) {
+  controllers.set(id, ctl);
+  return () => void controllers.delete(id);
 }
 
 /** Stop a draft that is still being written. */

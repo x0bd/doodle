@@ -20,6 +20,10 @@ import { tiedTo } from "../state/anchors";
 import { offer, type Idea } from "../state/ideas";
 import { shots, parseShots } from "../state/shots";
 import { drafts } from "../state/drafts";
+import { searchMeaning, whereIs } from "../state/meaning";
+import { gistOf } from "../state/gists";
+import { checkContinuity } from "../state/continuity";
+import type { ToolAnswer } from "../providers/types";
 
 type Args = Record<string, unknown>;
 interface Tool {
@@ -29,7 +33,7 @@ interface Tool {
   inputSchema: Record<string, unknown>;
   /** reads only (true) or leaves a proposal (false) */
   readOnly: boolean;
-  run(args: Args, by: string): string;
+  run(args: Args, by: string): string | Promise<string>;
 }
 
 const obj = (properties: Record<string, unknown>, required: string[] = []) => ({ type: "object", properties, required, additionalProperties: false });
@@ -75,7 +79,7 @@ export const TOOLS: Tool[] = [
   {
     name: "doodle_outline",
     title: "The document's outline",
-    description: "Every node in the document as a tree: chapters, pages, scenes, beats, characters, places, styles, shots — each with its kind, id, state and size.",
+    description: "Every node in the document as a tree: chapters, pages, scenes, beats, characters, places, styles, shots — each with its kind, id, state and size; a chapter with what happens in it, where that has been written.",
     inputSchema: obj({}),
     readOnly: true,
     run() {
@@ -88,6 +92,8 @@ export const TOOLS: Tool[] = [
           const w = countWords(wordsOf(n), formOf(n.data));
           const inside = childrenOf(g, n.id).length;
           lines.push(`${"  ".repeat(depth)}- ${label(n)}${w ? ` · ${w} words` : ""}${inside ? ` · ${inside} inside` : ""}`);
+          const gist = n.kind === "chapter" ? gistOf(n) : undefined;
+          if (gist) lines.push(`${"  ".repeat(depth + 1)}(what happens: ${gist.replace(/\s+/g, " ")})`);
           walk(n.id, depth + 1);
         }
       };
@@ -156,6 +162,36 @@ export const TOOLS: Tool[] = [
         .filter(Boolean)
         .slice(0, 20);
       return hits.length ? hits.join("\n") : `Nothing matches "${q}".`;
+    },
+  },
+  {
+    name: "doodle_search_meaning",
+    title: "Find by meaning",
+    description:
+      "The passages of the book nearest in meaning to a question or a description — 'where does Mara first see the ship', 'the argument on the stairs' — though they share no words with it. Each with where it is (the path, the node's id) and its words as written. Use it to find things in a long book; doodle_find is for exact words.",
+    inputSchema: obj({ query: str("The question, or what the passage is about."), count: { type: "number", description: "How many passages (default 6, at most 12)." } }, ["query"]),
+    readOnly: true,
+    async run(args) {
+      const q = String(args.query ?? "").trim();
+      if (!q) throw new Error("An empty query.");
+      const found = await searchMeaning(q, { count: Math.max(1, Math.min(12, Number(args.count) || 6)) });
+      if (found === null) throw new Error("No embedding model on this Mac to search by meaning (ollama pull qwen3-embedding:0.6b). doodle_find finds exact words.");
+      if (!found.length) return "The book has no words yet.";
+      return found.map((f, i) => `${i + 1}. ${whereIs(f.node)}${f.page ? `, page ${f.page}` : ""} · ${f.score.toFixed(2)}\n${clip(f.text, 1600)}`).join("\n\n");
+    },
+  },
+  {
+    name: "doodle_check_continuity",
+    title: "Check continuity",
+    description:
+      "Check a chapter (or a page) against the bible, the characters and places, and the chapters before it. What contradicts them is proposed as comments on the chapter's words — each with what it contradicts and where, and the smallest fix — and listed here. Use it when asked whether anything contradicts, or does not add up.",
+    inputSchema: obj({ id: str("The chapter's or page's id.") }, ["id"]),
+    readOnly: false,
+    async run(args) {
+      const n = node(args.id);
+      const found = await checkContinuity(n.id);
+      if (!found.length) return `Checked ${label(n)}: nothing in it contradicts the bible, the characters and places, or the chapters before (or nothing could be checked — the draft on its page says which).`;
+      return [`Checked ${label(n)}. Proposed ${found.length} comment${found.length === 1 ? "" : "s"} on its words:`, ...found.map((f, i) => `${i + 1}. "${f.quote}" — ${f.problem} ${f.source}${f.says ? ` says: "${f.says}"` : ""}. Fix: ${f.fix}`)].join("\n");
     },
   },
   {
@@ -232,6 +268,30 @@ export const TOOLS: Tool[] = [
     },
   },
   {
+    name: "propose_comment",
+    title: "Propose comments",
+    description:
+      "Propose remarks in the margin of a chapter or a page, each on a passage — a question, a contradiction found, a note for the writer. Give `quote`: the exact words of the passage it is about (a sentence or a phrase, copied from doodle_read), and the comment is tied to them. They appear as proposals for the writer to keep or drop; nothing in the words changes.",
+    inputSchema: obj(
+      {
+        id: str("The chapter's or page's id."),
+        comments: { type: "array", items: obj({ quote: str("The exact words of the passage it is about."), text: str("The remark, a sentence or three."), why: str("Optional: what it rests on — a quote from the bible, a character or an earlier chapter, and where.") }, ["quote", "text"]) },
+      },
+      ["id", "comments"],
+    ),
+    readOnly: false,
+    run(args, by) {
+      const n = node(args.id);
+      const list = (Array.isArray(args.comments) ? args.comments : []) as { quote?: string; text?: string; why?: string }[];
+      const count = offer(
+        n.id,
+        list.map((c) => ({ kind: "comment", title: String(c.text ?? "").split(/(?<=[.?!])\s/)[0].slice(0, 80), text: String(c.text ?? ""), quote: c.quote ? String(c.quote) : undefined, why: c.why ? String(c.why) : undefined })),
+        by,
+      );
+      return count ? `Proposed ${count} comment${count === 1 ? "" : "s"} on ${label(n)}. They wait on its page until the writer keeps them.` : "Nothing to propose.";
+    },
+  },
+  {
     name: "propose_characters",
     title: "Propose characters",
     description: "Propose new characters, beside a node. They appear as proposals on that node's page for the writer to keep or drop.",
@@ -263,11 +323,11 @@ export const TOOLS: Tool[] = [
 export const toolSpecs = () => TOOLS.map(({ name, description, inputSchema }) => ({ name, description, inputSchema }));
 
 /** a tool by name, run, its answer as words; an error says what went wrong */
-export function runTool(name: string, args: Args, by = "the agent"): { text: string; error: boolean } {
+export async function runTool(name: string, args: Args, by = "the agent"): Promise<ToolAnswer> {
   const tool = TOOLS.find((t) => t.name === name);
   if (!tool) return { text: `No tool named ${name}.`, error: true };
   try {
-    return { text: tool.run(args ?? {}, by), error: false };
+    return { text: await tool.run(args ?? {}, by), error: false };
   } catch (e) {
     return { text: e instanceof Error ? e.message : String(e), error: true };
   }
@@ -279,8 +339,8 @@ export function briefing(nodeId: string): string {
   return [
     "You are the writing partner inside Doodle, a creative document made of nodes — chapters, pages, scenes, beats, characters, places, styles, shots.",
     n ? `The writer is on ${label(n)}.` : "",
-    "Read what you need with the doodle_* tools before you answer (doodle_read the node you are on first).",
-    "You cannot change the document. To suggest additions use propose_beats, propose_shots, propose_characters, propose_places or propose_text: they appear as proposals the writer keeps or drops.",
+    "Read what you need with the doodle_* tools before you answer (doodle_read the node you are on first). In a long book, doodle_search_meaning finds the passages a question is about.",
+    "You cannot change the document. To suggest additions use propose_beats, propose_shots, propose_characters, propose_places, propose_comment or propose_text: they appear as proposals the writer keeps or drops.",
     "Keep your final reply short — what you proposed and why, or the answer to the question.",
   ]
     .filter(Boolean)
@@ -308,8 +368,9 @@ export function listenForAgent() {
         void invoke("mcp_reply", { id, result: { tools } });
         return;
       }
-      const r = runTool(String(params?.name ?? ""), params?.arguments ?? {}, "ChatGPT");
-      void invoke("mcp_reply", { id, result: { content: [{ type: "text", text: r.text }], isError: r.error } });
+      void runTool(String(params?.name ?? ""), params?.arguments ?? {}, "ChatGPT").then((r) =>
+        invoke("mcp_reply", { id, result: { content: [{ type: "text", text: r.text }], isError: r.error } }),
+      );
     });
   })();
 }

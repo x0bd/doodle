@@ -137,7 +137,7 @@ async function turn(req: TextRequest, onDelta: (t: string) => void, signal: Abor
         continue;
       }
       req.onTool?.(name);
-      const r = req.runTool!(name, args);
+      const r = await req.runTool!(name, args);
       messages.push({ role: "tool", tool_name: name, content: r.error ? `Error: ${r.text}` : r.text });
     }
   }
