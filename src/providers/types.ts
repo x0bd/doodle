@@ -63,8 +63,18 @@ export interface TextRequest {
   /** what the agent is told about where it is, when it has the tools */
   instructions?: string;
   runTool?: (name: string, args: Record<string, unknown>) => { text: string; error: boolean };
+  /** the tools themselves, for a provider that is handed them by
+   *  description and calls back (Ollama's tool calling) */
+  toolSpecs?: ToolSpec[];
   /** a tool reached for, as it happens */
   onTool?: (name: string) => void;
+}
+
+/** a tool as a model is told about it */
+export interface ToolSpec {
+  name: string;
+  description: string;
+  inputSchema: Record<string, unknown>;
 }
 
 export interface Progress {

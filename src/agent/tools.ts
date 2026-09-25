@@ -259,6 +259,9 @@ export const TOOLS: Tool[] = [
   },
 ];
 
+/** the tools as a model is told about them */
+export const toolSpecs = () => TOOLS.map(({ name, description, inputSchema }) => ({ name, description, inputSchema }));
+
 /** a tool by name, run, its answer as words; an error says what went wrong */
 export function runTool(name: string, args: Args, by = "the agent"): { text: string; error: boolean } {
   const tool = TOOLS.find((t) => t.name === name);

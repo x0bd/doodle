@@ -10,7 +10,7 @@ import { pick } from "../providers/registry";
 import { ui } from "./ui";
 import { bibleText } from "./doc";
 import { expandMentions } from "../canvas/mentions";
-import { briefing, runTool } from "../agent/tools";
+import { briefing, runTool, toolSpecs } from "../agent/tools";
 import type { TextRequest } from "../providers/types";
 
 export type Ask = "expand" | "continue" | "rewrite" | "ask";
@@ -115,6 +115,7 @@ export async function propose(nodeId: string, ask: Ask, instruction = "") {
       req.tools = true;
       req.instructions = briefing(nodeId);
       req.runTool = (name, args) => runTool(name, args, provider.descriptor.name);
+      req.toolSpecs = toolSpecs();
       req.onTool = (name) => drafts.set((d) => (d[id] ? { ...d, [id]: { ...d[id], doing: DOING[name] ?? name, reply: true } } : d));
     }
     // words as they come, when the provider can give them
