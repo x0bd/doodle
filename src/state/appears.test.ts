@@ -29,3 +29,17 @@ describe("where they appear", () => {
     expect(appearances(lamp, [w("One", 1, "Then @Lamp, lit.")])[0].count).toBe(1);
   });
 });
+
+describe("who a passage names", () => {
+  it("by any of their names, or with @", async () => {
+    const { namedIn } = await import("./appears");
+    const cast = [
+      { id: "m", kind: "character", title: "Mara", data: { name: "Mara" } },
+      { id: "t", kind: "character", title: "Tom Keel", data: { name: "Tom Keel" } },
+      { id: "l", kind: "location", title: "The lighthouse", data: { name: "The lighthouse" } },
+      { id: "o", kind: "object", title: "The manifest", data: { name: "The manifest" } },
+    ];
+    expect(namedIn("Tom holds out the manifest to her.", cast).map((n) => n.id)).toEqual(["t", "o"]);
+    expect(namedIn("Up the stairs of @The lighthouse; Mara waits.", cast).map((n) => n.id)).toEqual(["m", "l"]);
+  });
+});

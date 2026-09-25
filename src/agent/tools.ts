@@ -292,6 +292,21 @@ export const TOOLS: Tool[] = [
     },
   },
   {
+    name: "propose_illustration",
+    title: "Propose an illustration",
+    description:
+      "Propose a picture for a passage of a chapter or page — the moment worth seeing. Give `quote`: the exact words of the passage (copied from doodle_read). It waits as a proposal; nothing is drawn until the writer keeps it, and then it is drawn with whoever the passage names, their pictures as references.",
+    inputSchema: obj({ id: str("The chapter's or page's id."), quote: str("The exact words of the passage."), why: str("What the picture would show, and why this moment.") }, ["id", "quote", "why"]),
+    readOnly: false,
+    run(args, by) {
+      const n = node(args.id);
+      const quote = String(args.quote ?? "").trim();
+      if (!quote) throw new Error("No passage: give the exact words in quote.");
+      const count = offer(n.id, [{ kind: "illustration", title: "An illustration", text: String(args.why ?? ""), quote }], by);
+      return count ? `Proposed an illustration of "${quote.slice(0, 60)}" on ${label(n)}; it is drawn if the writer keeps it.` : "Nothing to propose.";
+    },
+  },
+  {
     name: "propose_bible",
     title: "Propose to the bible",
     description:
@@ -370,7 +385,7 @@ export function briefing(nodeId: string): string {
     "You are the writing partner inside Doodle, a creative document made of nodes — chapters, pages, scenes, beats, characters, places, styles, shots.",
     n ? `The writer is on ${label(n)}.` : "",
     "Read what you need with the doodle_* tools before you answer (doodle_read the node you are on first). In a long book, doodle_search_meaning finds the passages a question is about.",
-    "You cannot change the document. To suggest additions use propose_beats, propose_shots, propose_characters, propose_places, propose_objects, propose_comment, propose_bible or propose_text: they appear as proposals the writer keeps or drops.",
+    "You cannot change the document. To suggest additions use propose_beats, propose_shots, propose_characters, propose_places, propose_objects, propose_comment, propose_illustration, propose_bible or propose_text: they appear as proposals the writer keeps or drops.",
     "Keep your final reply short — what you proposed and why, or the answer to the question.",
   ]
     .filter(Boolean)

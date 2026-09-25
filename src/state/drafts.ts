@@ -32,6 +32,7 @@ export const DOING: Record<string, string> = {
   propose_objects: "proposing things",
   propose_comment: "commenting",
   propose_bible: "proposing to the bible",
+  propose_illustration: "proposing a picture",
 };
 
 export interface Draft {

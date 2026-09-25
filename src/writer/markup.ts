@@ -195,6 +195,16 @@ const HEADING = /^(#{1,3})\s+(.*)$/;
 const FIGURE = /^!\[((?:\\.|\[[^\]]*\]|[^\]\\])*)\]\(([^)\s]+)(?:\s+"((?:\\.|[^"\\])*)")?\)(?:\{\.(page|opener)\})?\s*$/;
 const unescape = (s: string) => s.replace(/\\(.)/g, "$1");
 
+/** A chapter's words with a figure put in after the paragraph a passage
+ *  is in (M5.3) — or at the end, if the passage is not there any more. */
+export function figureAfter(text: string, quote: string, line: string): string {
+  const want = quote.replace(/\s+/g, " ").trim().slice(0, 60);
+  const blocks = text.split(/\n{2,}/);
+  const i = want ? blocks.findIndex((b) => plain(b).replace(/\s+/g, " ").includes(want)) : -1;
+  if (i < 0) return `${text.trimEnd()}${text.trim() ? "\n\n" : ""}${line}`;
+  return [...blocks.slice(0, i + 1), line, ...blocks.slice(i + 1)].join("\n\n");
+}
+
 /** a figure as its line of Markdown */
 export function figureLine(a: { src: string; caption?: string; alt?: string; place?: string }): string {
   const caption = (a.caption ?? "").replace(/[\\\]]/g, "\\$&").replace(/\n/g, " ");

@@ -35,6 +35,16 @@ export function namesOf(n: Named): string[] {
   return [...out];
 }
 
+/** Who, where and what these words name — for the pictures a passage
+ *  is made with (M5.3): named by any of their names, or with `@`. */
+export function namedIn<T extends Named>(words: string, all: T[]): T[] {
+  return all.filter((n) => {
+    const names = namesOf(n);
+    if (!names.length) return false;
+    return new RegExp(`(?:@${escape(n.title)}|\\b(?:${names.map(escape).join("|")})\\b)`, "i").test(words);
+  });
+}
+
 /** How often each chapter and page names them, in reading order. */
 export function appearances(who: Named, written: Written[]): { id: string; title: string; count: number }[] {
   const names = namesOf(who);

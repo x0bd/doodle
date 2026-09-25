@@ -11,10 +11,11 @@ import { graph, childrenOf, makeNode, type GraphNode } from "./graph";
 import { commit } from "./history";
 import { locate } from "./anchors";
 import { doc, setBible } from "./doc";
+import { illustrate } from "./illustrate";
 import { plain, formOf } from "../writer/markup";
 import type { NodeKind } from "../graph/kinds";
 
-export type IdeaKind = "beat" | "note" | "character" | "location" | "object" | "comment" | "bible";
+export type IdeaKind = "beat" | "note" | "character" | "location" | "object" | "comment" | "bible" | "illustration";
 
 export interface Idea {
   kind: IdeaKind;
@@ -49,7 +50,16 @@ export function offer(nodeId: string, items: Idea[], by: string): number {
 
 export const ideasFor = (all: Record<string, IdeaSet>, nodeId: string) => Object.values(all).filter((s) => s.nodeId === nodeId);
 
-const KIND: Record<Exclude<IdeaKind, "bible">, NodeKind> = { beat: "note", note: "note", character: "character", location: "location", object: "object", comment: "comment" };
+const KIND: Record<Exclude<IdeaKind, "bible" | "illustration">, NodeKind> = { beat: "note", note: "note", character: "character", location: "location", object: "object", comment: "comment" };
+
+/** an illustration kept: drawn now, from the words it names (M6.4 → M5.3) */
+function drawIt(host: string, idea: Idea) {
+  const n = graph.get().nodes[host];
+  const quote = idea.quote?.trim() ?? "";
+  if (!n || !quote) return;
+  const words = plain(String(n.data.text ?? ""), formOf(n.data));
+  illustrate(host, { text: quote, at: Math.max(0, words.indexOf(quote)) });
+}
 
 /** the bible's words added to, never replaced: what it says stays, the new goes after */
 function toBible(idea: Idea) {
@@ -74,7 +84,7 @@ function made(set: IdeaSet, idea: Idea, offset: number): GraphNode | undefined {
   const g = graph.get();
   const host = g.nodes[set.nodeId];
   if (!host) return undefined;
-  if (idea.kind === "bible") return undefined;
+  if (idea.kind === "bible" || idea.kind === "illustration") return undefined;
   const kind = KIND[idea.kind];
   if (kind === "note") {
     const n = childrenOf(g, host.id).length + offset;
@@ -106,6 +116,7 @@ export function keepIdea(id: string, index: number) {
   const idea = set?.items[index];
   if (!set || !idea) return;
   if (idea.kind === "bible") return void (toBible(idea), dropIdea(id, index));
+  if (idea.kind === "illustration") return void (drawIt(set.nodeId, idea), dropIdea(id, index));
   const node = made(set, idea, 0);
   if (!node) return;
   commit("Keep", () => graph.set((x) => ({ ...x, nodes: { ...x.nodes, [node.id]: node }, order: [...x.order, node.id] })));
@@ -117,6 +128,7 @@ export function keepAllIdeas(id: string) {
   const set = ideas.get()[id];
   if (!set) return;
   set.items.filter((it) => it.kind === "bible").forEach(toBible);
+  set.items.filter((it) => it.kind === "illustration").forEach((it) => drawIt(set.nodeId, it));
   const nodes = set.items.map((it, i) => made(set, it, i)).filter((n): n is GraphNode => !!n);
   commit("Keep all", () =>
     graph.set((x) => ({ ...x, nodes: { ...x.nodes, ...Object.fromEntries(nodes.map((n) => [n.id, n])) }, order: [...x.order, ...nodes.map((n) => n.id)] })),

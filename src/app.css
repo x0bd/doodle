@@ -481,6 +481,13 @@ html, body, #root { height: 100%; }
 .media-img { position: relative; }
 .media-in { position: absolute; left: 8px; bottom: 8px; opacity: 0; transition: opacity var(--fast) var(--ease); }
 .media-img:hover .media-in, .media-in:focus-visible { opacity: 1; }
+/* a passage's pictures (M5.3) */
+.illos { display: flex; flex-direction: column; gap: 14px; }
+.illo-head { display: flex; align-items: center; gap: 8px; }
+.illo-quote { flex: 1; min-width: 0; font-size: var(--t-label); color: var(--fg-muted); font-style: italic; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.illo-state { font-size: var(--t-micro); color: var(--fg-faint); }
+.illo-takes { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-top: 8px; }
+.illo-take { aspect-ratio: 3 / 2; }
 .media-empty { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 88px; border-radius: 10px; color: var(--fg-faint); font-size: var(--t-label); }
 
 /* the character sheet, the style sheet */

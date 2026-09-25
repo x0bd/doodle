@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Node as PMNode } from "prosemirror-model";
-import { parse, serialize, plain, plainOf, toPos, toOffset, countWords } from "./markup";
+import { parse, serialize, plain, plainOf, toPos, toOffset, countWords, figureAfter } from "./markup";
 import { schema, type Form } from "./schema";
 
 const N = schema.nodes;
@@ -178,5 +178,15 @@ describe("figures (M5.4)", () => {
   it("a picture inside a paragraph stays words, as it was", () => {
     const t = "Before ![x](assets/x.jpg) after.";
     expect(parse(t).child(0).type).toBe(N.paragraph);
+  });
+});
+
+describe("a figure after a passage (M5.3)", () => {
+  it("goes in after the paragraph the passage is in — its markup read away — else at the end", () => {
+    const t = "The ship is there. *No sail set.*\n\nMara counts the gulls.\n\nTom comes along the causeway.";
+    const fig = "![](assets/a.jpg)";
+    expect(figureAfter(t, "No sail set. ", fig)).toBe("The ship is there. *No sail set.*\n\n![](assets/a.jpg)\n\nMara counts the gulls.\n\nTom comes along the causeway.");
+    expect(figureAfter(t, "Tom comes", fig).endsWith(`causeway.\n\n${fig}`)).toBe(true);
+    expect(figureAfter(t, "gone from the book", fig).endsWith(`causeway.\n\n${fig}`)).toBe(true);
   });
 });

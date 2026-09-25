@@ -23,6 +23,7 @@ import { jobs, enqueue, jobFor, partialFor, RUNNABLE } from "../state/jobs";
 import { FieldRow } from "../shell/Fields";
 import { mentionables } from "./mentions";
 import { appearances } from "../state/appears";
+import { illustrate, illustrationsOf, briefOf, takeIntoWords } from "../state/illustrate";
 import { useState, useMemo } from "react";
 import { Editor, type Picked, type Tie } from "../writer/Editor";
 import { formOf, countWords, plain, figureLine } from "../writer/markup";
@@ -39,7 +40,7 @@ const runtime = (words: number) => {
   return s < 60 ? `≈ ${Math.max(5, Math.round(s / 5) * 5)} s` : `≈ ${Math.round(s / 60)} min`;
 };
 
-const IDEA_WORD: Record<string, string> = { beat: "beats", note: "notes", character: "characters", location: "places", object: "things", comment: "comments", bible: "additions to the bible" };
+const IDEA_WORD: Record<string, string> = { beat: "beats", note: "notes", character: "characters", location: "places", object: "things", comment: "comments", bible: "additions to the bible", illustration: "illustrations" };
 
 const ASK_LABEL = { expand: "Expanded", continue: "Continued", rewrite: "Rewritten", ask: "Answered" } as const;
 
@@ -61,7 +62,9 @@ export function Doc({ id }: { id: string }) {
   // beats and notes are written in the list; anything else inside (a brief,
   // a writer, a generator) is a row that opens it
   const kids = inside.filter((k) => k.kind === "note" || k.kind === "shot");
-  const others = inside.filter((k) => k.kind !== "note" && k.kind !== "shot" && k.kind !== "comment");
+  // an illustration (its brief and its generator) is shown with its takes, not as a row
+  const drawn = illustrationsOf(g, id);
+  const others = inside.filter((k) => k.kind !== "note" && k.kind !== "shot" && k.kind !== "comment" && !k.data.illustrates && !drawn.some((d) => d.data.illustrates === k.id));
   const images = node.attachments ?? [];
   // a chapter or page in prose takes pictures into its words, as figures
   const prosed = (node.kind === "chapter" || node.kind === "page") && formOf(node.data) === "prose";
@@ -285,6 +288,16 @@ export function Doc({ id }: { id: string }) {
             )}
           </Section>
 
+          {drawn.length > 0 && (
+            <Section name="Illustrations" note="Made from the words they are tied to. Put one in, and it sits after them.">
+              <div className="illos">
+                {drawn.map((d) => (
+                  <Illustration key={d.id} host={node} gen={d} />
+                ))}
+              </div>
+            </Section>
+          )}
+
           {others.length > 0 && (
             <Section name="Inside" note="What works on these words. Each opens.">
               <div className="list inside">
@@ -322,6 +335,49 @@ export function Doc({ id }: { id: string }) {
           </Section>
         </footer>
       </article>
+    </div>
+  );
+}
+
+/** one passage's pictures: what it was made from, how far it is, its takes */
+function Illustration({ host, gen }: { host: GraphNode; gen: GraphNode }) {
+  const j = jobs.use();
+  assets.use();
+  const job = jobFor(j, gen.id);
+  const going = job && (job.state === "queued" || job.state === "running");
+  const takes = gen.outputs ?? [];
+  const brief = briefOf(graph.get(), gen);
+  const inWords = String(host.data.text ?? "");
+  return (
+    <div className="illo">
+      <div className="illo-head">
+        <span className="illo-quote">“{String(gen.data.quote || brief?.anchor?.text || gen.title)}”</span>
+        <span className="illo-state px">{going ? (job.state === "running" ? `drawing ${Math.round((job.progress ?? 0) * 100)}%` : "waiting") : job?.state === "failed" ? "could not" : `${takes.length} take${takes.length === 1 ? "" : "s"}`}</span>
+        <button className="pill pill-sm" disabled={!!going} onClick={() => enqueue([gen.id])} title="More takes of it">
+          Again
+        </button>
+        {brief && (
+          <button className="pill pill-sm" onClick={() => enter(brief.id)} title="The words it was made from — change them, then Again">
+            Brief
+          </button>
+        )}
+      </div>
+      {takes.length > 0 && (
+        <div className="illo-takes">
+          {[...takes].reverse().map((t) => {
+            const url = thumbFor(t, 512);
+            const placed = inWords.includes(`](${t}`);
+            return (
+              <div key={t} className="media-img well illo-take">
+                {url && <img src={url} alt="" draggable={false} />}
+                <button className="pill pill-sm media-in" disabled={placed} onClick={() => void takeIntoWords(host.id, gen.id, t)} title="A figure after the passage it illustrates">
+                  {placed ? "In the words" : "Into the words"}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -753,6 +809,12 @@ export function Prose({ node, field = "text", focus = true }: { node: GraphNode;
               <Icon icon={CommentIcon} size={11} strokeWidth={2.2} />
               Comment
             </button>
+            {(node.kind === "chapter" || node.kind === "page") && form === "prose" && (
+              <button className="wb-act" onClick={() => (illustrate(node.id, p), setSel(null))} title="A picture of these words, with who and where they name">
+                <Icon icon={ImageIcon} size={11} strokeWidth={2} />
+                Illustrate
+              </button>
+            )}
           </>
         ) : null
       }
