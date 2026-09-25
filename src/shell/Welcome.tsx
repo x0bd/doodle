@@ -8,6 +8,7 @@ import { ui, closeChooser } from "../state/ui";
 import { newGraph, openDialog, openFrom, recent, forget, mayLeave, type Seen } from "../state/doc";
 import { graph } from "../state/graph";
 import { fitAll } from "../canvas/view";
+import { enter } from "../state/nav";
 import { graphExists, inTauri } from "../platform/fs";
 
 const GLYPH: Record<TemplateId, IconSvgElement> = { images: ImageIcon, film: FilmIcon, manga: MangaIcon, book: BookIcon, sample: BookIcon, material: BoardIcon };
@@ -79,12 +80,14 @@ export function Welcome() {
   /** starting something new: a graph never saved is asked about first */
   const ask = mayLeave;
 
-  const pick = async (id: TemplateId) => {
+  const pick = async (id: TemplateId, blank = false) => {
     if (!(await ask())) return;
     welcomed();
-    newGraph(id);
+    newGraph(id, blank);
     closeChooser();
-    requestAnimationFrame(fitAll);
+    // a blank book is its first chapter, open to write in; the rest, the whole field
+    if (blank && id === "book") enter("ch1");
+    else requestAnimationFrame(fitAll);
   };
 
   const go = async (r: Seen) => {
@@ -146,16 +149,22 @@ export function Welcome() {
                   <span className="welcome-sub">Your notes, drafts, research and pictures, laid on a board in a new book — or drop them here.</span>
                 </span>
               </button>
+              {/* each workflow starts blank — its parts, wired, empty — or as a worked example */}
               {TEMPLATES.map((t) => (
-                <button key={t.id} className={`welcome-row list-row tpl-${t.id}`} onClick={() => void pick(t.id)}>
-                  <span className="welcome-glyph">
-                    <Icon icon={GLYPH[t.id]} size={15} strokeWidth={1.7} />
-                  </span>
-                  <span className="welcome-what">
-                    <span className="welcome-title">{t.name}</span>
-                    <span className="welcome-sub">{t.note}</span>
-                  </span>
-                </button>
+                <div key={t.id} className={`welcome-pair tpl-${t.id}`}>
+                  <button className="welcome-row list-row" onClick={() => void pick(t.id, true)} title={`A new ${t.name.toLowerCase()}, empty`}>
+                    <span className="welcome-glyph">
+                      <Icon icon={GLYPH[t.id]} size={15} strokeWidth={1.7} />
+                    </span>
+                    <span className="welcome-what">
+                      <span className="welcome-title">{t.name}</span>
+                      <span className="welcome-sub">{t.blankNote ?? t.note}</span>
+                    </span>
+                  </button>
+                  <button className="pill pill-sm welcome-example" onClick={() => void pick(t.id)} title={`${t.note} Filled in, to look around.`}>
+                    Example
+                  </button>
+                </div>
               ))}
             </div>
           </section>

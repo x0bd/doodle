@@ -673,11 +673,12 @@ export async function openDialog() {
   if (path) await openFrom(path);
 }
 
-/** A fresh graph from one of the templates. */
-export function newGraph(template: TemplateId = "images") {
+/** A fresh graph from one of the templates — its example, or (`blank`)
+ *  the same workflow with nothing in it yet. */
+export function newGraph(template: TemplateId = "images", blank = false) {
   leaveLog();
   const t = templateById(template);
-  const { nodes, edges } = t.build();
+  const { nodes, edges } = blank && t.blank ? t.blank() : t.build();
   graph.set({
     nodes: Object.fromEntries(nodes.map((n) => [n.id, n])),
     order: nodes.map((n) => n.id),

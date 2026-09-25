@@ -8,6 +8,7 @@ import { propose } from "../state/drafts";
 import { proposeShots } from "../state/shots";
 import { checkContinuity } from "../state/continuity";
 import { askBook } from "../state/asking";
+import { promptHint } from "../canvas/Node";
 import { KINDS, PLACES } from "../graph/kinds";
 import { gatherDialog } from "../state/gather";
 import { buildFromBoard, styleFromPictures } from "../state/build";
@@ -282,7 +283,7 @@ function Words({ node, value, innerRef }: { node: string; value: string; innerRe
       className="bar-text"
       rows={1}
       value={value}
-      placeholder="What you want to get — Enter runs it"
+      placeholder={`${promptHint(graph.get().nodes[node]?.title ?? "")} — Enter runs it`}
       spellCheck={false}
       onChange={(e) => updateData(node, { text: e.target.value })}
       onKeyDown={(e) => {

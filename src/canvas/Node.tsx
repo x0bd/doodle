@@ -248,7 +248,7 @@ function Body({ node }: { node: GraphNode }) {
           <textarea
             className="node-text"
             value={String(node.data.text ?? "")}
-            placeholder={node.title === "Negative" ? "What you do not want" : "What you want to get"}
+            placeholder={promptHint(node.title)}
             onChange={(e) => updateData(node.id, { text: e.target.value })}
             onPointerDown={(e) => e.stopPropagation()}
             spellCheck={false}
@@ -372,6 +372,15 @@ function Body({ node }: { node: GraphNode }) {
 
 /** a document's kind, the way the Finder names it */
 const KIND_WORD: Record<string, string> = { pdf: "PDF", docx: "Word", md: "Markdown", markdown: "Markdown", txt: "Text", text: "Text", fountain: "Fountain" };
+/** what an empty prompt card says, by what it is for */
+export function promptHint(title: string): string {
+  if (/^negative/i.test(title)) return "What you do not want in it";
+  if (/^scene/i.test(title)) return "What happens — who, where, what they do";
+  if (/^panel/i.test(title)) return "What the panel shows, and what is said";
+  if (/^brief/i.test(title)) return "What this should be about";
+  return "What you want to see";
+}
+
 export const kindWord = (from: string) => KIND_WORD[from.split(".").pop()?.toLowerCase() ?? ""] ?? "Document";
 
 /** A clipping on a board: a picture as itself, a passage in reading type, a

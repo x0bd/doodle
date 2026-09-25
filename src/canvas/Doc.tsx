@@ -512,6 +512,12 @@ function Beat({ node, n, tie }: { node: GraphNode; n: number; tie?: Tied }) {
 
 /* ── what each kind is, as sections ── */
 
+/** what an empty field of a kind says it wants (kinds.ts `hint`) */
+const hintOf = (kind: NodeKind, key: string) => {
+  for (const g of KINDS[kind].groups) for (const f of g.fields) if (f.key === key && "hint" in f && f.hint) return f.hint;
+  return undefined;
+};
+
 /** the chapters and pages that name them, each a key to go there */
 function Appears({ node }: { node: GraphNode }) {
   const nodes = graph.use((g) => g.nodes);
@@ -557,11 +563,11 @@ function Body({ node }: { node: GraphNode }) {
           <div className="sheet-fields">
             <label className="sheet-field">
               <span className="lbl">Name</span>
-              <input className="inp" value={String(node.data.name ?? "")} onChange={(e) => set({ name: e.target.value })} spellCheck={false} />
+              <input className="inp" value={String(node.data.name ?? "")} placeholder={hintOf(node.kind, "name")} onChange={(e) => set({ name: e.target.value })} spellCheck={false} />
             </label>
             <label className="sheet-field grow">
               <span className="lbl">{node.kind === "object" ? "What it is, how it looks" : node.kind === "location" ? "What it is like" : "Appearance"}</span>
-              <textarea className="inp" rows={6} value={String(node.data.description ?? "")} onChange={(e) => set({ description: e.target.value })} spellCheck />
+              <textarea className="inp" rows={6} value={String(node.data.description ?? "")} placeholder={hintOf(node.kind, "description")} onChange={(e) => set({ description: e.target.value })} spellCheck />
             </label>
             <Appears node={node} />
           </div>

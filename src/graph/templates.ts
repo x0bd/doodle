@@ -12,7 +12,15 @@ export interface Template {
   name: string;
   note: string;
   build: () => { nodes: GraphNode[]; edges: Edge[] };
+  /** the same workflow with nothing of anyone else's in it: its parts, wired,
+   *  empty, named for what goes in them — the start of your own */
+  blank?: () => { nodes: GraphNode[]; edges: Edge[] };
+  /** what the blank says it is, on the welcome */
+  blankNote?: string;
 }
+
+/** a blank's nodes are the writer's own from the start */
+const own = (nodes: GraphNode[], edges: Edge[]) => ({ nodes: nodes.map((n) => ({ ...n, status: "canon" as const })), edges });
 
 type Ref = [string, string];
 let eseq = 0;
@@ -26,6 +34,17 @@ export const TEMPLATES: Template[] = [
     id: "images",
     name: "Images",
     note: "Prompt, generate, look. The plain loop.",
+    blankNote: "A prompt and what not to draw, into a generator and a preview.",
+    blank() {
+      const nodes = [
+        makeNode("model", 80, 140, { id: "n1" }),
+        makeNode("prompt", 400, 40, { id: "n2", title: "Prompt", data: { text: "" } }),
+        makeNode("prompt", 400, 250, { id: "n3", title: "Negative", data: { text: "" } }),
+        makeNode("generate", 720, 120, { id: "n4" }),
+        makeNode("preview", 1060, 100, { id: "n5" }),
+      ];
+      return own(nodes, [wire(["n1", "model"], ["n4", "model"]), wire(["n2", "text"], ["n4", "positive"]), wire(["n3", "text"], ["n4", "negative"]), wire(["n4", "image"], ["n5", "image"])]);
+    },
     build() {
       const nodes = [
         makeNode("model", 80, 140, { id: "n1" }),
@@ -47,6 +66,28 @@ export const TEMPLATES: Template[] = [
     id: "film",
     name: "Film",
     note: "A scene, its people and its look, into storyboard frames.",
+    blankNote: "Scene 1 with its first beat, a character, a place and a look, into storyboard frames.",
+    blank() {
+      const nodes = [
+        makeNode("character", 60, 40, { id: "c1", title: "Character", data: { name: "", description: "" } }),
+        makeNode("style", 60, 290, { id: "s1", title: "Look", data: { description: "", palette: "", lighting: "" } }),
+        makeNode("prompt", 360, 40, { id: "p1", title: "Scene 1", data: { text: "" } }),
+        makeNode("location", 360, 420, { id: "l1", title: "Place", data: { name: "", description: "" } }),
+        makeNode("model", 360, 290, { id: "m1" }),
+        makeNode("generate", 680, 80, { id: "g1", title: "Storyboard", extras: [{ id: "place", name: "place", type: "text" }] }),
+        makeNode("preview", 1040, 60, { id: "v1", title: "Frame" }),
+        // inside the scene: where its beats go
+        makeNode("note", 60, 60, { id: "p1b1", title: "Beat 1", parent: "p1", data: { text: "" } }),
+      ];
+      return own(nodes, [
+        wire(["m1", "model"], ["g1", "model"]),
+        wire(["p1", "text"], ["g1", "positive"]),
+        wire(["s1", "text"], ["g1", "style"]),
+        wire(["c1", "text"], ["g1", "character"]),
+        wire(["l1", "text"], ["g1", "place"]),
+        wire(["g1", "image"], ["v1", "image"]),
+      ]);
+    },
     build() {
       const nodes = [
         makeNode("character", 60, 40, { id: "c1", title: "R-404", data: { name: "R-404", description: "A small maintenance robot, dented brass, one blue eye brighter than the other." } }),
@@ -79,6 +120,24 @@ export const TEMPLATES: Template[] = [
     id: "manga",
     name: "Manga",
     note: "A script and a cast, panel by panel, onto a page.",
+    blankNote: "Panel 1's script, a character and a look, onto a page.",
+    blank() {
+      const nodes = [
+        makeNode("character", 60, 40, { id: "c1", title: "Character", data: { name: "", description: "" } }),
+        makeNode("style", 60, 290, { id: "s1", title: "Look", data: { description: "", palette: "", lighting: "" } }),
+        makeNode("prompt", 360, 40, { id: "p1", title: "Panel 1 · script", data: { text: "" } }),
+        makeNode("model", 360, 290, { id: "m1" }),
+        makeNode("generate", 680, 40, { id: "g1", title: "Panel 1" }),
+        makeNode("preview", 1040, 40, { id: "v1", title: "Page · panel 1" }),
+      ];
+      return own(nodes, [
+        wire(["m1", "model"], ["g1", "model"]),
+        wire(["p1", "text"], ["g1", "positive"]),
+        wire(["s1", "text"], ["g1", "style"]),
+        wire(["c1", "text"], ["g1", "character"]),
+        wire(["g1", "image"], ["v1", "image"]),
+      ]);
+    },
     build() {
       const nodes = [
         makeNode("character", 60, 40, { id: "c1", title: "Kei", data: { name: "Kei", description: "Seventeen, cropped hair, a school jacket two sizes too big, never without headphones." } }),
@@ -110,6 +169,15 @@ export const TEMPLATES: Template[] = [
     id: "book",
     name: "Book",
     note: "A cast and a voice; chapters to write in.",
+    blankNote: "Chapter One, empty and open, a character and a voice.",
+    blank() {
+      const nodes = [
+        makeNode("character", 60, 40, { id: "c1", title: "Character", data: { name: "", description: "" } }),
+        makeNode("style", 60, 290, { id: "s1", title: "Voice", data: { description: "", palette: "", lighting: "" } }),
+        makeNode("chapter", 400, 40, { id: "ch1", title: "One", data: { summary: "", text: "" } }),
+      ];
+      return own(nodes, []);
+    },
     build() {
       const nodes = [
         makeNode("character", 60, 40, { id: "c1", title: "Mara", data: { name: "Mara", description: "A lighthouse keeper's daughter who has never seen the mainland and reads every wreck's cargo manifest." } }),

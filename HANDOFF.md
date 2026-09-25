@@ -167,6 +167,10 @@ public/fixtures/black-bear.png
 - **Cloud**: the top writers (Claude Opus 5, Fable 5.1, GPT-6) almost never go explicit (NSFW < 1/10) — nor does the user's ChatGPT via Codex. Grok is the explicit-willing one (Grok-4 NSFW 9.2/10; Grok 4.7 creative-writing #8).
 - Speed on the M5 Pro: a 27B dense model at Q6 is an estimate of ~10–15 words/s (not measured).
 
+## Starting blank (the user's ask, 2026-09-25)
+
+Each of the four workflows starts **blank** now — the welcome's row (and *File › New Graph…*, the same sheet) makes its parts, wired, empty, named for what goes in them; **Example** beside it is the worked one (the bear, R-404, Kei, Mara). `Template.blank()` / `blankNote` (`templates.ts`), `newGraph(id, blank)`. Images: model, *Prompt*, *Negative* → generator → preview. Film: *Character*, *Place*, *Look*, *Scene 1* (with an empty *Beat 1* inside — the scene can be entered) → *Storyboard* → *Frame*. Manga: *Character*, *Look*, *Panel 1 · script* → *Panel 1* → *Page · panel 1*. Book: *Character*, *Voice*, and *One* — **opened at once, the caret in it** (type and it is the chapter). Empty fields say what they want: `hint` on a kind's line/text fields (`kinds.ts`) — the Inspector, a character's/place's/object's page (`hintOf`) and the prompt card and bar (`promptHint`: a scene, a panel, a brief, a negative each asked for differently). Test: `e2e/blank.e2e.ts`. Not in the installed v0.5.0 (the cadence: a build per milestone).
+
 ## The agent reads the book (M6, 2026-09-25)
 
 **M6 is done; v0.5.0 is built** (`src-tauri/target/release/bundle/dmg/Doodle_0.5.0_aarch64.dmg`, tag `v0.5.0` local only) — **installed 2026-09-25 at the user's word** (v0.4.0 quit cleanly through AppleScript, the `.dmg`'s app copied over with `ditto`, reopened: runs, signed, no crash report). v0.5.0 carries M6 and, done early, M5.2–M5.5. **M5.1 and M5.6 remain** (character sheets, the flag on pictures made from an earlier face); **M4 waits for the user's home wifi** (FLUX, ≈16 GB).

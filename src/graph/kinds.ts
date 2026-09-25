@@ -33,8 +33,9 @@ export type Field =
   /** one of a few, all of them shown — a row of keys in a well */
   | { key: string; label: string; type: "choice"; options: string[] }
   | { key: string; label: string; type: "seed" }
-  | { key: string; label: string; type: "line" }
-  | { key: string; label: string; type: "text"; rows?: number };
+  /** `hint`: what goes in it, said in the empty field */
+  | { key: string; label: string; type: "line"; hint?: string }
+  | { key: string; label: string; type: "text"; rows?: number; hint?: string };
 
 /** a picture's shape, the way a photographer picks a frame, not a pair of
  *  numbers: the long side is 1024, the short side what the ratio makes it,
@@ -85,7 +86,7 @@ export const KINDS: Record<NodeKind, KindDef> = {
     outputs: [{ id: "text", name: "text", type: "text" }],
     size: { w: 240, h: 176 },
     data: { text: "" },
-    groups: [{ name: "Text", fields: [{ key: "text", label: "Prompt", type: "text", rows: 5 }] }],
+    groups: [{ name: "Text", fields: [{ key: "text", label: "Prompt", type: "text", rows: 5, hint: "What you want to see — @ names someone, somewhere, a look" }] }],
   },
   generate: {
     kind: "generate",
@@ -143,8 +144,8 @@ export const KINDS: Record<NodeKind, KindDef> = {
       {
         name: "Identity",
         fields: [
-          { key: "name", label: "Name", type: "line" },
-          { key: "description", label: "Appearance", type: "text", rows: 5 },
+          { key: "name", label: "Name", type: "line", hint: "What the book calls them" },
+          { key: "description", label: "Appearance", type: "text", rows: 5, hint: "Age, face, build, what they wear — what a picture of them must get right" },
         ],
       },
     ],
@@ -161,8 +162,8 @@ export const KINDS: Record<NodeKind, KindDef> = {
       {
         name: "The place",
         fields: [
-          { key: "name", label: "Name", type: "line" },
-          { key: "description", label: "What it is like", type: "text", rows: 5 },
+          { key: "name", label: "Name", type: "line", hint: "What the book calls it" },
+          { key: "description", label: "What it is like", type: "text", rows: 5, hint: "What it looks like, the light there, what it sounds and smells like" },
         ],
       },
     ],
@@ -179,8 +180,8 @@ export const KINDS: Record<NodeKind, KindDef> = {
       {
         name: "The thing",
         fields: [
-          { key: "name", label: "Name", type: "line" },
-          { key: "description", label: "What it is, how it looks", type: "text", rows: 5 },
+          { key: "name", label: "Name", type: "line", hint: "What the book calls it" },
+          { key: "description", label: "What it is, how it looks", type: "text", rows: 5, hint: "What it is made of, its size, its wear — and why it matters" },
         ],
       },
     ],
@@ -198,9 +199,9 @@ export const KINDS: Record<NodeKind, KindDef> = {
         name: "Look",
         fields: [
           { key: "look", label: "Start from", type: "select", options: ["Your own", ...Object.keys(LOOKS)], fills: { ...LOOKS } as unknown as Record<string, Record<string, string>> },
-          { key: "description", label: "Description", type: "text", rows: 3 },
-          { key: "palette", label: "Palette", type: "line" },
-          { key: "lighting", label: "Lighting", type: "line" },
+          { key: "description", label: "Description", type: "text", rows: 3, hint: "The look, or the voice — medium, mood, what it never does" },
+          { key: "palette", label: "Palette", type: "line", hint: "Its colours — navy, pale yellow, teal" },
+          { key: "lighting", label: "Lighting", type: "line", hint: "Its light — one low sun, long shadows" },
         ],
       },
     ],
@@ -239,7 +240,7 @@ export const KINDS: Record<NodeKind, KindDef> = {
       {
         name: "Camera",
         fields: [
-          { key: "description", label: "What we see", type: "text", rows: 3 },
+          { key: "description", label: "What we see", type: "text", rows: 3, hint: "What the camera sees, and who is in it" },
           { key: "shotSize", label: "Size", type: "select", options: ["ECU", "CU", "MCU", "MS", "MLS", "WS", "EWS"] },
           { key: "lensMm", label: "Lens", type: "range", min: 8, max: 200, step: 1, unit: "mm" },
           { key: "movement", label: "Movement", type: "select", options: ["static", "pan", "tilt", "dolly-in", "dolly-out", "truck", "handheld", "crane"] },
@@ -256,7 +257,7 @@ export const KINDS: Record<NodeKind, KindDef> = {
     outputs: [],
     size: { w: 240, h: 150 },
     data: { text: "" },
-    groups: [{ name: "Note", fields: [{ key: "text", label: "Text", type: "text", rows: 6 }] }],
+    groups: [{ name: "Note", fields: [{ key: "text", label: "Text", type: "text", rows: 6, hint: "A thought, a beat, a thing to remember" }] }],
   },
   page: {
     kind: "page",
@@ -297,7 +298,7 @@ export const KINDS: Record<NodeKind, KindDef> = {
     size: { w: 260, h: 160 },
     // what: picture | passage | document; source: the project's copy (assets/…); from: the file's name; page: where in it
     data: { what: "passage", text: "", source: "", from: "", page: 0, pages: 0 },
-    groups: [{ name: "Clipping", fields: [{ key: "note", label: "A note", type: "text", rows: 3 }] }],
+    groups: [{ name: "Clipping", fields: [{ key: "note", label: "A note", type: "text", rows: 3, hint: "Why you kept it" }] }],
   },
   group: {
     kind: "group",
@@ -317,6 +318,6 @@ export const KINDS: Record<NodeKind, KindDef> = {
     outputs: [{ id: "text", name: "text", type: "text" }],
     size: { w: 280, h: 236 },
     data: { summary: "", text: "" },
-    groups: [{ name: "Chapter", fields: [{ key: "summary", label: "In a line", type: "text", rows: 3 }] }],
+    groups: [{ name: "Chapter", fields: [{ key: "summary", label: "In a line", type: "text", rows: 3, hint: "What happens in it, in a sentence — the agent reads it" }] }],
   },
 };

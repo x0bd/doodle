@@ -1894,6 +1894,11 @@ html, body, #root { height: 100%; }
 /* the first run's first row: the sample, chosen for you — the tint, not the ink */
 .welcome-row.lead { background: var(--tint); }
 .welcome-row.still { cursor: default; align-items: center; }
+/* a workflow: the row starts it blank; the key beside it, the worked example */
+.welcome-pair { display: flex; align-items: center; gap: 6px; }
+.welcome-pair .welcome-row { flex: 1; min-width: 0; }
+.welcome-example { flex: none; opacity: 0.6; transition: opacity var(--fast) var(--ease); }
+.welcome-pair:hover .welcome-example, .welcome-example:focus-visible { opacity: 1; }
 .welcome-row.still:hover, .welcome-row.still:active { background: transparent; }
 .welcome-row.still .chip { flex: none; }
 .welcome-found { margin-bottom: 6px; }
