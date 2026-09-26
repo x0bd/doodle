@@ -7,12 +7,13 @@
 import { mock } from "./mock";
 import { ollama } from "./ollama";
 import { codex } from "./codex";
+import { local } from "./local";
 import type { Capability, Provider, ProviderStatus } from "./types";
 
-export const providers: Provider[] = [mock, ollama, codex];
+export const providers: Provider[] = [mock, ollama, codex, local];
 
 /** what a select's words mean, by provider id */
-const NAMES: Record<string, string> = { chatgpt: "codex", codex: "codex", ollama: "ollama", mock: "mock" };
+const NAMES: Record<string, string> = { chatgpt: "codex", codex: "codex", ollama: "ollama", mock: "mock", local: "local", flux: "local" };
 
 const status = new Map<string, { at: number; value: ProviderStatus }>();
 const TTL = 30_000;

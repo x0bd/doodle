@@ -1,5 +1,6 @@
 mod archive;
 mod codex;
+mod imaged;
 mod import;
 mod integrity;
 mod logs;
@@ -62,9 +63,15 @@ pub fn run() {
             codex::codex_text,
             codex::codex_image,
             codex::codex_turn,
-            codex::codex_interrupt
+            codex::codex_interrupt,
+            imaged::imaged_status,
+            imaged::imaged_setup,
+            imaged::imaged_send,
+            imaged::imaged_stop,
+            imaged::imaged_out
         ])
         .manage(codex::CodexState::default())
+        .manage(imaged::ImagedState::default())
         .setup(|app| {
             logs::init(app.handle());
             logs::info("app", &format!("Doodle {} starting ({})", app.package_info().version, if cfg!(debug_assertions) { "dev" } else { "release" }));

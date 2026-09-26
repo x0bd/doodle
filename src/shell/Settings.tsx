@@ -3,6 +3,7 @@ import { Icon, CloseIcon, CheckIcon, GeneralIcon, AppearanceIcon, AboutIcon, Pro
 import { ui, closeSettings, setTheme, setMotion, setDim, setSpell, openShortcuts, type Theme } from "../state/ui";
 import { providers } from "../providers/registry";
 import { probe, type Found } from "../providers/found";
+import { setUpLocal } from "../providers/local";
 import { inTauri } from "../platform/fs";
 
 type Section = "general" | "appearance" | "providers" | "about";
@@ -189,6 +190,28 @@ function Swatch({ mode, half }: { mode: "light" | "dark"; half?: boolean }) {
 }
 
 
+/** Doodle's own environment for FLUX, made on a key — uv's words as it works */
+function SetUpLocal({ onDone }: { onDone: () => void }) {
+  const [line, setLine] = useState<string | null>(null);
+  const [failed, setFailed] = useState<string | null>(null);
+  const go = () => {
+    setFailed(null);
+    setLine("Starting…");
+    setUpLocal((l) => setLine(l))
+      .then(() => (setLine(null), onDone()))
+      .catch((e) => (setLine(null), setFailed(String(e))));
+  };
+  return (
+    <div className="prov-act">
+      <button className="pill pill-sm" onClick={go} disabled={line !== null}>
+        {line !== null ? "Setting up…" : "Set up"}
+      </button>
+      {line && <p className="prov-fix px">{line.slice(0, 90)}</p>}
+      {failed && <p className="group-note">{failed}</p>}
+    </div>
+  );
+}
+
 function Providers() {
   const [found, setFound] = useState<Record<string, Found> | null>(null);
   const [looking, setLooking] = useState(false);
@@ -212,6 +235,7 @@ function Providers() {
                 <p className="group-note">{f?.says ?? "Looking…"}</p>
                 {f?.fix && <p className="prov-fix px">{f.fix}</p>}
                 {f?.then && <p className="group-note">{f.then}</p>}
+                {f?.action === "set-up-local" && <SetUpLocal onDone={look} />}
                 {f?.where && <p className={`prov-where${/[/:]/.test(f.where) ? " px" : ""}`}>{/[/:]/.test(f.where) ? f.where.replace(/^\/Users\/[^/]+/, "~") : `From ${f.where}`}</p>}
               </div>
               <span className={`chip${f?.ready ? " on" : ""}`}>{f?.chip ?? "…"}</span>

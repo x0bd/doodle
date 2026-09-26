@@ -2413,3 +2413,4 @@ html, body, #root { height: 100%; }
 .wire-row:hover { background: var(--tint); }
 .wire-port { margin-left: auto; font-size: var(--t-micro); color: var(--fg-faint); }
 
+.prov-act { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin-top: 8px; }

@@ -6,6 +6,7 @@
 import { providers, statusOf, lookAgain } from "./registry";
 import { ollamaFound, ollamaWhere } from "./ollama";
 import { codexStatus, type CodexStatus } from "./codex";
+import { localStatus } from "./local";
 import type { ProviderStatus } from "./types";
 import { inTauri } from "../platform/fs";
 
@@ -18,6 +19,8 @@ export interface Found {
   where?: string;
   fix?: string;
   then?: string;
+  /** something Doodle can do about it itself, on a key */
+  action?: "set-up-local";
 }
 
 /** a model's name as a person would say it: `hf.co/someone/chandra-ocr-2-GGUF:Q4_K_M` → chandra-ocr-2 */
@@ -59,6 +62,17 @@ export async function probe(): Promise<Record<string, Found>> {
 
   // ChatGPT through Codex: not found, found but signed out, ready
   const cx: CodexStatus | null = inTauri ? await codexStatus().catch(() => null) : null;
+  // FLUX on this Mac: uv, Doodle's own environment, the weights
+  const lo = await localStatus();
+  out.local = !lo
+    ? { chip: "Not here", ready: false, says: "Pictures drawn on this Mac, in the installed app." }
+    : !lo.uv
+      ? { chip: "Needs uv", ready: false, says: "FLUX.2 klein, drawn on this Mac — free and private. Doodle makes a Python of its own for it with uv:", fix: "brew install uv", then: "then look again." }
+      : !lo.model
+        ? { chip: "No model", ready: false, says: "FLUX.2 klein 4B is not in the Hugging Face cache yet (about 16 GB). In Terminal:", fix: "uvx --from huggingface_hub hf download black-forest-labs/FLUX.2-klein-4B --exclude flux-2-klein-4b.safetensors" }
+        : !lo.env
+          ? { chip: "Not set up", ready: false, says: "FLUX.2 klein 4B is here. Doodle sets up a Python of its own with mflux in it (a few hundred MB), once.", action: "set-up-local" }
+          : { chip: "Ready", ready: true, says: "Draws with FLUX.2 klein 4B in four steps, on this Mac — free and private. Lets the model go after ten quiet minutes.", where: "~/.cache/huggingface" };
   out.codex = !cx?.found
     ? {
         chip: "Not found",
