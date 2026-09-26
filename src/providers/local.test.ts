@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { makeRoom } from "./local";
+import { makeRoom, forFlux } from "./local";
 
 const GB = 1e9;
 
@@ -22,5 +22,14 @@ describe("the memory guard (M4.4)", () => {
 
   it("on a small Mac, everything steps aside", async () => {
     expect(await makeRoom(24 * GB, [{ name: "a", size: 2 * GB }, { name: "b", size: 3 * GB }], async () => {})).toEqual(["b", "a"]);
+  });
+});
+
+describe("the prompt, as FLUX wants it (M4.5)", () => {
+  it("says what is not wanted in words, and asks for no lettering", () => {
+    expect(forFlux("A lighthouse at dawn.", "No text, other people.")).toBe("A lighthouse at dawn. Without: text, other people. No text, lettering, captions or signature anywhere in the picture.");
+  });
+  it("lets words through when the picture is asked to show them", () => {
+    expect(forFlux("A shop sign that reads BAKERY")).toBe("A shop sign that reads BAKERY.");
   });
 });

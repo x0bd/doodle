@@ -126,9 +126,15 @@ def load(name):
         state.model, state.name = FakeModel(), name
         return 0
     from mflux.models.common.config import ModelConfig
-    from mflux.models.flux2.variants import Flux2KleinEdit
+    from mflux.models.flux2.variants import Flux2Klein, Flux2KleinEdit
 
-    state.model = Flux2KleinEdit(model_config=getattr(ModelConfig, MODELS[name])())
+    edit = Flux2KleinEdit(model_config=getattr(ModelConfig, MODELS[name])())
+    # the edit variant needs references; without them, the plain one draws —
+    # built around the same weights, so the model is in memory once
+    plain = Flux2Klein.__new__(Flux2Klein)
+    dict.update(plain, edit)
+    plain.__dict__.update(edit.__dict__)
+    state.model = {"edit": edit, "plain": plain}
     state.name = name
     ms = int((time.time() - t0) * 1000)
     note(f"loaded {name} in {ms} ms")
@@ -160,7 +166,7 @@ def generate(cmd):
     width = max(256, int(cmd.get("width") or 1024) // 16 * 16)
     height = max(256, int(cmd.get("height") or 1024) // 16 * 16)
     images = [p for p in (cmd.get("images") or []) if p]
-    model = state.model
+    model = state.model["edit" if images else "plain"] if isinstance(state.model, dict) else state.model
     progress = Progress(job, steps)
     # the last run's progress goes; this one's comes
     registry = model.callbacks
@@ -170,14 +176,8 @@ def generate(cmd):
     state.cancel.clear()
     t0 = time.time()
     try:
-        image = model.generate_image(
-            seed=int(cmd.get("seed") or 0),
-            prompt=cmd["prompt"],
-            num_inference_steps=steps,
-            width=width,
-            height=height,
-            image_paths=images or None,
-        )
+        args = dict(seed=int(cmd.get("seed") or 0), prompt=cmd["prompt"], num_inference_steps=steps, width=width, height=height)
+        image = model.generate_image(**args, image_paths=images) if images else model.generate_image(**args)
         image.image.save(cmd["out"])
         say({"id": job, "event": "done", "path": cmd["out"], "seed": int(cmd.get("seed") or 0), "ms": int((time.time() - t0) * 1000), "width": width, "height": height})
     except Exception as e:  # noqa: BLE001

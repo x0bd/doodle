@@ -73,6 +73,21 @@ async function guard(): Promise<string[]> {
   }
 }
 
+/**
+ * The prompt as FLUX.2 wants it (M4.5): natural language, one piece. It has
+ * no negative prompt, so what is not wanted is said in words; and it writes
+ * made-up lettering and signatures into a picture unless told not to — so
+ * it is told, unless the picture is asked to show words.
+ */
+export function forFlux(prompt: string, negative = ""): string {
+  const parts = [prompt.trim().replace(/[.\s]+$/, "")];
+  const not = negative.trim().replace(/^no\s+/i, "").replace(/[.\s]+$/, "");
+  if (not) parts.push(`Without: ${not}`);
+  // words asked for (a sign, a title, a letter) are let through
+  if (!/\b(text|words?|lettering|sign|title|caption|label|written|reads)\b/i.test(prompt)) parts.push("No text, lettering, captions or signature anywhere in the picture");
+  return `${parts.join(". ")}.`;
+}
+
 /** the model, and how many steps it draws in */
 const MODEL = "flux2-klein-4b";
 const STEPS = 4;
@@ -117,7 +132,7 @@ export const local: Provider = {
         // listening before asking, so no line is missed
         onProgress({ fraction: 0, note: images.length ? `loading · ${images.length} reference${images.length === 1 ? "" : "s"}` : "loading" });
         return invoke("imaged_send", {
-          line: { id, op: "generate", model: MODEL, prompt: req.prompt, seed: req.seed, steps: STEPS, width: req.width, height: req.height, images, out },
+          line: { id, op: "generate", model: MODEL, prompt: forFlux(req.prompt, req.negative), seed: req.seed, steps: STEPS, width: req.width, height: req.height, images, out },
         }).catch(reject);
       });
     });
