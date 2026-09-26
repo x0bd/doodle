@@ -88,6 +88,9 @@ export function forFlux(prompt: string, negative = ""): string {
   return `${parts.join(". ")}.`;
 }
 
+/** what a picture from here says it was made by (M4.10) */
+const MADE = { model: "FLUX.2 klein 4B", quantization: "bf16", steps: 4, licence: "Apache 2.0 — commercial use allowed" };
+
 /** the model, and how many steps it draws in */
 const MODEL = "flux2-klein-4b";
 const STEPS = 4;
@@ -138,7 +141,7 @@ export const local: Provider = {
     });
     try {
       const path = await done;
-      return { asset: await dataUrl(path), seed: req.seed, elapsedMs: performance.now() - t0 };
+      return { asset: await dataUrl(path), seed: req.seed, elapsedMs: performance.now() - t0, made: MADE };
     } finally {
       off?.();
     }

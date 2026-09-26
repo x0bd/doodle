@@ -1,16 +1,18 @@
 import { useEffect, useState } from "react";
-import { Icon, CloseIcon, CheckIcon, GeneralIcon, AppearanceIcon, AboutIcon, ProvidersIcon } from "../icons";
+import { Icon, CloseIcon, CheckIcon, GeneralIcon, AppearanceIcon, AboutIcon, ProvidersIcon, ModelIcon } from "../icons";
 import { ui, closeSettings, setTheme, setMotion, setDim, setSpell, openShortcuts, type Theme } from "../state/ui";
 import { providers } from "../providers/registry";
 import { probe, type Found } from "../providers/found";
 import { setUpLocal } from "../providers/local";
 import { inTauri } from "../platform/fs";
+import { MODELS, models, lookAtModels, fetchModel, stopModel, revealModel, modelPage, hasToken, setToken, forgetToken, gb, type ModelSpec } from "../state/models";
 
-type Section = "general" | "appearance" | "providers" | "about";
+type Section = "general" | "appearance" | "providers" | "models" | "about";
 const SECTIONS: { id: Section; label: string; icon: Parameters<typeof Icon>[0]["icon"] }[] = [
   { id: "general", label: "General", icon: GeneralIcon },
   { id: "appearance", label: "Appearance", icon: AppearanceIcon },
   { id: "providers", label: "Providers", icon: ProvidersIcon },
+  { id: "models", label: "Models", icon: ModelIcon },
   { id: "about", label: "About", icon: AboutIcon },
 ];
 
@@ -67,6 +69,7 @@ export function Settings() {
             {section === "general" && <General />}
             {section === "appearance" && <Appearance />}
             {section === "providers" && <Providers />}
+            {section === "models" && <Models />}
             {section === "about" && <About />}
           </div>
         </div>
@@ -189,6 +192,122 @@ function Swatch({ mode, half }: { mode: "light" | "dark"; half?: boolean }) {
   );
 }
 
+
+/** The models on this Mac (M4.2): what each is for and weighs, its licence,
+ *  and bringing it down — with progress, a stop that keeps what came, and
+ *  for a gated one, the licence to accept and the token to fetch it with. */
+function Models() {
+  const here = models.use();
+  const [token, setTok] = useState<boolean | null>(null);
+  useEffect(() => {
+    void lookAtModels();
+    void hasToken().then(setTok);
+  }, []);
+  if (!inTauri) return <p className="group-note">The models are managed in the installed app.</p>;
+  return (
+    <>
+      <section className="grp">
+        <p className="group-head">On this Mac</p>
+        <div className="group">
+          {MODELS.map((m) => (
+            <ModelRow key={m.id} m={m} here={here[m.id]} token={!!token} />
+          ))}
+        </div>
+        <p className="group-note under">Kept in Hugging Face's own cache (~/.cache/huggingface), where other tools find them too. A stopped download picks up where it was.</p>
+      </section>
+      <HfToken has={token} onChange={() => void hasToken().then(setTok)} />
+    </>
+  );
+}
+
+function ModelRow({ m, here, token }: { m: ModelSpec; here?: { whole: boolean; bytes: number; fetching: boolean; failed?: string; gated?: boolean }; token: boolean }) {
+  const pct = here ? Math.min(100, Math.round((here.bytes / m.size) * 100)) : 0;
+  return (
+    <div className="group-row prov model-row">
+      <div className="group-what">
+        <p className="group-name">
+          {m.name}
+          <span className={`model-lic${m.commercial ? " ok" : ""}`}>{m.licence}{m.commercial ? " · commercial use" : ""}</span>
+        </p>
+        <p className="group-note">{m.does}</p>
+        {!m.ready && <p className="group-note">Doodle draws with it once it learns it — soon; it can come down now.</p>}
+        {m.gated && !here?.whole && (
+          <p className="group-note">
+            Hugging Face asks you to accept its licence first:{" "}
+            <button className="link" onClick={() => void modelPage(m)}>
+              the model's page
+            </button>
+            {token ? ", then Download." : " — and a token, below."}
+          </p>
+        )}
+        {here?.fetching && (
+          <div className="model-bar" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={`${m.name} downloading`}>
+            <span style={{ width: `${pct}%` }} />
+          </div>
+        )}
+        {here?.fetching && <p className="prov-fix px">{gb(here.bytes)} of {gb(m.size)} · {pct}%</p>}
+        {here?.failed && <p className="group-note model-failed">{here.gated ? "Hugging Face would not give it: accept the licence on the model's page, and check the token." : here.failed}</p>}
+      </div>
+      <div className="model-acts">
+        {here?.whole ? (
+          <>
+            <span className="chip on">Here</span>
+            <button className="pill pill-sm" onClick={() => void revealModel(m)} title="Show it in the Finder">
+              Show
+            </button>
+          </>
+        ) : here?.fetching ? (
+          <button className="pill pill-sm" onClick={() => void stopModel(m)} title="Stop — what came down stays">
+            Stop
+          </button>
+        ) : (
+          <button className="pill pill-sm" onClick={() => void fetchModel(m)} disabled={m.gated && !token} title={m.gated && !token ? "A Hugging Face token first" : `Bring down ${gb(m.size)}`}>
+            {here && here.bytes > 1e8 ? `Resume · ${gb(m.size - here.bytes)}` : `Download · ${gb(m.size)}`}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** the writer's Hugging Face token, for gated models — into the Keychain, never shown again */
+function HfToken({ has, onChange }: { has: boolean | null; onChange: () => void }) {
+  const [value, setValue] = useState("");
+  const [said, setSaid] = useState<string | null>(null);
+  const save = () =>
+    setToken(value)
+      .then(() => (setValue(""), setSaid(null), onChange()))
+      .catch((e) => setSaid(String(e)));
+  return (
+    <section className="grp">
+      <p className="group-head">Hugging Face</p>
+      <div className="group">
+        <div className="group-row prov">
+          <div className="group-what">
+            <p className="group-name">Token</p>
+            <p className="group-note">
+              {has ? "Kept in your Keychain. Gated models are fetched with it." : "For gated models. Make a read token on huggingface.co (Settings › Access Tokens); Doodle keeps it in your Keychain."}
+            </p>
+            {!has && (
+              <div className="model-token">
+                <input className="inp" type="password" value={value} onChange={(e) => setValue(e.target.value)} placeholder="hf_…" aria-label="Hugging Face token" spellCheck={false} autoComplete="off" />
+                <button className="pill pill-sm" onClick={() => void save()} disabled={!value.trim()}>
+                  Keep
+                </button>
+              </div>
+            )}
+            {said && <p className="group-note model-failed">{said}</p>}
+          </div>
+          {has && (
+            <button className="pill pill-sm" onClick={() => void forgetToken().then(onChange)}>
+              Forget
+            </button>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
 
 /** Doodle's own environment for FLUX, made on a key — uv's words as it works */
 function SetUpLocal({ onDone }: { onDone: () => void }) {

@@ -42,6 +42,8 @@ export interface ImageResult {
   asset: string;
   seed: number;
   elapsedMs: number;
+  /** what made it, as the provider knows it (M4.10) — for Where this came from */
+  made?: { model: string; quantization?: string; steps?: number; licence?: string };
 }
 
 export interface TextRequest {

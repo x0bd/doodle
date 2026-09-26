@@ -22,6 +22,10 @@ export interface Prov {
   system?: string;
   /** the number that would make it again, if there is one */
   seed?: number;
+  /** how the model ran, and under what licence its pictures may be used (M4.10) */
+  quantization?: string;
+  steps?: number;
+  licence?: string;
   /** what fed it, by node — their names as they were */
   inputs: { node: string; port: string; title: string; kind: string }[];
   /** the pictures it was shown, by whose they were */

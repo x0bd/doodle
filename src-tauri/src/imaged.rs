@@ -187,6 +187,16 @@ pub fn imaged_stop(state: tauri::State<ImagedState>) {
     }
 }
 
+/// which self-test the dev build was asked to run (`DOODLE_SELFTEST`), if any
+#[tauri::command]
+pub fn selftest_mode() -> Option<String> {
+    if cfg!(debug_assertions) {
+        std::env::var("DOODLE_SELFTEST").ok()
+    } else {
+        None
+    }
+}
+
 /// this Mac's memory, in bytes — for the memory guard (M4.4)
 #[tauri::command]
 pub fn memory_total() -> u64 {

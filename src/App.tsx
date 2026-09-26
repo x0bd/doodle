@@ -11,6 +11,7 @@ import { listenToMenu } from "./platform/menu";
 import { listenForAgent } from "./agent/tools";
 import { keepIndexed } from "./state/meaning";
 import { keepGists } from "./state/gists";
+import { selfTest } from "./state/selftest";
 import { makeRecipe, addRefs, type Shot } from "./state/looks";
 import { Answers } from "./shell/Answers";
 import { drafts } from "./state/drafts";
@@ -59,6 +60,8 @@ export function App() {
   useEffect(listenToMenu, []);
   useEffect(listenForAgent, []);
   useEffect(keepIndexed, []);
+  // the dev build's self-test, when asked for (DOODLE_SELFTEST)
+  useEffect(() => void selfTest(), []);
   // chapter gists while nothing else wants the local writer
   useEffect(() => keepGists(() => Object.values(drafts.get()).some((d) => d.state === "thinking") || pending(jobs.get()).length > 0), []);
   // what the Finder opened Doodle with; else a graph that was never saved

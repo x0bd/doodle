@@ -397,11 +397,14 @@ async function run(id: string) {
           key: ref,
           kind: "image",
           provider: provider.descriptor.name,
-          model: String(fed(gen, "model")?.data.model ?? "default"),
+          model: result.made?.model ?? String(fed(gen, "model")?.data.model ?? "default"),
           at: Date.now(),
           prompt: req.prompt,
           system: req.negative || undefined,
           seed: result.seed,
+          quantization: result.made?.quantization,
+          steps: result.made?.steps,
+          licence: result.made?.licence,
           pictures: req.images?.map((p) => p.label),
           inputs: inputsOf(gen.id),
           rules: bibleText() || undefined,
@@ -439,8 +442,11 @@ async function run(id: string) {
 
 /* ── on disk ── */
 // Runs are kept beside the graph (jobs.json), written a moment after they
-// change. On open they come back; anything that was queued or running when
-// the app closed is marked cancelled — a mock or a CLI cannot be resumed —
+// change. On open they come back. A picture that was queued or being drawn
+// on this Mac (FLUX, M4.9) is queued again and runs — it needs nothing that
+// went away with the app; anything else that was unfinished (the mock, a
+// ChatGPT or Ollama run, which cannot be picked up where it stopped) is
+// marked as closed mid-run, to be run again from the History if wanted —
 // so the record is always true.
 let writeTimer: number | undefined;
 jobs.subscribe(() => {
@@ -455,6 +461,10 @@ jobs.subscribe(() => {
   }, 800);
 });
 
+/** a run that can pick up after a relaunch: a picture drawn on this Mac —
+ *  by FLUX when it started, or waiting while FLUX is the drawer */
+export const resumable = (j: Job, drawWith = ui.get().drawWith) => j.kind === "image" && (j.provider === "local" || (!j.provider && drawWith === "local"));
+
 export async function restoreJobs(dir: string) {
   if (!inTauri) return;
   try {
@@ -468,11 +478,14 @@ export async function restoreJobs(dir: string) {
     for (const id of file.order) {
       const j = file.jobs[id];
       if (!j) continue;
-      restored[id] = j.state === "queued" || j.state === "running" ? { ...j, state: "cancelled", endedAt: j.endedAt ?? Date.now(), note: "closed mid-run" } : j;
+      const unfinished = j.state === "queued" || j.state === "running";
+      restored[id] = !unfinished ? j : resumable(j) ? { ...j, state: "queued", progress: 0, startedAt: undefined, note: "resumed after reopening" } : { ...j, state: "cancelled", endedAt: j.endedAt ?? Date.now(), note: "closed mid-run — run it again from the History" };
       const n = Number(id.slice(1));
       if (n > seq) seq = n;
     }
     jobs.set({ jobs: restored, order: file.order.filter((id) => restored[id]), iterations: file.iterations ?? 0 });
+    // what was resumed runs now
+    if (Object.values(restored).some((j) => j.state === "queued")) void pump();
   } catch {
     jobs.set({ jobs: {}, order: [], iterations: 0 });
   }

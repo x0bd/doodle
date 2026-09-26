@@ -188,6 +188,18 @@ function Source({ node }: { node: GraphNode }) {
           <div className="group-name">When</div>
           <div className="group-val">{when(p.at)}</div>
         </div>
+        {(p.steps || p.quantization) && (
+          <div className="group-row">
+            <div className="group-name">Ran</div>
+            <div className="group-val">{[p.steps && `${p.steps} steps`, p.quantization].filter(Boolean).join(" · ")}</div>
+          </div>
+        )}
+        {p.licence && (
+          <div className="group-row">
+            <div className="group-name">Licence</div>
+            <div className="group-val">{p.licence}</div>
+          </div>
+        )}
         {p.seed !== undefined && (
           <div className="group-row">
             <div className="group-name">Seed</div>

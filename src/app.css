@@ -2413,4 +2413,14 @@ html, body, #root { height: 100%; }
 .wire-row:hover { background: var(--tint); }
 .wire-port { margin-left: auto; font-size: var(--t-micro); color: var(--fg-faint); }
 
+.model-row { align-items: flex-start; }
+.model-lic { margin-left: 8px; padding: 1px 7px; border-radius: var(--r-pill); background: var(--tint-2); font-size: var(--t-micro); font-weight: var(--w-mid); color: var(--fg-muted); }
+.model-lic.ok { color: var(--fg); }
+.model-acts { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.model-bar { height: 4px; margin-top: 8px; border-radius: var(--r-pill); background: var(--tint-2); overflow: hidden; }
+.model-bar span { display: block; height: 100%; border-radius: inherit; background: var(--fg-muted); transition: width var(--base) var(--ease); }
+.model-failed { color: var(--fg); }
+.model-token { display: flex; gap: 6px; margin-top: 8px; }
+.model-token .inp { flex: 1; min-width: 0; height: 30px; font-family: var(--font-mono); font-size: var(--t-label); }
 .prov-act { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin-top: 8px; }
+.link { padding: 0; background: none; font: inherit; color: var(--fg); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }

@@ -185,15 +185,15 @@ Built on **D1** (decided: the chapter is the manuscript).
 | # | Task | Acceptance |
 |---|---|---|
 | M4.1 ◐ | **doodle-imaged sidecar**: Python + `mflux` in Doodle's own `uv` environment under Application Support; JSON-lines protocol (`load`, `generate`, `edit`, `inpaint`, `upscale`, `progress`, `cancel`, `unload`); supervised by Rust | Kill it mid-run: Doodle restarts it and marks the job failed with a sentence. |
-| M4.2 | **Model manager**: list models with size, licence, capabilities, speed on this Mac; download with progress and resume (`hf_transfer`); gated models (Ideogram 4) explain the licence page and take a Hugging Face token into the **Keychain** | Install FLUX.2 klein 4B from Settings; see it offered to generators. |
+| M4.2 ◐ | **Model manager**: list models with size, licence, capabilities, speed on this Mac; download with progress and resume (`hf_transfer`); gated models (Ideogram 4) explain the licence page and take a Hugging Face token into the **Keychain** | Install FLUX.2 klein 4B from Settings; see it offered to generators. |
 | M4.3 | **Models, first set**: FLUX.2 klein 4B (Apache, default), FLUX.2 klein 9B (quality, non-commercial), Ideogram 4 (typography and layout, non-commercial), SeedVR2 (upscale). Later: Qwen Image 2.1, Z-Image | Each generates a 1024² image on the M5 Pro; times recorded in the model list. |
 | M4.4 ◐ | **Local provider** behind the provider port: progress per step, **real cancel**, one model resident, idle unload after 10 min, memory guard (refuse to load a model that would not fit beside what Ollama holds) | Generate, cancel at step 5 — stops within a second. |
 | M4.5 ◐ | **Prompt compiler per model**: FLUX.2 natural language with references; Ideogram 4 JSON captions, hex colours, bounding boxes for layout; negative prompts where supported | The same scene prompt produces model-appropriate requests (unit-tested). |
 | M4.6 | **References and editing** (FLUX.2 multi-reference): character and place pictures as references; "same person, new pose"; edit an image with words | Four images of a character from one reference are recognisably the same person (manual check with a rubric). |
 | M4.7 | **Touch-up brush** (inpaint): paint a mask over an image, words for the change, regenerate only the mask | Fix a hand; the rest of the image is byte-for-byte unchanged outside the mask's feather. |
 | M4.8 | **Upscale** (SeedVR2) of any take, 2× and 4× | A kept take upscales to 2048² in the background. |
-| M4.9 | **Queue that survives**: persisted local jobs resume after relaunch (local runs can resume; ChatGPT ones are marked and retried on request) | Quit mid-run, reopen: the job continues. |
-| M4.10 | **Provenance** records model, quantisation, steps, seed, references and licence | *Where this came from* shows "FLUX.2 klein 9B · non-commercial". |
+| M4.9 ◐ | **Queue that survives**: persisted local jobs resume after relaunch (local runs can resume; ChatGPT ones are marked and retried on request) | Quit mid-run, reopen: the job continues. |
+| M4.10 ◐ | **Provenance** records model, quantisation, steps, seed, references and licence | *Where this came from* shows "FLUX.2 klein 9B · non-commercial". |
 
 ### M5 — Pictures in the book — *L*
 

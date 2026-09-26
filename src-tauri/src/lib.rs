@@ -1,6 +1,7 @@
 mod archive;
 mod codex;
 mod imaged;
+mod models;
 mod import;
 mod integrity;
 mod logs;
@@ -69,10 +70,20 @@ pub fn run() {
             imaged::imaged_send,
             imaged::imaged_stop,
             imaged::imaged_out,
-            imaged::memory_total
+            imaged::memory_total,
+            imaged::selftest_mode,
+            models::model_present,
+            models::model_fetch,
+            models::model_stop,
+            models::model_reveal,
+            models::model_page,
+            models::hf_token_has,
+            models::hf_token_set,
+            models::hf_token_forget
         ])
         .manage(codex::CodexState::default())
         .manage(imaged::ImagedState::default())
+        .manage(models::ModelsState::default())
         .setup(|app| {
             logs::init(app.handle());
             logs::info("app", &format!("Doodle {} starting ({})", app.package_info().version, if cfg!(debug_assertions) { "dev" } else { "release" }));
