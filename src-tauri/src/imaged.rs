@@ -187,6 +187,12 @@ pub fn imaged_stop(state: tauri::State<ImagedState>) {
     }
 }
 
+/// this Mac's memory, in bytes — for the memory guard (M4.4)
+#[tauri::command]
+pub fn memory_total() -> u64 {
+    Command::new("/usr/sbin/sysctl").args(["-n", "hw.memsize"]).output().ok().and_then(|o| String::from_utf8_lossy(&o.stdout).trim().parse().ok()).unwrap_or(0)
+}
+
 /// where a picture is written before it is taken into the project
 #[tauri::command]
 pub fn imaged_out(app: AppHandle, id: String) -> Result<String, String> {

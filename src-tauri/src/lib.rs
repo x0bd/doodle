@@ -68,7 +68,8 @@ pub fn run() {
             imaged::imaged_setup,
             imaged::imaged_send,
             imaged::imaged_stop,
-            imaged::imaged_out
+            imaged::imaged_out,
+            imaged::memory_total
         ])
         .manage(codex::CodexState::default())
         .manage(imaged::ImagedState::default())
